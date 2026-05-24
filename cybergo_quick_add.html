@@ -1,0 +1,296 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-sans); }
+:root {
+  --cb: #0a0d14; --cp: #111520; --cc: #161b2e;
+  --ca: #00d4ff; --ca2: #7c3aed; --ca3: #06ffa5; --ca4: #ff6b6b;
+  --ct: #e2e8f0; --cm: #64748b; --cbr: rgba(0,212,255,0.15);
+}
+.overlay {
+  min-height: 500px; background: rgba(5,7,12,0.9);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px; padding: 24px; flex-direction: column; gap: 24px;
+}
+.qa-wrapper { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 12px; }
+.qa-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--cm); display: flex; align-items: center; gap: 6px;
+}
+.qa-label i { color: var(--ca); font-size: 13px; }
+.qa-input-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.qa-input {
+  flex: 1; background: #0d1017;
+  border: 1px solid rgba(0,212,255,0.25); border-radius: 10px;
+  padding: 13px 16px; color: var(--ct); font-size: 14px;
+  outline: none; font-family: var(--font-sans);
+}
+.qa-input:focus { border-color: rgba(0,212,255,0.55); }
+.qa-input::placeholder { color: #334155; }
+.qa-btn {
+  padding: 13px 18px; border-radius: 10px; border: none;
+  background: var(--ca); color: #000; font-size: 13px; font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.qa-btn i { font-size: 15px; }
+.qa-hint { font-size: 11px; color: #334155; display: flex; gap: 12px; flex-wrap: wrap; }
+.qa-hint span {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  padding: 3px 8px; border-radius: 5px; color: #475569; cursor: pointer;
+}
+.parsing-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--cm);
+}
+.parse-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--ca);
+  animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.card {
+  background: #111520; border-radius: 14px;
+  border: 1px solid rgba(0,212,255,0.2); width: 100%; max-width: 560px;
+  overflow: hidden;
+}
+.card-header {
+  background: #0d1017; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--cbr);
+}
+.card-header-left { display: flex; align-items: center; gap: 8px; }
+.ai-badge {
+  font-size: 9px; padding: 3px 8px; border-radius: 10px;
+  background: rgba(0,212,255,0.1); color: var(--ca);
+  border: 1px solid rgba(0,212,255,0.2); display: flex; align-items: center; gap: 4px;
+}
+.card-title { font-size: 13px; color: var(--ct); font-weight: 500; }
+.confidence {
+  font-size: 11px; color: #06ffa5; display: flex; align-items: center; gap: 4px;
+}
+.card-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.event-title-preview {
+  font-size: 18px; font-weight: 500; color: var(--ct);
+  padding-bottom: 12px; border-bottom: 1px solid rgba(0,212,255,0.08);
+}
+.parsed-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pf {
+  background: #0d1017; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05); padding: 10px 12px;
+}
+.pf-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--cm); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;
+}
+.pf-label i { font-size: 11px; color: var(--ca); }
+.pf-value { font-size: 13px; color: var(--ct); font-weight: 500; }
+.pf-value.highlight { color: var(--ca); }
+.pf-full { grid-column: span 2; }
+.tags-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag {
+  font-size: 11px; padding: 3px 9px; border-radius: 20px;
+  background: rgba(124,58,237,0.1); color: #a78bfa;
+  border: 1px solid rgba(124,58,237,0.2);
+}
+.warn-row {
+  background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 8px; padding: 9px 12px;
+  display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #d97706;
+}
+.warn-row i { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+.card-footer {
+  padding: 12px 16px; border-top: 1px solid var(--cbr);
+  display: flex; align-items: center; justify-content: space-between;
+  background: #0d1017;
+}
+.edit-link {
+  font-size: 12px; color: var(--cm); cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+}
+.edit-link:hover { color: var(--ca); }
+.footer-btns { display: flex; gap: 8px; }
+.btn-discard {
+  padding: 8px 14px; border-radius: 7px; font-size: 12px;
+  border: 1px solid rgba(255,107,107,0.2); background: rgba(255,107,107,0.06);
+  color: var(--ca4); cursor: pointer;
+}
+.btn-confirm {
+  padding: 8px 20px; border-radius: 7px; font-size: 12px; font-weight: 500;
+  border: none; background: var(--ca3); color: #000; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-confirm i { font-size: 13px; }
+.examples-label {
+  font-size: 11px; color: #334155; text-align: center; margin-top: -8px;
+}
+</style>
+
+<h2 class="sr-only">CyberGo Quick Add – entrada de evento en lenguaje natural con feedback visual de IA</h2>
+
+<div class="overlay">
+
+  <div class="qa-wrapper">
+    <div class="qa-label">
+      <i class="ti ti-sparkles"></i> Quick Add · lenguaje natural
+    </div>
+    <div class="qa-input-row">
+      <input class="qa-input" id="qa-inp" placeholder="ej. &quot;ir al dentista mañana a las 3pm&quot;" value="ir al dentista mañana a las 3pm">
+      <button class="qa-btn" onclick="parseEvent()">
+        <i class="ti ti-sparkles"></i> Parse
+      </button>
+    </div>
+    <div class="qa-hint">
+      Try: <span onclick="setEx('reunión con cliente el viernes a las 10am en zoom')">reunión con cliente el viernes</span>
+      <span onclick="setEx('llamar a mamá el domingo')">llamar a mamá el domingo</span>
+      <span onclick="setEx('vuelo a Madrid el 5 de junio a las 6am, alta importancia')">vuelo a Madrid el 5 de junio</span>
+    </div>
+  </div>
+
+  <div class="card" id="result-card">
+    <div class="card-header">
+      <div class="card-header-left">
+        <div class="ai-badge"><i class="ti ti-cpu" style="font-size:10px;"></i> AI parsed</div>
+        <span class="card-title">Event detected</span>
+      </div>
+      <div class="confidence"><i class="ti ti-circle-check" style="font-size:13px;"></i> 97% confidence</div>
+    </div>
+    <div class="card-body">
+      <div class="event-title-preview" id="ev-title">Dentist appointment</div>
+      <div class="parsed-fields">
+        <div class="pf">
+          <div class="pf-label"><i class="ti ti-calendar"></i>Date</div>
+          <div class="pf-value highlight" id="ev-date">Thursday, May 21, 2026</div>
+        </div>
+        <div class="pf">
+          <div class="pf-label"><i class="ti ti-clock"></i>Time</div>
+          <div class="pf-value highlight" id="ev-time">3:00 PM – 4:00 PM</div>
+        </div>
+        <div class="pf">
+          <div class="pf-label"><i class="ti ti-map-pin"></i>Location</div>
+          <div class="pf-value" id="ev-loc" style="color:#475569;">Not specified</div>
+        </div>
+        <div class="pf">
+          <div class="pf-label"><i class="ti ti-folder"></i>Group</div>
+          <div class="pf-value" id="ev-group">Life</div>
+        </div>
+        <div class="pf">
+          <div class="pf-label"><i class="ti ti-flame"></i>Importance</div>
+          <div class="pf-value" id="ev-imp">Normal</div>
+        </div>
+        <div class="pf">
+          <div class="pf-label"><i class="ti ti-bell"></i>Reminder</div>
+          <div class="pf-value" id="ev-rem">30 min before</div>
+        </div>
+        <div class="pf pf-full">
+          <div class="pf-label"><i class="ti ti-tag"></i>Auto tags</div>
+          <div class="tags-row" id="ev-tags">
+            <span class="tag">health</span>
+            <span class="tag">appointment</span>
+          </div>
+        </div>
+      </div>
+      <div class="warn-row" id="ev-warn">
+        <i class="ti ti-alert-triangle"></i>
+        <span id="ev-warn-text">No location detected — you can add it before confirming or edit later.</span>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="edit-link"><i class="ti ti-edit" style="font-size:13px;"></i> Edit in full form</div>
+      <div class="footer-btns">
+        <button class="btn-discard"><i class="ti ti-x" style="font-size:12px;"></i> Discard</button>
+        <button class="btn-confirm"><i class="ti ti-check"></i> Confirm event</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="examples-label">La IA detecta fecha, hora, ubicación, importancia y grupo automáticamente</div>
+
+</div>
+
+<script>
+function setEx(txt) {
+  document.getElementById('qa-inp').value = txt;
+  parseEvent();
+}
+
+function parseEvent() {
+  const inp = document.getElementById('qa-inp').value.toLowerCase();
+  const card = document.getElementById('result-card');
+  card.style.opacity = '0.4';
+  setTimeout(() => {
+    card.style.opacity = '1';
+    applyParse(inp);
+  }, 600);
+}
+
+function applyParse(t) {
+  const today = new Date(2026, 4, 20);
+  let date = new Date(today), timeStr = '9:00 AM – 10:00 AM';
+  let title = 'New Event', loc = '', group = 'Personal', imp = 'Normal';
+  let tags = [], rem = '30 min before', warn = '', conf = '94%';
+
+  if (t.includes('dentista') || t.includes('dentist')) {
+    title = 'Dentist appointment'; group = 'Life'; tags = ['health','appointment'];
+    warn = 'No location detected — you can add it before confirming or edit later.';
+    conf = '97%';
+  } else if (t.includes('cliente') || t.includes('reunión')) {
+    title = 'Client meeting'; group = 'Work'; tags = ['client','meeting'];
+    warn = ''; conf = '95%';
+    if (t.includes('zoom')) { loc = 'Zoom'; warn = ''; }
+  } else if (t.includes('mamá') || t.includes('mama') || t.includes('llamar')) {
+    title = 'Call mom'; group = 'Life'; tags = ['family','call'];
+    warn = 'No specific time detected — defaulted to 9:00 AM.'; conf = '88%';
+  } else if (t.includes('vuelo') || t.includes('madrid')) {
+    title = 'Flight to Madrid'; group = 'Life'; tags = ['travel','flight'];
+    loc = 'Airport'; rem = '3 hours before'; conf = '96%';
+    warn = '';
+  }
+
+  if (t.includes('mañana') || t.includes('tomorrow')) {
+    date = new Date(today); date.setDate(date.getDate() + 1);
+  } else if (t.includes('viernes') || t.includes('friday')) {
+    date = new Date(today); date.setDate(date.getDate() + ((5 - date.getDay() + 7) % 7 || 7));
+  } else if (t.includes('domingo') || t.includes('sunday')) {
+    date = new Date(today); date.setDate(date.getDate() + ((0 - date.getDay() + 7) % 7 || 7));
+  } else if (t.includes('5 de junio') || t.includes('june 5')) {
+    date = new Date(2026, 5, 5);
+  }
+
+  if (t.includes('3pm') || t.includes('3:00pm') || t.includes('3 pm') || t.includes('las 3')) {
+    timeStr = '3:00 PM – 4:00 PM';
+  } else if (t.includes('10am') || t.includes('10:00am') || t.includes('las 10')) {
+    timeStr = '10:00 AM – 11:00 AM';
+  } else if (t.includes('6am') || t.includes('las 6')) {
+    timeStr = '6:00 AM – 7:00 AM';
+  }
+
+  if (t.includes('alta importancia') || t.includes('urgente') || t.includes('important')) {
+    imp = 'High';
+  }
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dateStr = days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+
+  document.getElementById('ev-title').textContent = title;
+  document.getElementById('ev-date').textContent = dateStr;
+  document.getElementById('ev-time').textContent = timeStr;
+  document.getElementById('ev-loc').textContent = loc || 'Not specified';
+  document.getElementById('ev-loc').style.color = loc ? '#e2e8f0' : '#475569';
+  document.getElementById('ev-group').textContent = group;
+  document.getElementById('ev-imp').textContent = imp;
+  document.getElementById('ev-rem').textContent = rem;
+  document.querySelector('.confidence').innerHTML = '<i class="ti ti-circle-check" style="font-size:13px;"></i> ' + conf + ' confidence';
+
+  const tagsEl = document.getElementById('ev-tags');
+  tagsEl.innerHTML = tags.map(t => '<span class="tag">' + t + '</span>').join('');
+
+  const warnEl = document.getElementById('ev-warn');
+  if (warn) {
+    warnEl.style.display = 'flex';
+    document.getElementById('ev-warn-text').textContent = warn;
+  } else {
+    warnEl.style.display = 'none';
+  }
+}
+</script>

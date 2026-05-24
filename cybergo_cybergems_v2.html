@@ -1,0 +1,301 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-sans); }
+  :root {
+    --cyber-bg: #0a0d14; --cyber-panel: #111520; --cyber-card: #161b2e;
+    --cyber-accent: #00d4ff; --cyber-accent2: #7c3aed; --cyber-accent3: #06ffa5; --cyber-accent4: #ff6b6b;
+    --cyber-text: #e2e8f0; --cyber-muted: #64748b; --cyber-border: rgba(0,212,255,0.15); --cyber-border2: rgba(124,58,237,0.2);
+  }
+  .app-shell { background: var(--cyber-bg); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; min-height: 700px; border: 1px solid var(--cyber-border); }
+  .titlebar { background: #080b12; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--cyber-border); }
+  .titlebar-left { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 26px; height: 26px; border-radius: 6px; background: linear-gradient(135deg, #00d4ff, #7c3aed); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; letter-spacing: -0.5px; }
+  .app-name { color: var(--cyber-text); font-size: 13px; font-weight: 500; }
+  .app-name span { color: var(--cyber-accent); }
+  .app-version { color: var(--cyber-muted); font-size: 11px; }
+  .top-nav { background: #0d1017; padding: 0 16px; display: flex; align-items: center; gap: 2px; border-bottom: 1px solid var(--cyber-border); }
+  .nav-item { padding: 10px 14px; font-size: 12px; color: var(--cyber-muted); cursor: pointer; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .nav-item.active { color: var(--cyber-accent); border-bottom-color: var(--cyber-accent); }
+  .nav-item i { font-size: 14px; }
+  .nav-spacer { flex: 1; }
+  .nav-btn { padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px; border: 1px solid var(--cyber-accent); background: rgba(0,212,255,0.08); color: var(--cyber-accent); }
+  .main-layout { display: flex; flex: 1; overflow: hidden; }
+  .sidebar { width: 200px; background: var(--cyber-panel); border-right: 1px solid var(--cyber-border); display: flex; flex-direction: column; padding: 12px 0; flex-shrink: 0; }
+  .sidebar-section { padding: 0 8px; margin-bottom: 16px; }
+  .sidebar-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--cyber-muted); padding: 0 8px; margin-bottom: 6px; }
+  .sidebar-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; font-size: 12px; color: var(--cyber-muted); cursor: pointer; margin-bottom: 1px; }
+  .sidebar-item.active { background: rgba(0,212,255,0.08); color: var(--cyber-accent); }
+  .sidebar-item i { font-size: 15px; }
+  .sidebar-dot { width: 7px; height: 7px; border-radius: 50%; margin-left: auto; }
+  .dot-life { background: #06ffa5; } .dot-work { background: #7c3aed; } .dot-personal { background: #ff6b6b; }
+  .sidebar-badge { margin-left: auto; background: rgba(0,212,255,0.15); color: var(--cyber-accent); font-size: 9px; padding: 2px 6px; border-radius: 10px; }
+  .content { flex: 1; overflow: auto; padding: 16px; background: var(--cyber-bg); }
+  .dash-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .dash-title { color: var(--cyber-text); font-size: 18px; font-weight: 500; }
+  .dash-subtitle { color: var(--cyber-muted); font-size: 12px; margin-top: 2px; }
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: var(--cyber-card); border-radius: 10px; border: 1px solid var(--cyber-border); padding: 14px; }
+  .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 10px; }
+  .stat-icon-cyan { background: rgba(0,212,255,0.1); color: #00d4ff; } .stat-icon-purple { background: rgba(124,58,237,0.1); color: #a78bfa; }
+  .stat-icon-green { background: rgba(6,255,165,0.1); color: #06ffa5; } .stat-icon-red { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+  .stat-val { font-size: 22px; font-weight: 500; color: var(--cyber-text); }
+  .stat-lbl { font-size: 11px; color: var(--cyber-muted); margin-top: 2px; }
+  .two-col { display: grid; grid-template-columns: 1fr 320px; gap: 12px; margin-bottom: 12px; }
+  .panel { background: var(--cyber-card); border-radius: 10px; border: 1px solid var(--cyber-border); overflow: hidden; }
+  .panel-head { padding: 12px 14px; border-bottom: 1px solid var(--cyber-border); display: flex; align-items: center; justify-content: space-between; }
+  .panel-title { color: var(--cyber-text); font-size: 13px; font-weight: 500; }
+  .panel-action { color: var(--cyber-accent); font-size: 11px; cursor: pointer; }
+  .event-list { padding: 8px; }
+  .event-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; margin-bottom: 4px; cursor: pointer; }
+  .event-stripe { width: 3px; height: 36px; border-radius: 2px; flex-shrink: 0; }
+  .ev-cyan { background: #00d4ff; } .ev-purple { background: #7c3aed; } .ev-green { background: #06ffa5; } .ev-red { background: #ff6b6b; } .ev-amber { background: #f59e0b; }
+  .event-info { flex: 1; }
+  .event-name { font-size: 12px; color: var(--cyber-text); font-weight: 500; }
+  .event-meta { font-size: 10px; color: var(--cyber-muted); margin-top: 2px; }
+  .event-badge { font-size: 9px; padding: 3px 7px; border-radius: 8px; font-weight: 500; }
+  .badge-today { background: rgba(6,255,165,0.1); color: #06ffa5; border: 1px solid rgba(6,255,165,0.2); }
+  .badge-soon { background: rgba(0,212,255,0.1); color: #00d4ff; border: 1px solid rgba(0,212,255,0.2); }
+  .badge-overdue { background: rgba(255,107,107,0.1); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.2); }
+  .badge-days { background: rgba(124,58,237,0.1); color: #a78bfa; border: 1px solid rgba(124,58,237,0.2); }
+  .mini-calendar { padding: 12px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-day-label { text-align: center; font-size: 9px; color: var(--cyber-muted); padding: 2px 0; text-transform: uppercase; }
+  .cal-day { text-align: center; font-size: 11px; color: var(--cyber-muted); padding: 5px 2px; border-radius: 4px; cursor: pointer; position: relative; }
+  .cal-day.has-event::after { content: ''; width: 4px; height: 4px; background: var(--cyber-accent); border-radius: 50%; position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); }
+  .cal-day.today { background: var(--cyber-accent); color: #000; font-weight: 600; }
+  .cal-day.other-month { opacity: 0.3; }
+  .relax-panel { background: #0d1220; border: 1px solid rgba(124,58,237,0.3); border-radius: 10px; padding: 14px; }
+  .relax-title { color: #a78bfa; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 5px; margin-bottom: 12px; justify-content: space-between; }
+  .relax-timer { font-size: 36px; font-weight: 300; color: var(--cyber-text); letter-spacing: 2px; text-align: center; margin: 8px 0; }
+  .relax-timer span { color: #a78bfa; }
+  .sound-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+  .sound-chip { font-size: 10px; padding: 4px 9px; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 4px; border: 1px solid rgba(124,58,237,0.3); color: #a78bfa; background: rgba(124,58,237,0.08); }
+  .sound-chip.active { background: rgba(124,58,237,0.25); border-color: #7c3aed; }
+  .relax-controls { display: flex; gap: 8px; align-items: center; justify-content: center; }
+  .relax-btn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; border: none; }
+  .relax-btn-main { background: #7c3aed; color: white; width: 44px; height: 44px; font-size: 18px; }
+  .relax-btn-sec { background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.3); color: #a78bfa; }
+  .vol-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .vol-bar { flex: 1; height: 3px; background: rgba(124,58,237,0.2); border-radius: 2px; overflow: hidden; }
+  .vol-fill { height: 100%; width: 65%; background: #7c3aed; border-radius: 2px; }
+  .notif-preview { background: #0d1017; border: 1px solid var(--cyber-border); border-radius: 10px; overflow: hidden; }
+  .notif-bar { background: rgba(0,212,255,0.05); padding: 8px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--cyber-border); }
+  .notif-icon { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #00d4ff, #7c3aed); display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; }
+  .notif-content { flex: 1; }
+  .notif-title-t { font-size: 11px; font-weight: 500; color: var(--cyber-text); }
+  .notif-body { font-size: 10px; color: var(--cyber-muted); margin-top: 1px; }
+  .notif-time { font-size: 10px; color: var(--cyber-muted); }
+  .notif-actions { display: flex; gap: 6px; padding: 8px 12px; }
+  .notif-action-btn { padding: 4px 10px; border-radius: 5px; font-size: 10px; cursor: pointer; border: none; }
+  .notif-snooze { background: rgba(255,255,255,0.05); color: var(--cyber-muted); }
+  .notif-open { background: rgba(0,212,255,0.15); color: var(--cyber-accent); }
+  .notif-dismiss { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+  .section-title { font-size: 11px; font-weight: 500; color: var(--cyber-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; margin-top: 14px; }
+</style>
+
+<h2 class="sr-only">CyberGo by CyberGems – mockup de interfaz de escritorio premium</h2>
+
+<div class="app-shell">
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="logo-mark">CG</div>
+      <span class="app-name">Cyber<span>Go</span></span>
+      <span style="font-size:10px;color:var(--cyber-muted);padding:2px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);">by CyberGems</span>
+      <span class="app-version">v1.0 · Power Edition</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:10px;color:#06ffa5;border:1px solid rgba(6,255,165,0.2);padding:3px 8px;border-radius:20px;">● SYNCED</span>
+      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;">JR</div>
+    </div>
+  </div>
+
+  <div class="top-nav">
+    <div class="nav-item active"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    <div class="nav-item"><i class="ti ti-calendar"></i>Calendar</div>
+    <div class="nav-item"><i class="ti ti-list-check"></i>Events</div>
+    <div class="nav-item"><i class="ti ti-moon"></i>Relax</div>
+    <div class="nav-item"><i class="ti ti-chart-bar"></i>Stats</div>
+    <div class="nav-item"><i class="ti ti-search"></i>Search</div>
+    <div class="nav-spacer"></div>
+    <button class="nav-btn"><i class="ti ti-plus" style="font-size:13px;"></i>New Event</button>
+  </div>
+
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">My Groups</div>
+        <div class="sidebar-item active"><i class="ti ti-table"></i>All Events<span class="sidebar-badge">17</span></div>
+        <div class="sidebar-item"><i class="ti ti-heart"></i>Life<span class="sidebar-dot dot-life"></span></div>
+        <div class="sidebar-item"><i class="ti ti-briefcase"></i>Work<span class="sidebar-dot dot-work"></span></div>
+        <div class="sidebar-item"><i class="ti ti-star"></i>Personal<span class="sidebar-dot dot-personal"></span></div>
+        <div class="sidebar-item"><i class="ti ti-plus" style="font-size:13px;color:#00d4ff;opacity:0.6;"></i><span style="color:#00d4ff;opacity:0.6;font-size:11px;">Add group</span></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Filter</div>
+        <div class="sidebar-item"><i class="ti ti-circle-check"></i>Today</div>
+        <div class="sidebar-item"><i class="ti ti-clock"></i>Next 7 Days</div>
+        <div class="sidebar-item"><i class="ti ti-calendar-event"></i>Next 30 Days</div>
+        <div class="sidebar-item"><i class="ti ti-alert-circle" style="color:#ff6b6b;"></i><span style="color:#ff6b6b;">Overdue</span><span class="sidebar-badge" style="color:#ff6b6b;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.2);">3</span></div>
+        <div class="sidebar-item"><i class="ti ti-flame"></i>High Priority</div>
+      </div>
+      <div style="margin-top:auto;padding:8px 16px;border-top:1px solid var(--cyber-border);">
+        <div class="sidebar-item"><i class="ti ti-settings"></i>Settings</div>
+        <div class="sidebar-item"><i class="ti ti-recycle"></i>Recycle Bin</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title">Good morning, there are <span style="color:#00d4ff;">5 events</span> today</div>
+          <div class="dash-subtitle">Wednesday, May 20, 2026 · Week 21</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <div style="padding:5px 10px;border-radius:6px;border:1px solid var(--cyber-border);color:var(--cyber-muted);font-size:11px;cursor:pointer;">Day</div>
+          <div style="padding:5px 10px;border-radius:6px;border:1px solid var(--cyber-border);color:var(--cyber-muted);font-size:11px;cursor:pointer;">Week</div>
+          <div style="padding:5px 10px;border-radius:6px;background:rgba(0,212,255,0.08);border:1px solid var(--cyber-accent);color:var(--cyber-accent);font-size:11px;cursor:pointer;">Month</div>
+          <div style="padding:5px 10px;border-radius:6px;border:1px solid var(--cyber-border);color:var(--cyber-muted);font-size:11px;cursor:pointer;">Year</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-cyan"><i class="ti ti-calendar-event"></i></div>
+          <div class="stat-val" style="color:#00d4ff;">5</div>
+          <div class="stat-lbl">Events Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-purple"><i class="ti ti-list"></i></div>
+          <div class="stat-val" style="color:#a78bfa;">17</div>
+          <div class="stat-lbl">Total Events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-red"><i class="ti ti-alert-triangle"></i></div>
+          <div class="stat-val" style="color:#ff6b6b;">3</div>
+          <div class="stat-lbl">Overdue</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-green"><i class="ti ti-moon"></i></div>
+          <div class="stat-val" style="color:#06ffa5;">47m</div>
+          <div class="stat-lbl">Relax today</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Upcoming Events</span>
+              <span class="panel-action">View all →</span>
+            </div>
+            <div class="event-list">
+              <div class="event-row">
+                <div class="event-stripe ev-green"></div>
+                <div class="event-info">
+                  <div class="event-name">Team standup</div>
+                  <div class="event-meta"><i class="ti ti-clock" style="font-size:10px;"></i> 9:00 AM · Zoom · Work</div>
+                </div>
+                <span class="event-badge badge-today">Today</span>
+              </div>
+              <div class="event-row">
+                <div class="event-stripe ev-cyan"></div>
+                <div class="event-info">
+                  <div class="event-name">Client presentation – CyberGems</div>
+                  <div class="event-meta"><i class="ti ti-map-pin" style="font-size:10px;"></i> San José · 11:30 AM · Work</div>
+                </div>
+                <span class="event-badge badge-today">Today</span>
+              </div>
+              <div class="event-row">
+                <div class="event-stripe ev-amber"></div>
+                <div class="event-info">
+                  <div class="event-name">Dentist appointment</div>
+                  <div class="event-meta"><i class="ti ti-clock" style="font-size:10px;"></i> 3:00 PM · Life</div>
+                </div>
+                <span class="event-badge badge-soon">In 4h</span>
+              </div>
+              <div class="event-row">
+                <div class="event-stripe ev-purple"></div>
+                <div class="event-info">
+                  <div class="event-name">WordPress plugin review</div>
+                  <div class="event-meta"><i class="ti ti-clock" style="font-size:10px;"></i> Tomorrow · 10:00 AM</div>
+                </div>
+                <span class="event-badge badge-days">1 day</span>
+              </div>
+              <div class="event-row">
+                <div class="event-stripe ev-red"></div>
+                <div class="event-info">
+                  <div class="event-name">Invoice submission</div>
+                  <div class="event-meta"><i class="ti ti-alert-circle" style="font-size:10px;color:#ff6b6b;"></i> Was May 18 · Work</div>
+                </div>
+                <span class="event-badge badge-overdue">Overdue</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-title">Notification Preview</div>
+          <div class="notif-preview">
+            <div class="notif-bar">
+              <div class="notif-icon"><i class="ti ti-bell" style="font-size:13px;"></i></div>
+              <div class="notif-content">
+                <div class="notif-title-t">CyberGo · Reminder</div>
+                <div class="notif-body">Client presentation – CyberGems starts in 30 min · Room 4B</div>
+              </div>
+              <div class="notif-time">11:00 AM</div>
+            </div>
+            <div class="notif-actions">
+              <button class="notif-action-btn notif-snooze"><i class="ti ti-clock" style="font-size:10px;"></i> Snooze 10m</button>
+              <button class="notif-action-btn notif-open"><i class="ti ti-external-link" style="font-size:10px;"></i> Open</button>
+              <button class="notif-action-btn notif-dismiss"><i class="ti ti-x" style="font-size:10px;"></i> Dismiss</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">May 2026</span>
+              <div style="display:flex;gap:6px;">
+                <span style="color:var(--cyber-muted);font-size:14px;cursor:pointer;"><i class="ti ti-chevron-left"></i></span>
+                <span style="color:var(--cyber-muted);font-size:14px;cursor:pointer;"><i class="ti ti-chevron-right"></i></span>
+              </div>
+            </div>
+            <div class="mini-calendar">
+              <div class="cal-grid">
+                <div class="cal-day-label">Su</div><div class="cal-day-label">Mo</div><div class="cal-day-label">Tu</div><div class="cal-day-label">We</div><div class="cal-day-label">Th</div><div class="cal-day-label">Fr</div><div class="cal-day-label">Sa</div>
+                <div class="cal-day other-month">27</div><div class="cal-day other-month">28</div><div class="cal-day other-month">29</div><div class="cal-day other-month">30</div><div class="cal-day has-event">1</div><div class="cal-day">2</div><div class="cal-day">3</div>
+                <div class="cal-day">4</div><div class="cal-day has-event">5</div><div class="cal-day">6</div><div class="cal-day has-event">7</div><div class="cal-day">8</div><div class="cal-day has-event">9</div><div class="cal-day">10</div>
+                <div class="cal-day">11</div><div class="cal-day">12</div><div class="cal-day has-event">13</div><div class="cal-day">14</div><div class="cal-day has-event">15</div><div class="cal-day">16</div><div class="cal-day has-event">17</div>
+                <div class="cal-day">18</div><div class="cal-day">19</div><div class="cal-day today">20</div><div class="cal-day has-event">21</div><div class="cal-day">22</div><div class="cal-day has-event">23</div><div class="cal-day">24</div>
+                <div class="cal-day">25</div><div class="cal-day has-event">26</div><div class="cal-day">27</div><div class="cal-day">28</div><div class="cal-day has-event">29</div><div class="cal-day">30</div><div class="cal-day">31</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="relax-panel">
+            <div class="relax-title">
+              <span style="display:flex;align-items:center;gap:5px;"><i class="ti ti-moon" style="font-size:14px;"></i>Relax Mode</span>
+              <span style="font-size:9px;color:#7c3aed;background:rgba(124,58,237,0.15);padding:3px 7px;border-radius:10px;border:1px solid rgba(124,58,237,0.3);">LOFI RAIN</span>
+            </div>
+            <div class="relax-timer">24:<span>37</span></div>
+            <div class="sound-chips">
+              <div class="sound-chip active"><i class="ti ti-cloud-rain" style="font-size:11px;"></i>Rain</div>
+              <div class="sound-chip"><i class="ti ti-music" style="font-size:11px;"></i>Lofi</div>
+              <div class="sound-chip"><i class="ti ti-tree" style="font-size:11px;"></i>Forest</div>
+              <div class="sound-chip"><i class="ti ti-waves" style="font-size:11px;"></i>Ocean</div>
+            </div>
+            <div class="relax-controls">
+              <button class="relax-btn relax-btn-sec"><i class="ti ti-refresh" style="font-size:14px;"></i></button>
+              <button class="relax-btn relax-btn-main"><i class="ti ti-player-pause" style="font-size:16px;"></i></button>
+              <button class="relax-btn relax-btn-sec"><i class="ti ti-player-skip-forward" style="font-size:14px;"></i></button>
+            </div>
+            <div class="vol-row">
+              <i class="ti ti-volume" style="font-size:12px;color:var(--cyber-muted);"></i>
+              <div class="vol-bar"><div class="vol-fill"></div></div>
+              <span style="font-size:10px;color:var(--cyber-muted);">65%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

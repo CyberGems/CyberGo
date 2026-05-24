@@ -1,0 +1,325 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-sans); }
+:root {
+  --cb: #0a0d14; --cp: #111520; --cc: #161b2e; --ca: #00d4ff;
+  --ca2: #7c3aed; --ca3: #06ffa5; --ca4: #ff6b6b;
+  --ct: #e2e8f0; --cm: #64748b; --cbr: rgba(0,212,255,0.15);
+}
+.overlay {
+  min-height: 780px; background: rgba(5,7,12,0.88);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 12px; padding: 20px;
+}
+.modal {
+  background: #111520; border-radius: 14px;
+  border: 1px solid var(--cbr); width: 100%; max-width: 620px; overflow: hidden;
+}
+.modal-header {
+  background: #0d1017; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--cbr);
+}
+.modal-title { color: var(--ct); font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.modal-title i { color: var(--ca); font-size: 16px; }
+.modal-close {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04); color: var(--cm); font-size: 15px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.tabs {
+  display: flex; border-bottom: 1px solid var(--cbr); background: #0d1017; padding: 0 18px;
+}
+.tab {
+  padding: 10px 14px; font-size: 12px; color: var(--cm); cursor: pointer;
+  border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 5px;
+}
+.tab.active { color: var(--ca); border-bottom-color: var(--ca); }
+.tab i { font-size: 13px; }
+.modal-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-row { display: grid; gap: 12px; }
+.field-row-2 { grid-template-columns: 1fr 1fr; }
+.field-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+.lbl {
+  font-size: 11px; font-weight: 500; color: var(--cm);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  display: flex; align-items: center; gap: 5px;
+}
+.lbl i { font-size: 12px; color: var(--ca); }
+.inp {
+  background: #0d1017; border: 1px solid rgba(0,212,255,0.12);
+  border-radius: 7px; padding: 9px 12px; color: var(--ct); font-size: 13px;
+  outline: none; font-family: var(--font-sans); width: 100%;
+}
+.inp:focus { border-color: rgba(0,212,255,0.4); }
+.inp-subject {
+  font-size: 15px; font-weight: 500; padding: 11px 14px;
+  border-color: rgba(0,212,255,0.2);
+}
+.inp::placeholder { color: #3a4a5c; }
+.color-strip {
+  display: flex; gap: 7px; align-items: center;
+}
+.color-dot {
+  width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+}
+.color-dot.selected { border-color: white; }
+.cd-cyan { background: #00d4ff; }
+.cd-purple { background: #7c3aed; }
+.cd-green { background: #06ffa5; }
+.cd-red { background: #ff6b6b; }
+.cd-amber { background: #f59e0b; }
+.cd-pink { background: #ec4899; }
+.cd-blue { background: #3b82f6; }
+.importance-row { display: flex; gap: 6px; }
+.imp-btn {
+  padding: 6px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08); color: var(--cm); background: rgba(255,255,255,0.03);
+  display: flex; align-items: center; gap: 4px;
+}
+.imp-btn.active-low { border-color: #06ffa5; color: #06ffa5; background: rgba(6,255,165,0.08); }
+.imp-btn.active-normal { border-color: var(--ca); color: var(--ca); background: rgba(0,212,255,0.08); }
+.imp-btn.active-high { border-color: #ff6b6b; color: #ff6b6b; background: rgba(255,107,107,0.08); }
+.imp-btn i { font-size: 12px; }
+.divider { border: none; border-top: 1px solid rgba(0,212,255,0.08); margin: 2px 0; }
+.section-head {
+  font-size: 10px; font-weight: 500; color: var(--cm); text-transform: uppercase;
+  letter-spacing: 1px; margin-bottom: -4px;
+}
+.reminder-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rem-chip {
+  padding: 5px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;
+  border: 1px solid rgba(0,212,255,0.15); color: var(--cm); background: rgba(0,212,255,0.04);
+}
+.rem-chip.active { border-color: var(--ca); color: var(--ca); background: rgba(0,212,255,0.1); }
+.toggle-row { display: flex; align-items: center; gap: 10px; }
+.toggle {
+  width: 36px; height: 20px; border-radius: 10px; background: rgba(0,212,255,0.15);
+  border: 1px solid rgba(0,212,255,0.2); position: relative; cursor: pointer; flex-shrink: 0;
+}
+.toggle.on { background: rgba(0,212,255,0.3); border-color: var(--ca); }
+.toggle-knob {
+  width: 14px; height: 14px; border-radius: 50%; background: var(--cm);
+  position: absolute; top: 2px; left: 2px; transition: left 0.2s;
+}
+.toggle.on .toggle-knob { left: 18px; background: var(--ca); }
+.toggle-lbl { font-size: 12px; color: var(--cm); }
+.tag-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tag {
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;
+  border: 1px solid rgba(124,58,237,0.2); color: #a78bfa; background: rgba(124,58,237,0.07);
+}
+.tag-add {
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;
+  border: 1px dashed rgba(124,58,237,0.3); color: rgba(167,139,250,0.5);
+  background: transparent;
+}
+.textarea-inp {
+  background: #0d1017; border: 1px solid rgba(0,212,255,0.12);
+  border-radius: 7px; padding: 9px 12px; color: var(--ct); font-size: 12px;
+  outline: none; font-family: var(--font-sans); width: 100%; resize: none; min-height: 60px;
+}
+.textarea-inp::placeholder { color: #3a4a5c; }
+.modal-footer {
+  padding: 14px 18px; border-top: 1px solid var(--cbr);
+  display: flex; align-items: center; justify-content: space-between;
+  background: #0d1017;
+}
+.footer-left { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03); color: var(--cm); font-size: 15px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.footer-right { display: flex; gap: 8px; }
+.btn-cancel {
+  padding: 8px 16px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08); background: transparent; color: var(--cm);
+}
+.btn-save {
+  padding: 8px 20px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  border: none; background: #00d4ff; color: #000; font-weight: 500;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-save-new {
+  padding: 8px 16px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.08); color: var(--ca);
+}
+.recur-badge {
+  font-size: 9px; padding: 2px 7px; border-radius: 10px;
+  background: rgba(124,58,237,0.15); color: #a78bfa;
+  border: 1px solid rgba(124,58,237,0.25); margin-left: 4px;
+}
+</style>
+
+<h2 class="sr-only">CyberGo – formulario de creación de nuevo evento</h2>
+
+<div class="overlay">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">
+        <i class="ti ti-calendar-plus"></i>
+        New Event
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:10px;color:var(--cm);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);padding:3px 8px;border-radius:5px;">Draft</span>
+        <div class="modal-close"><i class="ti ti-x"></i></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active"><i class="ti ti-info-circle"></i>General</div>
+      <div class="tab"><i class="ti ti-repeat"></i>Recurrence <span class="recur-badge">OFF</span></div>
+      <div class="tab"><i class="ti ti-paperclip"></i>Attachments</div>
+      <div class="tab"><i class="ti ti-message"></i>Notes</div>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="field">
+        <div class="lbl"><i class="ti ti-cursor-text"></i>Subject</div>
+        <input class="inp inp-subject" placeholder="What do you need to remember?" style="color:#e2e8f0;" value="Client presentation – CyberGems">
+      </div>
+
+      <div class="field-row field-row-2">
+        <div class="field">
+          <div class="lbl"><i class="ti ti-map-pin"></i>Location</div>
+          <input class="inp" placeholder="Room, URL, address..." value="San José · Room 4B">
+        </div>
+        <div class="field">
+          <div class="lbl"><i class="ti ti-folder"></i>Group</div>
+          <select class="inp" style="cursor:pointer;">
+            <option>Work</option>
+            <option>Life</option>
+            <option>Personal</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row field-row-3">
+        <div class="field">
+          <div class="lbl"><i class="ti ti-calendar"></i>Start date</div>
+          <input class="inp" type="date" value="2026-05-20" style="color:#e2e8f0;">
+        </div>
+        <div class="field">
+          <div class="lbl"><i class="ti ti-clock"></i>Start time</div>
+          <input class="inp" type="time" value="11:30" style="color:#e2e8f0;">
+        </div>
+        <div class="field">
+          <div class="lbl"><i class="ti ti-hourglass"></i>Duration</div>
+          <select class="inp" style="cursor:pointer;">
+            <option>30 min</option>
+            <option selected>1 hour</option>
+            <option>2 hours</option>
+            <option>All day</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row field-row-2" style="align-items:end;">
+        <div class="field">
+          <div class="lbl"><i class="ti ti-calendar"></i>End date</div>
+          <input class="inp" type="date" value="2026-05-20" style="color:#e2e8f0;">
+        </div>
+        <div class="field">
+          <div class="lbl"><i class="ti ti-clock"></i>End time</div>
+          <input class="inp" type="time" value="12:30" style="color:#e2e8f0;">
+        </div>
+      </div>
+
+      <div class="toggle-row" style="margin-top:-4px;">
+        <div class="toggle on"><div class="toggle-knob"></div></div>
+        <span class="toggle-lbl" style="color:#00d4ff;">All day event</span>
+        <div class="toggle" style="margin-left:16px;"><div class="toggle-knob"></div></div>
+        <span class="toggle-lbl">Private event</span>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field-row field-row-2">
+        <div class="field">
+          <div class="lbl"><i class="ti ti-flame"></i>Importance</div>
+          <div class="importance-row">
+            <div class="imp-btn active-low"><i class="ti ti-minus"></i>Low</div>
+            <div class="imp-btn active-normal"><i class="ti ti-equal"></i>Normal</div>
+            <div class="imp-btn active-high"><i class="ti ti-alert-triangle"></i>High</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="lbl"><i class="ti ti-palette"></i>Color label</div>
+          <div class="color-strip">
+            <div class="color-dot cd-cyan selected"></div>
+            <div class="color-dot cd-purple"></div>
+            <div class="color-dot cd-green"></div>
+            <div class="color-dot cd-red"></div>
+            <div class="color-dot cd-amber"></div>
+            <div class="color-dot cd-pink"></div>
+            <div class="color-dot cd-blue"></div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <div class="lbl"><i class="ti ti-bell"></i>Remind before</div>
+        <div class="reminder-row">
+          <div class="rem-chip">5 min</div>
+          <div class="rem-chip">15 min</div>
+          <div class="rem-chip active">30 min</div>
+          <div class="rem-chip">1 hour</div>
+          <div class="rem-chip">1 day</div>
+          <div class="rem-chip">Custom</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="lbl"><i class="ti ti-volume"></i>Reminder sound</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select class="inp" style="cursor:pointer;max-width:200px;">
+            <option>Cyber Pulse (default)</option>
+            <option>Soft Chime</option>
+            <option>Alert Beep</option>
+            <option>None</option>
+          </select>
+          <div class="icon-btn" style="flex-shrink:0;"><i class="ti ti-player-play" style="font-size:13px;color:#00d4ff;"></i></div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <div class="lbl"><i class="ti ti-tag"></i>Tags</div>
+        <div class="tag-row">
+          <div class="tag">client</div>
+          <div class="tag">presentation</div>
+          <div class="tag">urgent</div>
+          <div class="tag-add"><i class="ti ti-plus" style="font-size:11px;"></i> Add tag</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="lbl"><i class="ti ti-notes"></i>Quick note</div>
+        <textarea class="textarea-inp" placeholder="Add a note, checklist, or any extra details...">Prepare slides deck. Confirm room booking with reception.</textarea>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <div class="footer-left">
+        <div class="icon-btn" title="Attach file"><i class="ti ti-paperclip"></i></div>
+        <div class="icon-btn" title="Add to calendar"><i class="ti ti-calendar-event"></i></div>
+        <div class="icon-btn" title="Set recurrence"><i class="ti ti-repeat"></i></div>
+        <div class="icon-btn" title="Delete"><i class="ti ti-trash" style="color:#ff6b6b;"></i></div>
+      </div>
+      <div class="footer-right">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-save-new">Save & New</button>
+        <button class="btn-save"><i class="ti ti-check" style="font-size:13px;"></i>Save Event</button>
+      </div>
+    </div>
+
+  </div>
+</div>

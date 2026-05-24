@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-electron/
+release/
+.vs/
+
+*.log
+.env
+.env.*
+
+AGENTS.md
+CLAUDE.md
+.cursorrules
+.cursor/
+.github/copilot-instructions.md
