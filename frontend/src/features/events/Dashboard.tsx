@@ -6,7 +6,11 @@ import { useState, useMemo } from "react";
 import EventModal from "./EventModal";
 import EventCard from "./EventCard";
 import CalendarMonth from "./CalendarMonth";
-import { IconCalendar, IconPlus, IconSearch, IconLayoutGrid, IconList } from "@tabler/icons-react";
+import TrashDrawer from "./TrashDrawer";
+import BackupPanel from "../settings/BackupPanel";
+import { PasswordSetup } from "../settings/LockScreen";
+import { useTrash } from "@/stores/trash";
+import { IconCalendar, IconPlus, IconSearch, IconLayoutGrid, IconList, IconTrash } from "@tabler/icons-react";
 
 type Filter = "today"|"7d"|"30d"|"all"|"overdue"|"important";
 type View = "list"|"calendar";
@@ -17,9 +21,12 @@ export default function Dashboard(){
   const setItems = useReminders(s=>s.setItems);
   const reminders = useReminders(s=>s.items);
   const [open,setOpen]=useState(false);
+  const [trashOpen,setTrashOpen]=useState(false);
   const [filter,setFilter]=useState<Filter>("all");
   const [view,setView]=useState<View>("list");
   const [sort,setSort]=useState<"due"|"importance"|"subject">("due");
+  const trashed = useTrash(s=>s.trashed);
+  const trash = useTrash(s=>s.trash);
 
   const filtered = useMemo(()=>{
     const now=new Date(); now.setHours(0,0,0,0);
@@ -70,18 +77,24 @@ export default function Dashboard(){
         <FilterBtn k="today" label="Hoy" /><FilterBtn k="7d" label="Próx. 7 días" /><FilterBtn k="30d" label="Próx. 30 días" /><FilterBtn k="all" label="Todos" /><FilterBtn k="overdue" label="Vencidos" /><FilterBtn k="important" label="Importantes" />
         <span className="ml-auto text-xs text-muted-foreground self-center">{filtered.length} evento(s)</span>
       </div>
+      <div className="flex flex-wrap gap-2 items-center border rounded-xl p-3 bg-zinc-50 dark:bg-zinc-800/30">
+        <button onClick={()=>setTrashOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg bg-white hover:bg-zinc-50"><IconTrash size={14}/> Papelera ({trashed.length})</button>
+        <BackupPanel />
+        <div className="ml-auto"><PasswordSetup /></div>
+      </div>
 
       {view==="calendar" ? (
         <CalendarMonth events={filtered} onSelectDate={(d)=>{ setFilter("today"); setQuery(""); }} />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {filtered.map(e=>(
-            <div key={e.id} className="group"><EventCard e={e} onEdit={()=>{}} onDelete={()=>remove(e.id)} /></div>
+            <div key={e.id} className="group"><EventCard e={e} onEdit={()=>{}} onDelete={()=>{ trash(e); remove(e.id);}} /></div>
           ))}
         </div>
       )}
       {filtered.length===0 && <p className="text-sm text-muted-foreground text-center py-8">Sin resultados — prueba otro filtro</p>}
       <EventModal open={open} onClose={()=>setOpen(false)} />
+      <TrashDrawer open={trashOpen} onClose={()=>setTrashOpen(false)} />
     </div>
   );
 }

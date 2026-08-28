@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import RemindersWindow from "./features/reminders/RemindersWindow";
 import Dashboard from "./features/events/Dashboard";
 import Titlebar from "./components/Titlebar";
+import LockScreen from "./features/settings/LockScreen";
 import { useReminders } from "./stores/reminders";
 import { useEvents } from "./stores/events";
 import { Toaster } from "sonner";
@@ -35,6 +36,7 @@ export default function App() {
     <div className="min-h-screen bg-background flex flex-col">
       <Titlebar title="CyberGo" />
       <div className="flex-1 overflow-auto"><Dashboard /></div>
+      <LockScreen />
       <Toaster />
     </div>
   );
