@@ -46,5 +46,5 @@
     "targets": "all",
     "icon": ["icons/icon.png", "icons/icon.ico"]
   },
-  "plugins": { "opener": {}, "log": { "level": "info" } }
+  "plugins": { "opener": {} }
 }
