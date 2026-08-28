@@ -15,6 +15,12 @@ export default function RemindersWindow() {
   useEffect(()=>{ if(items[0]) setSelected(items[0].id); },[items]);
 
   useEffect(()=>{
+    import("@tauri-apps/api/window").then(({getCurrentWindow})=>{
+      const w=getCurrentWindow(); w.setAlwaysOnTop(alwaysOnTop).catch(()=>{});
+    });
+  },[alwaysOnTop]);
+
+  useEffect(()=>{
     if(!sounding || items.length===0) { audioRef.current?.pause(); return; }
     const a = audioRef.current ?? new Audio("/alarm.wav");
     audioRef.current=a; a.loop=true; a.play().catch(()=>{});
