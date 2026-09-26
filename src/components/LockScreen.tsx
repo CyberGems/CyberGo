@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Lock } from 'lucide-react';
 import type { AuthMethod } from '@shared/types';
 import type { Copy } from '../i18n';
@@ -19,6 +19,19 @@ export default function LockScreen({ copy, hint, method }: { copy: Copy; hint: s
   const [error, setError] = useState('');
   const [recovery, setRecovery] = useState('');
   const pin = method === 'pin';
+  const loginRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (mode !== 'login') return;
+    const focus = () => loginRef.current?.focus();
+    focus();
+    const timer = window.setTimeout(focus, 50);
+    window.addEventListener('focus', focus);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('focus', focus);
+    };
+  }, [mode]);
 
   async function unlock(e: FormEvent) {
     e.preventDefault();
@@ -55,8 +68,8 @@ export default function LockScreen({ copy, hint, method }: { copy: Copy; hint: s
             <label className="field">
               <span>{pin ? copy.authPin : copy.password}</span>
               <input
+                ref={loginRef}
                 type="password"
-                autoFocus
                 value={password}
                 inputMode={pin ? 'numeric' : undefined}
                 className={pin ? 'pin-input' : undefined}

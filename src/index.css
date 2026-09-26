@@ -36,13 +36,14 @@ button { cursor: pointer; }
   border-bottom: 1px solid var(--border);
   user-select: none;
   flex-shrink: 0;
+  -webkit-app-region: drag;
 }
-.drag { -webkit-app-region: drag; flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
-.no-drag, .titlebar button, .titlebar input { -webkit-app-region: no-drag; }
+.drag { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; -webkit-app-region: drag; }
+.no-drag, .titlebar button, .titlebar input, .toolbar, .win-controls { -webkit-app-region: no-drag; }
 .brand { font-weight: 600; letter-spacing: 0.01em; font-size: 13px; }
 .brand span { color: var(--accent-light); }
 .grow { flex: 1; }
-.win-controls { display: flex; -webkit-app-region: no-drag; }
+.win-controls { display: flex; align-items: center; -webkit-app-region: no-drag; }
 .win-btn, .icon-btn {
   width: 36px; height: 28px; border: 0; background: transparent; color: var(--text-secondary);
   display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-sm);
@@ -259,7 +260,8 @@ button { cursor: pointer; }
   outline: none;
 }
 .picker-btn:focus-visible, .quick-row input:focus { border-color: var(--border-focus); }
-.quick-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.quick-presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.quick-when { font-size: 12px; color: var(--text-muted); }
 .chip {
   border: 1px solid var(--border);
   background: var(--bg-input);

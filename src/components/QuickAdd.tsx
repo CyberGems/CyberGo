@@ -10,7 +10,7 @@ const PRESETS: QuickPreset[] = ['10m', '1h', 'tonight', 'tomorrow9'];
 
 function draftFrom(text: string, armed: QuickPreset | null, groupId: string | null, force: Date | null): ItemDraft {
   const parsed = parseQuick(text);
-  const presetTime = force ?? (!parsed.start && armed ? presetStart(armed) : null);
+  const presetTime = force ?? (armed ? presetStart(armed) : null);
   const start = presetTime ?? parsed.start;
   const allDay = !presetTime && parsed.allDay;
   return {
@@ -93,12 +93,8 @@ export default function QuickAdd({
   }
 
   function usePreset(preset: QuickPreset) {
-    if (!parsed.title) {
-      setArmed(preset);
-      inputRef.current?.focus();
-      return;
-    }
-    void commit(presetStart(preset));
+    setArmed((current) => (current === preset ? null : preset));
+    inputRef.current?.focus();
   }
 
   return (
@@ -131,18 +127,21 @@ export default function QuickAdd({
         <button type="button" className="btn" onClick={() => onMore(draftFrom(text, armed, groupId, null))}>{copy.more}</button>
       </div>
       <div className="quick-presets">
+        <span className="quick-when">{copy.quickWhen}</span>
         {PRESETS.map((preset) => (
           <button
             type="button"
             key={preset}
-            className={`chip ${armed === preset && !parsed.start ? 'on' : ''}`}
+            className={`chip ${armed === preset ? 'on' : ''}`}
             onClick={() => usePreset(preset)}
           >
             {preset === '10m' ? copy.preset10 : preset === '1h' ? copy.preset1h : preset === 'tonight' ? copy.presetTonight : copy.presetTomorrow9}
           </button>
         ))}
       </div>
-      <div className={`quick-preview ${text.trim() ? '' : 'muted'}`}>{text.trim() ? preview : copy.quickHint}</div>
+      <div className={`quick-preview ${text.trim() || armed ? '' : 'muted'}`}>
+        {text.trim() || armed ? preview : copy.quickHint}
+      </div>
     </div>
   );
 }
