@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ItemDraft, Lang } from '@shared/types';
 import { formatLocalInput, parseLocal } from '@shared/schedule';
 import { parseQuick, presetStart, type QuickPreset } from '@shared/quick';
@@ -42,6 +42,8 @@ export default function QuickAdd({
   onMore: (draft: ItemDraft) => void;
 }) {
   const [text, setText] = useState('');
+  const [example, setExample] = useState(0);
+  const [exampleOn, setExampleOn] = useState(true);
   const [armed, setArmed] = useState<QuickPreset | null>(null);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +51,24 @@ export default function QuickAdd({
   const previewDraft = draftFrom(text, armed, groupId, null);
   const start = previewDraft.startLocal ? parseLocal(previewDraft.startLocal, previewDraft.allDay) : null;
   const canSave = parsed.title.length > 0 && !busy;
+  const examples = copy.quickExamples;
+
+  useEffect(() => {
+    if (text.trim()) return;
+    let fade = 0;
+    const tick = window.setInterval(() => {
+      window.clearTimeout(fade);
+      setExampleOn(false);
+      fade = window.setTimeout(() => {
+        setExample((index) => (index + 1) % examples.length);
+        setExampleOn(true);
+      }, 280);
+    }, 3400);
+    return () => {
+      window.clearInterval(tick);
+      window.clearTimeout(fade);
+    };
+  }, [text, examples]);
 
   const preview = [
     copy.task,
@@ -84,10 +104,12 @@ export default function QuickAdd({
   return (
     <div className="quick">
       <div className="quick-row">
+        <div className="quick-field">
         <input
           ref={inputRef}
           value={text}
-          placeholder={copy.quickPlaceholder}
+          aria-label={copy.quickHint}
+          placeholder=""
           onChange={(event) => {
             const next = event.target.value;
             setText(next);
@@ -101,6 +123,8 @@ export default function QuickAdd({
             }
           }}
         />
+        {!text && <span className={`quick-ghost ${exampleOn ? 'show' : ''}`}>{examples[example]}</span>}
+        </div>
         <button type="button" className="btn btn-primary" disabled={!canSave} onClick={() => void commit(null)}>
           {copy.create}<EnterGlyph />
         </button>
