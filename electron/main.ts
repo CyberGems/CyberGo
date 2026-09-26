@@ -76,6 +76,16 @@ function showMain() {
   mainWindow.focus();
 }
 
+function toggleMainFromTray() {
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) return;
+  if (win.isVisible() && !win.isMinimized()) {
+    win.hide();
+    return;
+  }
+  showMain();
+}
+
 function flushNavigate() {
   if (!pendingNavigate || !mainWindow || sessionLocked) return;
   const id = pendingNavigate;
@@ -284,7 +294,7 @@ function createTray() {
     { label: es ? 'Salir' : 'Quit', click: () => { quitting = true; app.quit(); } },
   ]);
   tray.setContextMenu(menu);
-  tray.on('click', () => showMain());
+  tray.on('click', () => toggleMainFromTray());
 }
 
 function registerIpc() {
