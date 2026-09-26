@@ -76,7 +76,12 @@ function showMain() {
   mainWindow.focus();
 }
 
+let trayToggleAt = 0;
+
 function toggleMainFromTray() {
+  const now = Date.now();
+  if (now - trayToggleAt < 400) return;
+  trayToggleAt = now;
   const win = mainWindow;
   if (!win || win.isDestroyed()) return;
   if (win.isVisible() && !win.isMinimized()) {
@@ -295,6 +300,7 @@ function createTray() {
   ]);
   tray.setContextMenu(menu);
   tray.on('click', () => toggleMainFromTray());
+  tray.on('double-click', () => toggleMainFromTray());
 }
 
 function registerIpc() {
