@@ -1,0 +1,96 @@
+import type { ThemeId } from '@shared/types';
+
+export const THEMES: { id: ThemeId; vars: Record<string, string> }[] = [
+  {
+    id: 'cybergo',
+    vars: {
+      '--bg-app': '#0c0c12',
+      '--bg-sidebar': '#0e0e18',
+      '--bg-list': '#10101e',
+      '--bg-surface': '#181828',
+      '--bg-hover': 'rgba(255,255,255,0.04)',
+      '--bg-active': 'rgba(115,104,230,0.18)',
+      '--bg-input': '#10101e',
+      '--bg-modal': '#121220',
+      '--border': '#282838',
+      '--border-focus': '#6c63e6',
+      '--accent': '#6c63e6',
+      '--accent-light': '#968fff',
+      '--accent-dim': 'rgba(108,99,230,0.14)',
+      '--accent-glow': 'rgba(108,99,230,0.22)',
+      '--text-primary': '#eeeef5',
+      '--text-secondary': '#a8a8c0',
+      '--text-muted': '#9090a8',
+      '--text-on-accent': '#ffffff',
+      '--scrollbar-thumb': '#282838',
+      '--danger': '#ef4444',
+      '--danger-dim': 'rgba(239,68,68,0.15)',
+      '--warning': '#f59e0b',
+      '--success': '#22c55e',
+    },
+  },
+  {
+    id: 'gray',
+    vars: {
+      '--bg-app': '#1a1a1a',
+      '--bg-sidebar': '#121212',
+      '--bg-list': '#161616',
+      '--bg-surface': '#242424',
+      '--bg-hover': '#2c2c2c',
+      '--bg-active': '#333333',
+      '--bg-input': '#121212',
+      '--bg-modal': '#1e1e1e',
+      '--border': '#2d2d2d',
+      '--border-focus': '#9ca3af',
+      '--accent': '#9ca3af',
+      '--accent-light': '#d1d5db',
+      '--accent-dim': 'rgba(156,163,175,0.15)',
+      '--accent-glow': 'rgba(156,163,175,0.20)',
+      '--text-primary': '#f9fafb',
+      '--text-secondary': '#c9d1d9',
+      '--text-muted': '#9aa3ad',
+      '--text-on-accent': '#111111',
+      '--scrollbar-thumb': '#3a3a3a',
+      '--danger': '#f87171',
+      '--danger-dim': 'rgba(248,113,113,0.16)',
+      '--warning': '#d1d5db',
+      '--success': '#d1d5db',
+    },
+  },
+  {
+    id: 'light',
+    vars: {
+      '--bg-app': '#f4f5f9',
+      '--bg-sidebar': '#e8eaf2',
+      '--bg-list': '#ffffff',
+      '--bg-surface': '#ffffff',
+      '--bg-hover': '#f0f2f6',
+      '--bg-active': '#e4e2f4',
+      '--bg-input': '#f0f2f6',
+      '--bg-modal': '#ffffff',
+      '--border': '#d8dae0',
+      '--border-focus': '#6a60a0',
+      '--accent': '#6a60a0',
+      '--accent-light': '#8a80b8',
+      '--accent-dim': 'rgba(106,96,160,0.10)',
+      '--accent-glow': 'rgba(106,96,160,0.12)',
+      '--text-primary': '#1a1a2e',
+      '--text-secondary': '#5a5a72',
+      '--text-muted': '#7a7a90',
+      '--text-on-accent': '#ffffff',
+      '--scrollbar-thumb': '#c8cad0',
+      '--danger': '#dc2626',
+      '--danger-dim': 'rgba(220,38,38,0.10)',
+      '--warning': '#b45309',
+      '--success': '#15803d',
+    },
+  },
+];
+
+export function applyTheme(id: string) {
+  const theme = THEMES.find((t) => t.id === id) ?? THEMES[0];
+  for (const [key, value] of Object.entries(theme.vars)) {
+    document.documentElement.style.setProperty(key, value);
+  }
+  localStorage.setItem('cybergo-theme', theme.id);
+}
