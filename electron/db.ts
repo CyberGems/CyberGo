@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { createRequire } from 'module';
 import { afterDismiss, buildSchedule, fireKey, parseLocal, snoozeUntilFromNow } from '../shared/schedule';
-import type { Group, Importance, Item, ItemDraft, Kind, PublicSettings, Recurrence } from '../shared/types';
+import type { AuthMethod, Group, Importance, Item, ItemDraft, Kind, PublicSettings, Recurrence } from '../shared/types';
 
 const require = createRequire(import.meta.url);
 
@@ -112,6 +112,7 @@ export function readSettings(locale: 'es' | 'en'): PublicSettings {
     openAtLogin: boolSetting('open_at_login', false),
     reminderAlwaysOnTop: boolSetting('reminder_always_on_top', true),
     passwordHint: getSetting('password_hint') ?? '',
+    authMethod: getSetting('auth_method') === 'pin' ? 'pin' : 'password',
   };
 }
 
@@ -388,8 +389,16 @@ export function recoveryHash(): string | null {
   return getSetting('recovery_code_hash');
 }
 
+export function setAuthMethod(method: AuthMethod) {
+  setSetting('auth_method', method);
+}
+
+export function authMethod(): AuthMethod {
+  return getSetting('auth_method') === 'pin' ? 'pin' : 'password';
+}
+
 export function clearAuth() {
-  db.run(`DELETE FROM settings WHERE key IN ('password_hash', 'recovery_code_hash', 'password_hint')`);
+  db.run(`DELETE FROM settings WHERE key IN ('password_hash', 'recovery_code_hash', 'password_hint', 'auth_method')`);
   saveSoon();
 }
 

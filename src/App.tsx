@@ -86,7 +86,7 @@ function MainApp() {
   }
 
   if (!boot) return <div className="boot" />;
-  if (boot.locked) return <LockScreen copy={copy} hint={boot.settings.passwordHint} />;
+  if (boot.locked) return <LockScreen copy={copy} hint={boot.settings.passwordHint} method={boot.settings.authMethod} />;
 
   return (
     <div className="app">

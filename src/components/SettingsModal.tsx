@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Copy } from '../i18n';
-import type { PublicSettings } from '@shared/types';
+import type { AuthMethod, PublicSettings } from '@shared/types';
 import { applyTheme } from '../themes';
 import { playAlert } from '../lib/sound';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
@@ -23,6 +23,7 @@ export default function SettingsModal({
   const api = window.cyberGoAPI;
   const [tab, setTab] = useState<Tab>('general');
   const [hint, setHint] = useState(settings.passwordHint);
+  const [method, setMethod] = useState<AuthMethod>(settings.authMethod);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [message, setMessage] = useState('');
@@ -53,13 +54,23 @@ export default function SettingsModal({
 
   function explain(error: string) {
     if (error === 'short') return copy.shortPassword;
+    if (error === 'pin') return copy.pinShort;
     if (error === 'wait') return copy.wait;
-    if (error === 'wrong') return copy.wrongPassword;
+    if (error === 'wrong') return settings.authMethod === 'pin' ? copy.wrongPin : copy.wrongPassword;
     return error;
   }
 
+  function digits(value: string) {
+    return value.replace(/\D/g, '').slice(0, 8);
+  }
+
+  function pickMethod(nextMethod: AuthMethod) {
+    setMethod(nextMethod);
+    if (nextMethod === 'pin') setNext((value) => digits(value));
+  }
+
   async function createPassword() {
-    const result = await api.setPassword(next, hint);
+    const result = await api.setPassword(next, hint, method);
     if (!result.ok) return setMessage(explain(result.error));
     setRecovery(result.recoveryCode);
     setNext('');
@@ -67,7 +78,7 @@ export default function SettingsModal({
   }
 
   async function changePassword() {
-    const result = await api.changePassword(current, next, hint);
+    const result = await api.changePassword(current, next, hint, method);
     if (!result.ok) return setMessage(explain(result.error));
     setRecovery(result.recoveryCode);
     setCurrent('');
@@ -145,13 +156,43 @@ export default function SettingsModal({
               {copy.lockOnLaunch}
             </label>
             {!hasPassword && <p className="hint">{copy.noPassword}</p>}
+            <div className="field">
+              <span>{copy.kind}</span>
+              <div className="seg">
+                <button type="button" className={method === 'password' ? 'on' : ''} onClick={() => pickMethod('password')}>{copy.password}</button>
+                <button type="button" className={method === 'pin' ? 'on' : ''} onClick={() => pickMethod('pin')}>{copy.authPin}</button>
+              </div>
+              {method === 'pin' && <p className="hint">{copy.pinDigits}</p>}
+            </div>
             <label className="field"><span>{copy.hint}</span><input value={hint} placeholder={copy.hintOptional} onChange={(e) => setHint(e.target.value)} /></label>
-            {hasPassword && <label className="field"><span>{copy.currentPassword}</span><input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} /></label>}
-            <label className="field"><span>{hasPassword ? copy.newPassword : copy.password}</span><input type="password" value={next} onChange={(e) => setNext(e.target.value)} /></label>
+            {hasPassword && (
+              <label className="field">
+                <span>{settings.authMethod === 'pin' ? copy.currentPin : copy.currentPassword}</span>
+                <input
+                  type="password"
+                  value={current}
+                  inputMode={settings.authMethod === 'pin' ? 'numeric' : undefined}
+                  className={settings.authMethod === 'pin' ? 'pin-input' : undefined}
+                  autoComplete="off"
+                  onChange={(e) => setCurrent(settings.authMethod === 'pin' ? digits(e.target.value) : e.target.value)}
+                />
+              </label>
+            )}
+            <label className="field">
+              <span>{method === 'pin' ? (hasPassword ? copy.newPin : copy.authPin) : (hasPassword ? copy.newPassword : copy.password)}</span>
+              <input
+                type="password"
+                value={next}
+                inputMode={method === 'pin' ? 'numeric' : undefined}
+                className={method === 'pin' ? 'pin-input' : undefined}
+                autoComplete="new-password"
+                onChange={(e) => setNext(method === 'pin' ? digits(e.target.value) : e.target.value)}
+              />
+            </label>
             <div className="row-actions" style={{ justifyContent: 'flex-start' }}>
-              {!hasPassword && <button className="btn btn-primary" onClick={() => void createPassword()}>{copy.setPassword}</button>}
-              {hasPassword && <button className="btn btn-primary" onClick={() => void changePassword()}>{copy.changePassword}</button>}
-              {hasPassword && <button className="btn btn-danger" onClick={() => void api.removePassword(current).then((ok) => setMessage(ok ? copy.saved : copy.wrongPassword))}>{copy.removePassword}</button>}
+              {!hasPassword && <button className="btn btn-primary" onClick={() => void createPassword()}>{method === 'pin' ? copy.setPin : copy.setPassword}</button>}
+              {hasPassword && <button className="btn btn-primary" onClick={() => void changePassword()}>{method === 'pin' ? copy.changePin : copy.changePassword}</button>}
+              {hasPassword && <button className="btn btn-danger" onClick={() => void api.removePassword(current).then((ok) => setMessage(ok ? copy.saved : (settings.authMethod === 'pin' ? copy.wrongPin : copy.wrongPassword)))}>{settings.authMethod === 'pin' ? copy.removePin : copy.removePassword}</button>}
               {hasPassword && <button className="btn" onClick={onLock}>{copy.lockNow}</button>}
             </div>
             {recovery && (

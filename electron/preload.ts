@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { Bootstrap, CsvResult, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
+import type { AuthMethod, Bootstrap, CsvResult, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
 
 export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
@@ -16,11 +16,11 @@ export interface CyberGoAPI {
   saveGroup: (input: { id?: string; name: string; color: string }) => Promise<Group>;
   deleteGroup: (id: string) => Promise<void>;
   patchSettings: (patch: Partial<PublicSettings>) => Promise<PublicSettings>;
-  setPassword: (password: string, hint: string) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
-  changePassword: (current: string, next: string, hint: string) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
+  setPassword: (password: string, hint: string, method: AuthMethod) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
+  changePassword: (current: string, next: string, hint: string, method: AuthMethod) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
   removePassword: (current: string) => Promise<boolean>;
   unlock: (password: string) => Promise<'ok' | 'wrong' | 'wait'>;
-  recover: (code: string, next: string) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
+  recover: (code: string, next: string, method: AuthMethod) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
   lock: () => Promise<boolean>;
   dueReminders: () => Promise<Item[]>;
   showReminders: () => Promise<void>;
@@ -60,11 +60,11 @@ const api: CyberGoAPI = {
   saveGroup: (input) => ipcRenderer.invoke('groups:save', input),
   deleteGroup: (id) => ipcRenderer.invoke('groups:delete', id),
   patchSettings: (patch) => ipcRenderer.invoke('settings:patch', patch),
-  setPassword: (password, hint) => ipcRenderer.invoke('auth:set', password, hint),
-  changePassword: (current, next, hint) => ipcRenderer.invoke('auth:change', current, next, hint),
+  setPassword: (password, hint, method) => ipcRenderer.invoke('auth:set', password, hint, method),
+  changePassword: (current, next, hint, method) => ipcRenderer.invoke('auth:change', current, next, hint, method),
   removePassword: (current) => ipcRenderer.invoke('auth:remove', current),
   unlock: (password) => ipcRenderer.invoke('auth:unlock', password),
-  recover: (code, next) => ipcRenderer.invoke('auth:recover', code, next),
+  recover: (code, next, method) => ipcRenderer.invoke('auth:recover', code, next, method),
   lock: () => ipcRenderer.invoke('auth:lock'),
   dueReminders: () => ipcRenderer.invoke('reminders:due'),
   showReminders: () => ipcRenderer.invoke('reminders:show'),

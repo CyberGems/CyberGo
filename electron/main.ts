@@ -7,7 +7,8 @@ import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
-import type { ItemDraft, PublicSettings } from '../shared/types';
+import { normalizeAuthSecret } from '../shared/auth';
+import type { AuthMethod, ItemDraft, PublicSettings } from '../shared/types';
 import * as db from './db';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -230,6 +231,15 @@ function afterReminderChange() {
   if (due.length) broadcast('reminder:update', { sound: false, pulseIds: [] });
 }
 
+function methodOf(value: unknown): AuthMethod {
+  return value === 'pin' ? 'pin' : 'password';
+}
+
+function presented(value: unknown, method: AuthMethod): string {
+  const raw = typeof value === 'string' ? value : '';
+  return method === 'pin' ? raw.trim() : raw;
+}
+
 function recoveryCode(): string {
   const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const bytes = crypto.randomBytes(8);
@@ -346,27 +356,34 @@ function registerIpc() {
     return db.readSettings(locale());
   });
 
-  ipcMain.handle('auth:set', async (_e, password: string, hint: string) => {
+  ipcMain.handle('auth:set', async (_e, password: string, hint: string, method: unknown) => {
     if (db.hasPassword()) return { ok: false as const, error: 'exists' };
-    if (!password || password.length < 4) return { ok: false as const, error: 'short' };
+    const mode = methodOf(method);
+    const secret = normalizeAuthSecret(presented(password, mode), mode);
+    if (!secret) return { ok: false as const, error: mode === 'pin' ? 'pin' : 'short' };
     const code = recoveryCode();
-    db.setPasswordHash(await bcrypt.hash(password, 10));
+    db.setPasswordHash(await bcrypt.hash(secret, 10));
     db.setRecoveryHash(await bcrypt.hash(code.replace('-', ''), 10));
+    db.setAuthMethod(mode);
     db.applySettingsPatch({ passwordHint: hint || '', lockOnLaunch: true });
     changed();
     return { ok: true as const, recoveryCode: code };
   });
-  ipcMain.handle('auth:change', async (_e, current: string, next: string, hint: string) => {
+  ipcMain.handle('auth:change', async (_e, current: string, next: string, hint: string, method: unknown) => {
     if (tooManyAttempts()) return { ok: false as const, error: 'wait' };
     const hash = db.passwordHash();
-    if (!hash || !(await bcrypt.compare(current, hash))) {
+    const stored = db.authMethod();
+    if (!hash || !(await bcrypt.compare(presented(current, stored), hash))) {
       noteFailure();
       return { ok: false as const, error: 'wrong' };
     }
-    if (!next || next.length < 4) return { ok: false as const, error: 'short' };
+    const mode = methodOf(method);
+    const secret = normalizeAuthSecret(presented(next, mode), mode);
+    if (!secret) return { ok: false as const, error: mode === 'pin' ? 'pin' : 'short' };
     const code = recoveryCode();
-    db.setPasswordHash(await bcrypt.hash(next, 10));
+    db.setPasswordHash(await bcrypt.hash(secret, 10));
     db.setRecoveryHash(await bcrypt.hash(code.replace('-', ''), 10));
+    db.setAuthMethod(mode);
     db.applySettingsPatch({ passwordHint: hint });
     noteSuccess();
     changed();
@@ -375,7 +392,8 @@ function registerIpc() {
   ipcMain.handle('auth:remove', async (_e, current: string) => {
     if (tooManyAttempts()) return false;
     const hash = db.passwordHash();
-    if (!hash || !(await bcrypt.compare(current, hash))) {
+    const stored = db.authMethod();
+    if (!hash || !(await bcrypt.compare(presented(current, stored), hash))) {
       noteFailure();
       return false;
     }
@@ -392,7 +410,8 @@ function registerIpc() {
       sessionLocked = false;
       return 'ok';
     }
-    if (!(await bcrypt.compare(password, hash))) {
+    const stored = db.authMethod();
+    if (!(await bcrypt.compare(presented(password, stored), hash))) {
       noteFailure();
       return 'wrong';
     }
@@ -403,7 +422,7 @@ function registerIpc() {
     void evaluateReminders('unlock');
     return 'ok';
   });
-  ipcMain.handle('auth:recover', async (_e, code: string, next: string) => {
+  ipcMain.handle('auth:recover', async (_e, code: string, next: string, method: unknown) => {
     if (tooManyAttempts()) return { ok: false as const, error: 'wait' };
     const hash = db.recoveryHash();
     const normalized = code.trim().toUpperCase().replace(/-/g, '');
@@ -411,10 +430,13 @@ function registerIpc() {
       noteFailure();
       return { ok: false as const, error: 'wrong' };
     }
-    if (!next || next.length < 4) return { ok: false as const, error: 'short' };
+    const mode = method === undefined ? db.authMethod() : methodOf(method);
+    const secret = normalizeAuthSecret(presented(next, mode), mode);
+    if (!secret) return { ok: false as const, error: mode === 'pin' ? 'pin' : 'short' };
     const fresh = recoveryCode();
-    db.setPasswordHash(await bcrypt.hash(next, 10));
+    db.setPasswordHash(await bcrypt.hash(secret, 10));
     db.setRecoveryHash(await bcrypt.hash(fresh.replace('-', ''), 10));
+    db.setAuthMethod(mode);
     noteSuccess();
     sessionLocked = false;
     changed();

@@ -182,6 +182,7 @@ button { cursor: pointer; }
   padding: 7px 8px; outline: none;
 }
 .field textarea { min-height: 72px; resize: vertical; }
+.pin-input { text-align: center; letter-spacing: 0.28em; }
 .seg { display: flex; gap: 6px; }
 .seg button, .swatch, .theme-card {
   border: 1px solid var(--border); background: var(--bg-input); border-radius: var(--radius-sm); color: var(--text-secondary);

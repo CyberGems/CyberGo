@@ -4,6 +4,7 @@ export type Kind = 'event' | 'task';
 export type Importance = 'low' | 'normal' | 'high';
 export type Freq = 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type LockLevel = 'soft' | 'hard';
+export type AuthMethod = 'password' | 'pin';
 
 export interface Recurrence {
   freq: Freq;
@@ -74,6 +75,8 @@ export interface PublicSettings {
   openAtLogin: boolean;
   reminderAlwaysOnTop: boolean;
   passwordHint: string;
+  /** How the lock secret is entered. The hash itself stays out of this object. */
+  authMethod: AuthMethod;
 }
 
 export interface Bootstrap {
