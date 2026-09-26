@@ -93,6 +93,7 @@ export default function QuickAdd({
   }
 
   function usePreset(preset: QuickPreset) {
+    if (!text.trim()) return;
     setArmed((current) => (current === preset ? null : preset));
     inputRef.current?.focus();
   }
@@ -109,7 +110,7 @@ export default function QuickAdd({
           onChange={(event) => {
             const next = event.target.value;
             setText(next);
-            if (parseQuick(next).start) setArmed(null);
+            if (!next.trim() || parseQuick(next).start) setArmed(null);
           }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -127,12 +128,13 @@ export default function QuickAdd({
         <button type="button" className="btn" onClick={() => onMore(draftFrom(text, armed, groupId, null))}>{copy.more}</button>
       </div>
       <div className="quick-presets">
-        <span className="quick-when">{copy.quickWhen}</span>
+        <span className={`quick-when ${text.trim() ? 'on' : ''}`}>{copy.quickWhen}</span>
         {PRESETS.map((preset) => (
           <button
             type="button"
             key={preset}
             className={`chip ${armed === preset ? 'on' : ''}`}
+            disabled={!text.trim()}
             onClick={() => usePreset(preset)}
           >
             {preset === '10m' ? copy.preset10 : preset === '1h' ? copy.preset1h : preset === 'tonight' ? copy.presetTonight : copy.presetTomorrow9}

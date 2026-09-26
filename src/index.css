@@ -262,6 +262,7 @@ button { cursor: pointer; }
 .picker-btn:focus-visible, .quick-row input:focus { border-color: var(--border-focus); }
 .quick-presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .quick-when { font-size: 12px; color: var(--text-muted); }
+.quick-when.on { color: var(--text-secondary); }
 .chip {
   border: 1px solid var(--border);
   background: var(--bg-input);
@@ -271,6 +272,8 @@ button { cursor: pointer; }
   font-size: 12px;
 }
 .chip:hover { background: var(--bg-hover); color: var(--text-primary); }
+.chip:disabled { opacity: 0.4; cursor: default; }
+.chip:disabled:hover { background: var(--bg-input); color: var(--text-secondary); }
 .chip.on { border-color: var(--accent); color: var(--accent-light); background: var(--accent-dim); }
 .quick-preview { min-height: 18px; font-size: 12px; color: var(--text-secondary); }
 .quick-preview.muted { color: var(--text-muted); }
