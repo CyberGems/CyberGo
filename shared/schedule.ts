@@ -21,6 +21,13 @@ export function toDateInput(iso: string | null): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+export function formatLocalInput(date: Date, allDay = false): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  const day = `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+  if (allDay) return day;
+  return `${day}T${p(date.getHours())}:${p(date.getMinutes())}`;
+}
+
 export function toDateTimeInput(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);

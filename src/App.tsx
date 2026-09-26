@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, Lock, Plus, Settings, Trash2 } from 'lucide-react';
-import type { Bootstrap, Item } from '@shared/types';
+import type { Bootstrap, Item, ItemDraft } from '@shared/types';
 import { copyOf } from './i18n';
 import { matchesFilter, sortItems, type FilterId } from './lib/view';
 import { applyTheme } from './themes';
@@ -8,6 +8,7 @@ import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import ItemTable from './components/ItemTable';
 import ItemModal from './components/ItemModal';
+import QuickAdd from './components/QuickAdd';
 import SettingsModal from './components/SettingsModal';
 import LockScreen from './components/LockScreen';
 import RemindersWindow from './components/RemindersWindow';
@@ -30,6 +31,7 @@ function MainApp() {
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Item | null | 'new'>(null);
+  const [seed, setSeed] = useState<ItemDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirm, setConfirm] = useState<null | { title: string; body: string; danger?: boolean; run: () => void }>(null);
 
@@ -90,7 +92,7 @@ function MainApp() {
     <div className="app">
       <TitleBar title={<><span>Cyber</span>Go</>}>
         <div className="toolbar">
-          <button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={14} />{copy.newItem}</button>
+          <button className="btn btn-primary" onClick={() => { setSeed(null); setEditing('new'); }}><Plus size={14} />{copy.newItem}</button>
           <button className="btn" disabled={!selected || filter === 'trash'} onClick={() => selected && setEditing(selected)}>{copy.edit}</button>
           <button className="btn" disabled={!selected} onClick={() => selected && askDelete(selected)}><Trash2 size={14} />{copy.delete}</button>
           <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt} onClick={() => selected && void api.completeItem(selected.id)}>{copy.done}</button>
@@ -117,6 +119,15 @@ function MainApp() {
           })}
         />
         <section className="list-wrap">
+          {filter !== 'trash' && (
+            <QuickAdd
+              copy={copy}
+              lang={boot.settings.language}
+              groupId={groupId}
+              onSave={(draft) => api.saveItem(draft).then(() => undefined)}
+              onMore={(draft) => { setSeed(draft); setEditing('new'); }}
+            />
+          )}
           {visible.length === 0 ? (
             <div className="empty">
               <h2>{filter === 'trash' ? copy.emptyTrash : copy.emptyTitle}</h2>
@@ -149,10 +160,13 @@ function MainApp() {
       <footer className="statusbar">{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</footer>
       {editing && (
         <ItemModal
+          key={editing === 'new' ? `new-${seed?.title ?? ''}-${seed?.startLocal ?? ''}` : editing.id}
           copy={copy}
+          lang={boot.settings.language}
           item={editing === 'new' ? null : editing}
+          seed={editing === 'new' ? seed : null}
           groups={groups}
-          onClose={() => setEditing(null)}
+          onClose={() => { setEditing(null); setSeed(null); }}
           onSave={(draft) => api.saveItem(draft).then(() => undefined)}
         />
       )}

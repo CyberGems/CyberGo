@@ -4,20 +4,27 @@ type Keys = { esc?: () => void; enter?: () => void };
 const stack: { current: Keys }[] = [];
 
 function onKey(e: KeyboardEvent) {
-  const top = stack[stack.length - 1];
-  if (!top) return;
+  const find = (kind: 'esc' | 'enter') => {
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const fn = stack[i].current[kind];
+      if (fn) return fn;
+    }
+    return undefined;
+  };
   if (e.key === 'Escape') {
-    if (!top.current.esc) return;
+    const esc = find('esc');
+    if (!esc) return;
     e.preventDefault();
-    top.current.esc();
+    esc();
     return;
   }
   if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
   const tag = (e.target as HTMLElement | null)?.tagName;
   if (tag === 'TEXTAREA' || tag === 'BUTTON') return;
-  if (!top.current.enter) return;
+  const enter = find('enter');
+  if (!enter) return;
   e.preventDefault();
-  top.current.enter();
+  enter();
 }
 
 if (typeof window !== 'undefined') window.addEventListener('keydown', onKey);

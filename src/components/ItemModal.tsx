@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { SWATCHES, type Group, type Item, type ItemDraft } from '@shared/types';
+import { SWATCHES, type Group, type Item, type ItemDraft, type Lang } from '@shared/types';
 import { parseLocal, toDateInput, toDateTimeInput } from '@shared/schedule';
 import type { Copy } from '../i18n';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
+import DateTimeField from './DateTimeField';
 
 function fromItem(item: Item): ItemDraft {
   return {
@@ -37,18 +38,22 @@ const blank = (): ItemDraft => ({
 
 export default function ItemModal({
   copy,
+  lang,
   item,
+  seed,
   groups,
   onClose,
   onSave,
 }: {
   copy: Copy;
+  lang: Lang;
   item: Item | null;
+  seed?: ItemDraft | null;
   groups: Group[];
   onClose: () => void;
   onSave: (draft: ItemDraft) => Promise<void>;
 }) {
-  const [draft, setDraft] = useState<ItemDraft>(item ? fromItem(item) : blank());
+  const [draft, setDraft] = useState<ItemDraft>(item ? fromItem(item) : seed ?? blank());
   const [error, setError] = useState('');
   const presets = [0, 15, 60, 1440];
   const custom = !presets.includes(draft.remindMinutes);
@@ -104,11 +109,11 @@ export default function ItemModal({
         <div className="grid-2">
           <label className="field">
             <span>{draft.kind === 'task' ? `${copy.due} (${copy.optional})` : copy.start}</span>
-            <input type={draft.allDay ? 'date' : 'datetime-local'} value={draft.startLocal || ''} onChange={(e) => set({ startLocal: e.target.value })} />
+            <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.startLocal || ''} onChange={(startLocal) => set({ startLocal })} />
           </label>
           <label className="field">
             <span>{copy.end} ({copy.optional})</span>
-            <input type={draft.allDay ? 'date' : 'datetime-local'} value={draft.endLocal || ''} onChange={(e) => set({ endLocal: e.target.value })} />
+            <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.endLocal || ''} onChange={(endLocal) => set({ endLocal })} />
           </label>
         </div>
         <div className="grid-2">

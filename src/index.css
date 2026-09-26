@@ -227,3 +227,139 @@ button { cursor: pointer; }
   height: 30px; border: 1px solid var(--border); background: var(--bg-input); border-radius: var(--radius-sm); padding: 0 6px;
 }
 .boot { height: 100%; background: var(--bg-app, #0c0c12); }
+
+.quick {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-sidebar);
+}
+.quick-row { display: flex; gap: 6px; align-items: center; }
+.quick-row input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  outline: none;
+}
+.picker-btn:focus-visible, .quick-row input:focus { border-color: var(--border-focus); }
+.quick-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+}
+.chip:hover { background: var(--bg-hover); color: var(--text-primary); }
+.chip.on { border-color: var(--accent); color: var(--accent-light); background: var(--accent-dim); }
+.quick-preview { min-height: 18px; font-size: 12px; color: var(--text-secondary); }
+.quick-preview.muted { color: var(--text-muted); }
+
+.picker { position: relative; }
+.picker-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 7px 8px;
+  color: var(--text-primary);
+}
+.picker-btn.placeholder { color: var(--text-muted); }
+.picker-btn svg { color: var(--text-muted); flex-shrink: 0; }
+.picker-pop {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: 1fr auto;
+  width: 456px;
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.picker-pop.date-only { width: 292px; grid-template-columns: 1fr; }
+.picker-cal { padding: 10px 10px 6px; }
+.picker-head, .picker-week, .picker-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.picker-head {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-bottom: 8px;
+  text-transform: capitalize;
+}
+.picker-head strong { font-size: 13px; font-weight: 600; }
+.picker-head span { display: flex; gap: 2px; }
+.picker-head button, .picker-foot button {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+}
+.picker-head button:hover, .picker-foot button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.picker-week { margin-bottom: 4px; }
+.picker-week span {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.picker-grid button {
+  height: 30px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.picker-grid button.outside { color: var(--text-muted); opacity: 0.55; }
+.picker-grid button.today { box-shadow: inset 0 0 0 1px var(--border); }
+.picker-grid button.on { background: var(--accent); color: white; }
+.picker-grid button:hover { background: var(--bg-hover); }
+.picker-grid button.on:hover { background: var(--accent); }
+.picker-time {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 10px 10px 6px 0;
+  border-left: 1px solid var(--border);
+}
+.time-col {
+  max-height: 248px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.time-col button {
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  padding: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+.time-col button.on { background: var(--accent-dim); color: var(--accent-light); }
+.time-col button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.picker-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding: 4px 8px;
+}

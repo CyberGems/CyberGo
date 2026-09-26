@@ -161,6 +161,18 @@ const es = {
   preRestore: 'Antes de restaurar se crea una copia de seguridad.',
   desktopOnly: 'CyberGo se abre como aplicación de escritorio.',
   kind: 'Tipo',
+  quickPlaceholder: 'Farmacia en 10 minutos',
+  quickHint: 'Escribe el asunto y, si quieres, cuándo.',
+  quickNone: 'Sin fecha',
+  create: 'Crear',
+  more: 'Más',
+  preset10: '10 min',
+  preset1h: '1 hora',
+  presetTonight: 'Esta noche',
+  presetTomorrow9: 'Mañana 9:00',
+  pickerToday: 'Hoy',
+  pickerClear: 'Borrar',
+  pickDate: 'Elegir fecha',
 };
 
 const en: typeof es = {
@@ -324,6 +336,18 @@ const en: typeof es = {
   preRestore: 'A safety copy is made before restore.',
   desktopOnly: 'Open CyberGo as a desktop app.',
   kind: 'Type',
+  quickPlaceholder: 'Pharmacy in 10 minutes',
+  quickHint: 'Type a subject and, if you want, when.',
+  quickNone: 'No date',
+  create: 'Create',
+  more: 'More',
+  preset10: '10 min',
+  preset1h: '1 hour',
+  presetTonight: 'Tonight',
+  presetTomorrow9: 'Tomorrow 9:00',
+  pickerToday: 'Today',
+  pickerClear: 'Clear',
+  pickDate: 'Choose date',
 };
 
 export type Copy = typeof es;
