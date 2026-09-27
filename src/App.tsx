@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, Command, Lock, Plus, Settings, Trash2 } from 'lucide-react';
+import { Bell, CalendarDays, Command, List, Lock, Plus, Settings, Trash2 } from 'lucide-react';
 import type { Bootstrap, Item, ItemDraft } from '@shared/types';
+import { formatLocalInput } from '@shared/schedule';
 import { copyOf } from './i18n';
 import { matchesFilter, sortItems, type FilterId } from './lib/view';
 import { applyTheme } from './themes';
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import ItemTable from './components/ItemTable';
+import CalendarView from './components/CalendarView';
 import ItemModal from './components/ItemModal';
 import CommandPalette from './components/CommandPalette';
 import QuickAdd from './components/QuickAdd';
@@ -35,6 +37,9 @@ function MainApp() {
   const [seed, setSeed] = useState<ItemDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [view, setView] = useState<'list' | 'calendar'>(() => (
+    localStorage.getItem('cybergo-view') === 'calendar' ? 'calendar' : 'list'
+  ));
   const [confirm, setConfirm] = useState<null | { title: string; body: string; danger?: boolean; run: () => void }>(null);
 
   async function reload() {
@@ -71,13 +76,35 @@ function MainApp() {
     return () => document.removeEventListener('keydown', keys);
   }, []);
 
-  function newFromPalette(kind: 'event' | 'task') {
-    setSeed({
+  function newFromPalette(kind: 'event' | 'task') {    setSeed({
       kind,
       title: '',
       notes: '',
       allDay: false,
       startLocal: '',
+      endLocal: '',
+      importance: 'normal',
+      color: '',
+      groupId,
+      recurrence: null,
+      remindMinutes: 0,
+    });
+    setEditing('new');
+  }
+
+  function switchView(next: 'list' | 'calendar') {
+    setView(next);
+    localStorage.setItem('cybergo-view', next);
+  }
+
+  function newOnDay(day: Date) {
+    const atNine = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9, 0, 0, 0);
+    setSeed({
+      kind: 'event',
+      title: '',
+      notes: '',
+      allDay: false,
+      startLocal: formatLocalInput(atNine, false),
       endLocal: '',
       importance: 'normal',
       color: '',
@@ -130,6 +157,10 @@ function MainApp() {
           <button className="btn" disabled={!selected} onClick={() => selected && askDelete(selected)}><Trash2 size={14} />{copy.delete}</button>
           <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt} onClick={() => selected && void api.completeItem(selected.id)}>{copy.done}</button>
           <button className="btn" onClick={() => void api.showReminders()}><Bell size={14} />{copy.reminders}</button>
+          <span className="seg">
+            <button type="button" title={copy.viewList} className={view === 'list' ? 'on' : ''} onClick={() => switchView('list')}><List size={14} /></button>
+            <button type="button" title={copy.viewCalendar} className={view === 'calendar' ? 'on' : ''} onClick={() => switchView('calendar')}><CalendarDays size={14} /></button>
+          </span>
           <input className="search" placeholder={copy.search} value={query} onChange={(e) => setQuery(e.target.value)} />
           <button className="icon-btn" title="Ctrl+K" onClick={() => setPaletteOpen(true)}><Command size={15} /></button>
           <button className="icon-btn" title={copy.lock} onClick={() => void api.lock()}><Lock size={15} /></button>
@@ -167,6 +198,17 @@ function MainApp() {
               <h2>{filter === 'trash' ? copy.emptyTrash : copy.emptyTitle}</h2>
               <p>{filter === 'trash' ? '' : copy.emptyBody}</p>
             </div>
+          ) : view === 'calendar' && filter !== 'trash' ? (
+            <CalendarView
+              copy={copy}
+              lang={boot.settings.language}
+              items={visible}
+              groups={groups}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onOpen={(item) => { setSelectedId(item.id); setEditing(item); }}
+              onNewDay={newOnDay}
+            />
           ) : (
             <ItemTable
               copy={copy}

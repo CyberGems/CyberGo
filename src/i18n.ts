@@ -190,6 +190,10 @@ const es = {
   cmdGo: 'Ir a',
   cmdItems: 'Elementos',
   cmdEmpty: 'Sin resultados',
+  viewList: 'Lista',
+  viewCalendar: 'Calendario',
+  calMore: 'más',
+  calNewHint: 'Doble clic para crear aquí',
 };
 
 const en: typeof es = {
@@ -382,6 +386,10 @@ const en: typeof es = {
   cmdGo: 'Go to',
   cmdItems: 'Items',
   cmdEmpty: 'No results',
+  viewList: 'List',
+  viewCalendar: 'Calendar',
+  calMore: 'more',
+  calNewHint: 'Double-click to create here',
 };
 
 export type Copy = typeof es;
