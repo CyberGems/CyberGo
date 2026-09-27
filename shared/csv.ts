@@ -13,6 +13,7 @@ export const CSV_HEADERS = [
   'group',
   'recurrence_freq',
   'recurrence_interval',
+  'recurrence_day_of_month',
   'recurrence_until',
   'remind_minutes',
 ] as const;
@@ -138,6 +139,7 @@ export function itemToCsvRow(item: Item, groups: Group[]): Record<string, string
     group: group?.name ?? '',
     recurrence_freq: item.recurrence?.freq ?? '',
     recurrence_interval: item.recurrence ? String(item.recurrence.interval) : '',
+    recurrence_day_of_month: item.recurrence?.dayOfMonth ? String(item.recurrence.dayOfMonth) : '',
     recurrence_until: item.recurrence?.until ?? '',
     remind_minutes: String(item.remindMinutes ?? 0),
   };
@@ -168,6 +170,7 @@ export function rowToDraft(row: Record<string, string>, groups: Group[]): { draf
   if (endRaw) parseLocal(endRaw, allDay || endRaw.length <= 10);
   const freq = asFreq(row.recurrence_freq || '');
   const interval = Math.max(1, Number(row.recurrence_interval || '1') || 1);
+  const dayOfMonth = Number(row.recurrence_day_of_month || '');
   const until = (row.recurrence_until || '').trim();
   const groupName = (row.group || '').trim();
   const existing = groups.find((g) => g.name.toLowerCase() === groupName.toLowerCase());
@@ -182,7 +185,12 @@ export function rowToDraft(row: Record<string, string>, groups: Group[]): { draf
     importance: asImportance(row.importance || ''),
     color: sanitizeColor(row.color || ''),
     groupId: existing?.id ?? null,
-    recurrence: freq ? { freq, interval, until: until || null } : null,
+    recurrence: freq ? {
+      freq,
+      interval,
+      until: until || null,
+      dayOfMonth: dayOfMonth >= 1 && dayOfMonth <= 31 ? Math.floor(dayOfMonth) : null,
+    } : null,
     remindMinutes: remind,
   };
   if (draft.startLocal) buildSchedule(draft);

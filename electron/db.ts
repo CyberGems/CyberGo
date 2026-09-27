@@ -63,7 +63,13 @@ function parseRecurrence(raw: string | null): Recurrence | null {
   try {
     const v = JSON.parse(raw);
     if (!v || !v.freq) return null;
-    return { freq: v.freq, interval: Math.max(1, Number(v.interval) || 1), until: v.until || null };
+    const dayOfMonth = Number(v.dayOfMonth);
+    return {
+      freq: v.freq,
+      interval: Math.max(1, Number(v.interval) || 1),
+      until: v.until || null,
+      dayOfMonth: dayOfMonth >= 1 && dayOfMonth <= 31 ? Math.floor(dayOfMonth) : null,
+    };
   } catch {
     return null;
   }

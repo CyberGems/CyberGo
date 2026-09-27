@@ -13,6 +13,8 @@ export interface Recurrence {
   interval: number;
   /** YYYY-MM-DD, inclusive. Null means no end. */
   until: string | null;
+  /** Optional calendar day to preserve for monthly recurrences, from 1 to 31. */
+  dayOfMonth?: number | null;
 }
 
 export interface Group {

@@ -74,6 +74,16 @@ test('dismiss of a monthly item moves to the next month', () => {
   assert.equal(next.alertKey, null);
 });
 
+test('monthly day anchors clamp short months and recover afterward', () => {
+  const recurrence: Recurrence = { freq: 'monthly', interval: 1, until: null, dayOfMonth: 31 };
+  const february = nextDate(new Date(2026, 0, 31, 9, 0, 0), recurrence);
+  assert.equal(february?.getMonth(), 1);
+  assert.equal(february?.getDate(), 28);
+  const march = nextDate(february!, recurrence);
+  assert.equal(march?.getMonth(), 2);
+  assert.equal(march?.getDate(), 31);
+});
+
 test('a dismissed one-off is not due', () => {
   const done = item({
     nextFireAt: new Date(Date.now() - 1000).toISOString(),

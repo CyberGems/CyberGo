@@ -24,9 +24,22 @@ function draftFrom(text: string, armed: QuickPreset | null, groupId: string | nu
     importance: parsed.importance,
     color: '',
     groupId,
-    recurrence: null,
+    recurrence: parsed.recurrence,
     remindMinutes: 0,
   };
+}
+
+function recurrenceSummary(copy: Copy, recurrence: NonNullable<ReturnType<typeof parseQuick>['recurrence']>) {
+  if (recurrence.dayOfMonth) return `${copy.repeat}: ${copy.recurOnDay} ${recurrence.dayOfMonth}`;
+  const unit = recurrence.freq === 'daily'
+    ? copy.daily
+    : recurrence.freq === 'weekly'
+      ? copy.weekly
+      : recurrence.freq === 'monthly'
+        ? copy.monthly
+        : copy.yearly;
+  const cadence = recurrence.interval === 1 ? unit : `${recurrence.interval} ${unit}`;
+  return `${copy.repeat}: ${copy.recurEvery} ${cadence}`;
 }
 
 export default function QuickAdd({
@@ -91,6 +104,7 @@ export default function QuickAdd({
     start ? duePhrase(start.toISOString(), lang) : copy.quickNone,
     start && !previewDraft.allDay ? formatClock(start.toISOString(), lang) : '',
     parsed.importance === 'high' ? copy.highImp : '',
+    parsed.recurrence ? recurrenceSummary(copy, parsed.recurrence) : '',
   ].filter(Boolean).join(' · ');
 
   async function commit(force: Date | null) {

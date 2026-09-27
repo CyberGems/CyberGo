@@ -41,7 +41,15 @@ export function nextDate(from: Date, rec: Recurrence): Date | null {
   const n = Math.max(1, Math.floor(rec.interval || 1));
   if (rec.freq === 'daily') d.setDate(d.getDate() + n);
   else if (rec.freq === 'weekly') d.setDate(d.getDate() + 7 * n);
-  else if (rec.freq === 'monthly') d.setMonth(d.getMonth() + n);
+  else if (rec.freq === 'monthly') {
+    const monthIndex = d.getMonth() + n;
+    const year = d.getFullYear() + Math.floor(monthIndex / 12);
+    const month = monthIndex % 12;
+    const requestedDay = Number(rec.dayOfMonth);
+    const day = requestedDay >= 1 && requestedDay <= 31 ? requestedDay : d.getDate();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    d.setFullYear(year, month, Math.min(day, lastDay));
+  }
   else d.setFullYear(d.getFullYear() + n);
   if (rec.until) {
     const [y, m, day] = rec.until.split('-').map(Number);
