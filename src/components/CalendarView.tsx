@@ -100,9 +100,18 @@ export default function CalendarView({
               key={day.toISOString()}
               className={`cal-cell ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}`}
               onDoubleClick={() => onNewDay(day)}
+              onKeyDown={(event) => {
+                if (event.target !== event.currentTarget) return;
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onNewDay(day);
+                }
+              }}
+              tabIndex={0}
+              aria-label={`${day.toLocaleDateString(locale, { dateStyle: 'full' })}. ${copy.calNewHint}`}
               title={copy.calNewHint}
             >
-              <span className="cal-daynum">{day.getDate()}</span>
+              <span className="cal-daynum"><span>{day.getDate()}</span>{isToday && <span className="cal-today-label">{copy.todayWord}</span>}</span>
               {shown.map((item) => {
                 const group = groups.find((g) => g.id === item.groupId);
                 const tint = item.color || group?.color || 'var(--accent)';
@@ -110,9 +119,10 @@ export default function CalendarView({
                   <button
                     key={item.id}
                     type="button"
-                    className={`cal-chip ${selectedId === item.id ? 'selected' : ''} ${item.completedAt ? 'done' : ''}`}
+                    className={`cal-chip ${selectedId === item.id ? 'selected' : ''} ${item.completedAt ? 'done' : ''} kind-${item.kind}`}
                     onClick={(e) => { e.stopPropagation(); onSelect(item.id); }}
                     onDoubleClick={(e) => { e.stopPropagation(); onOpen(item); }}
+                    aria-label={`${item.title}, ${item.kind === 'task' ? copy.task : copy.event}`}
                     title={item.title}
                   >
                     <i className="dot" style={{ background: tint }} />

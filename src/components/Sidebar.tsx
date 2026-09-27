@@ -4,9 +4,20 @@ import type { FilterId } from '../lib/view';
 import { matchesFilter } from '../lib/view';
 import { SWATCHES } from '@shared/types';
 import { useState } from 'react';
+import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, Clock3, Flag, FolderPlus, Inbox, ListFilter, Plus, Trash2 } from 'lucide-react';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 
-const FILTERS: FilterId[] = ['all', 'today', 'next7', 'next30', 'upcoming', 'overdue', 'high', 'completed'];
+const FILTERS: Exclude<FilterId, 'trash'>[] = ['all', 'today', 'next7', 'next30', 'upcoming', 'overdue', 'high', 'completed'];
+const FILTER_ICONS = {
+  all: Inbox,
+  today: CalendarDays,
+  next7: CalendarRange,
+  next30: CalendarRange,
+  upcoming: Clock3,
+  overdue: AlertTriangle,
+  high: Flag,
+  completed: CheckCircle2,
+} as const;
 
 export default function Sidebar({
   copy,
@@ -55,21 +66,24 @@ export default function Sidebar({
   return (
     <aside className="sidebar">
       <div className="side-scroll">
-        <div className="side-label">{copy.filters}</div>
+        <div className="side-label"><ListFilter size={12} />{copy.filters}</div>
         {FILTERS.map((id) => (
-          <button key={id} className={`nav-btn ${filter === id && !groupId ? 'active' : ''}`} onClick={() => onFilter(id, null)}>
+          <button key={id} className={`nav-btn ${filter === id && !groupId ? 'active' : ''}`} onClick={() => onFilter(id, null)} aria-current={filter === id && !groupId ? 'page' : undefined}>
+            {(() => { const Icon = FILTER_ICONS[id]; return <Icon size={15} />; })()}
             {labels[id]}
             <span className="badge">{count(id)}</span>
           </button>
         ))}
-        <div className="side-label">{copy.groups}</div>
+        <div className="side-label"><FolderPlus size={12} />{copy.groups}</div>
         {groups.length === 0 && !adding && <div className="hint" style={{ padding: '0 8px' }}>{copy.noGroups}</div>}
         {groups.map((group) => (
-          <div key={group.id} className={`group-row ${groupId === group.id ? 'active' : ''}`} onClick={() => onFilter('all', group.id)} role="button">
-            <i className="dot" style={{ background: group.color }} />
-            <span className="subject">{group.name}</span>
-            <span className="badge">{count('all', group.id)}</span>
-            <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onDeleteGroup(group); }} aria-label={copy.delete}>×</button>
+          <div key={group.id} className={`group-row ${groupId === group.id ? 'active' : ''}`}>
+            <button type="button" className="group-main" onClick={() => onFilter('all', group.id)} aria-current={groupId === group.id ? 'page' : undefined}>
+              <i className="dot" style={{ background: group.color }} />
+              <span className="subject">{group.name}</span>
+              <span className="badge">{count('all', group.id)}</span>
+            </button>
+            <button type="button" className="icon-btn" onClick={() => onDeleteGroup(group)} aria-label={`${copy.delete}: ${group.name}`} title={copy.delete}><Trash2 size={13} /></button>
           </div>
         ))}
         {adding ? (
@@ -77,7 +91,7 @@ export default function Sidebar({
             <input className="inline-input" autoFocus placeholder={copy.groupName} value={name} onChange={(e) => setName(e.target.value)} />
             <div className="swatches">
               {SWATCHES.map((swatch) => (
-                <button type="button" key={swatch} className={`swatch ${color === swatch ? 'on' : ''}`} style={{ background: swatch }} onClick={() => setColor(swatch)} />
+                <button type="button" key={swatch} className={`swatch ${color === swatch ? 'on' : ''}`} style={{ background: swatch }} onClick={() => setColor(swatch)} aria-label={swatch} aria-pressed={color === swatch} />
               ))}
             </div>
             <div className="row-actions">
@@ -86,11 +100,12 @@ export default function Sidebar({
             </div>
           </form>
         ) : (
-          <button className="nav-btn" onClick={() => setAdding(true)}>+ {copy.newGroup}</button>
+          <button className="nav-btn" onClick={() => setAdding(true)}><Plus size={15} />{copy.newGroup}</button>
         )}
       </div>
       <div className="side-foot">
-        <button className={`nav-btn ${filter === 'trash' ? 'active' : ''}`} onClick={() => onFilter('trash', null)}>
+        <button className={`nav-btn ${filter === 'trash' ? 'active' : ''}`} onClick={() => onFilter('trash', null)} aria-current={filter === 'trash' ? 'page' : undefined}>
+          <Trash2 size={15} />
           {copy.trash}
           <span className="badge">{count('trash')}</span>
         </button>

@@ -1,11 +1,41 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle, CheckCircle2, CircleAlert, KeyRound, Trash2 } from 'lucide-react';
 import type { Copy } from '../i18n';
-import type { AuthMethod, PublicSettings } from '@shared/types';
+import type { AccessLogEntry, AccessLogEvent, AccessLogMethod, AuthMethod, PublicSettings } from '@shared/types';
 import { applyTheme } from '../themes';
 import { playAlert } from '../lib/sound';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 
 type Tab = 'general' | 'notifications' | 'security' | 'data';
+
+function accessEventLabel(copy: Copy, event: AccessLogEvent) {
+  if (event === 'success') return copy.accessSuccess;
+  if (event === 'failure') return copy.accessFailure;
+  if (event === 'recovery-success') return copy.accessRecoverySuccess;
+  if (event === 'recovery-failure') return copy.accessRecoveryFailure;
+  return copy.accessBlocked;
+}
+
+function accessMethodLabel(copy: Copy, method: AccessLogMethod) {
+  if (method === 'pin') return copy.accessMethodPin;
+  if (method === 'recovery') return copy.accessMethodRecovery;
+  return copy.accessMethodPassword;
+}
+
+function accessEventIcon(event: AccessLogEvent) {
+  if (event === 'success' || event === 'recovery-success') return <CheckCircle2 size={15} />;
+  if (event === 'failure' || event === 'recovery-failure') return <CircleAlert size={15} />;
+  return <AlertTriangle size={15} />;
+}
+
+function formatAccessTime(iso: string, language: 'es' | 'en') {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat(language === 'es' ? 'es-ES' : 'en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
 
 export default function SettingsModal({
   copy,
@@ -31,6 +61,8 @@ export default function SettingsModal({
   const [backups, setBackups] = useState<{ name: string; createdAt: string; bytes: number }[]>([]);
   const [keep, setKeep] = useState(settings.autobackupKeep);
   const [restoreName, setRestoreName] = useState<string | null>(null);
+  const [accessLog, setAccessLog] = useState<AccessLogEntry[]>([]);
+  const [clearAccessConfirm, setClearAccessConfirm] = useState(false);
 
   useModalKeys(true, {
     esc: () => {
@@ -44,11 +76,14 @@ export default function SettingsModal({
   });
 
   const refreshBackups = () => api.listBackups().then(setBackups);
+  const refreshAccessLog = () => api.listAccessLog().then(setAccessLog);
   useEffect(() => { if (tab === 'data') void refreshBackups(); }, [tab]);
+  useEffect(() => { if (tab === 'security') void refreshAccessLog(); }, [tab]);
 
   async function patch(partial: Partial<PublicSettings>) {
     const saved = await api.patchSettings(partial);
     if (partial.theme) applyTheme(saved.theme);
+    if (partial.accessLogEnabled != null) void refreshAccessLog();
     setMessage(copy.saved);
   }
 
@@ -92,7 +127,7 @@ export default function SettingsModal({
         <h2>{copy.settings}</h2>
         <div className="tabs">
           {(['general', 'notifications', 'security', 'data'] as Tab[]).map((id) => (
-            <button key={id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); setMessage(''); }}>{copy[id === 'data' ? 'data' : id]}</button>
+            <button key={id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); setMessage(''); setClearAccessConfirm(false); }}>{copy[id === 'data' ? 'data' : id]}</button>
           ))}
         </div>
 
@@ -203,6 +238,61 @@ export default function SettingsModal({
                 <button className="btn" onClick={() => setRecovery('')}>{copy.recoverySaved}</button>
               </div>
             )}
+            <section className={`settings-section access-log-section ${!settings.accessLogEnabled ? 'is-disabled' : ''}`}>
+              <div className="settings-section-heading">
+                <div>
+                  <h3>{copy.accessLog}</h3>
+                  <p className="hint">{copy.accessLogHelp}</p>
+                </div>
+                <KeyRound size={18} aria-hidden="true" />
+              </div>
+              <label className="check">
+                <input type="checkbox" checked={settings.accessLogEnabled} onChange={(e) => void patch({ accessLogEnabled: e.target.checked })} />
+                {copy.accessLogEnabled}
+              </label>
+              <p className="hint">{settings.accessLogEnabled ? copy.accessLogRetention : copy.accessLogDisabled}</p>
+              <div className="access-log-panel" aria-disabled={!settings.accessLogEnabled}>
+                {accessLog.length === 0 ? (
+                  <p className="access-log-empty">{copy.accessLogEmpty}</p>
+                ) : (
+                  <div className="access-log" role="list" aria-label={copy.accessLog}>
+                    {accessLog.map((entry) => (
+                      <div className={`access-log-entry access-log-${entry.event}`} key={entry.id} role="listitem">
+                        <span className="access-log-icon" aria-hidden="true">{accessEventIcon(entry.event)}</span>
+                        <span className="access-log-copy">
+                          <strong>{accessEventLabel(copy, entry.event)}</strong>
+                          <span>{accessMethodLabel(copy, entry.method)} · {formatAccessTime(entry.occurredAt, settings.language)}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="row-actions" style={{ justifyContent: 'flex-start' }}>
+                  <button className="btn btn-danger" disabled={!settings.accessLogEnabled || accessLog.length === 0} onClick={() => setClearAccessConfirm(true)}>
+                    <Trash2 size={14} />{copy.clearAccessLog}
+                  </button>
+                </div>
+                {clearAccessConfirm && (
+                  <div className="access-log-confirm">
+                    <strong>{copy.confirmClearAccessLog}</strong>
+                    <p className="hint">{copy.confirmClearAccessLogBody}</p>
+                    <div className="row-actions" style={{ justifyContent: 'flex-start' }}>
+                      <button className="btn" onClick={() => setClearAccessConfirm(false)}>{copy.cancel}<EscHint /></button>
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => void api.clearAccessLog().then(() => {
+                          setAccessLog([]);
+                          setClearAccessConfirm(false);
+                          setMessage(copy.accessLogCleared);
+                        })}
+                      >
+                        {copy.clearAccessLog}<EnterGlyph />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
           </>
         )}
 

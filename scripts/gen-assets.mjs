@@ -26,22 +26,59 @@ function chunk(type, data) {
   return Buffer.concat([len, body, crc]);
 }
 
-function pngCircle(size) {
+function pngIcon(size) {
   const raw = Buffer.alloc((size * 4 + 1) * size);
+  const mix = (a, b, amount) => Math.round(a + (b - a) * amount);
+  const distanceToSegment = (px, py, x1, y1, x2, y2) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = dx * dx + dy * dy;
+    const t = length ? Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / length)) : 0;
+    const x = x1 + t * dx;
+    const y = y1 + t * dy;
+    return Math.hypot(px - x, py - y);
+  };
+  const roundedBoxDistance = (px, py, width, height, radius) => {
+    const qx = Math.abs(px - 0.5) - width / 2 + radius;
+    const qy = Math.abs(py - 0.5) - height / 2 + radius;
+    return Math.min(Math.max(qx, qy), 0) + Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) - radius;
+  };
   let o = 0;
-  const cx = (size - 1) / 2;
-  const r = size / 2 - 1.2;
   for (let y = 0; y < size; y++) {
     raw[o++] = 0;
     for (let x = 0; x < size; x++) {
-      const dx = x - cx;
-      const dy = y - cx;
-      const d = Math.sqrt(dx * dx + dy * dy);
-      const edge = Math.max(0, Math.min(1, r - d + 0.6));
-      raw[o++] = 108;
-      raw[o++] = 99;
-      raw[o++] = 230;
-      raw[o++] = Math.round(255 * edge);
+      const px = (x + 0.5) / size;
+      const py = (y + 0.5) / size;
+      const box = roundedBoxDistance(px, py, 0.82, 0.82, 0.17);
+      let color = [22, 27, 38];
+      let alpha = box <= 0 ? 1 : Math.max(0, Math.min(1, 1 - box * size / 1.4));
+      if (box <= 0) {
+        const shade = Math.min(1, Math.max(0, (px + py - 0.22) * 0.62));
+        color = [mix(27, 49, shade), mix(32, 39, shade), mix(45, 76, shade)];
+        if (box > -0.018) {
+          const edge = Math.max(0, Math.min(1, (box + 0.018) / 0.018));
+          color = [mix(86, color[0], edge), mix(91, color[1], edge), mix(145, color[2], edge)];
+        }
+
+        const ring = Math.abs(Math.hypot(px - 0.5, py - 0.5) - 0.275);
+        if (ring < 0.032) {
+          const ringColor = px + py < 1 ? [165, 158, 240] : [86, 190, 210];
+          const ringAmount = Math.max(0, Math.min(1, (0.032 - ring) * size / 2.2));
+          color = color.map((value, index) => mix(value, ringColor[index], ringAmount));
+        }
+
+        const handOne = distanceToSegment(px, py, 0.5, 0.5, 0.5, 0.335);
+        const handTwo = distanceToSegment(px, py, 0.5, 0.5, 0.625, 0.5);
+        if (Math.min(handOne, handTwo) < 0.028) color = [236, 238, 245];
+        if (Math.hypot(px - 0.5, py - 0.5) < 0.045) color = [236, 238, 245];
+
+        const dot = Math.hypot(px - 0.725, py - 0.27);
+        if (dot < 0.045) color = [76, 194, 215];
+      }
+      raw[o++] = color[0];
+      raw[o++] = color[1];
+      raw[o++] = color[2];
+      raw[o++] = Math.round(255 * alpha);
     }
   }
   const ihdr = Buffer.alloc(13);
@@ -58,8 +95,8 @@ function pngCircle(size) {
   ]);
 }
 
-fs.writeFileSync(path.join(pub, 'icon.png'), pngCircle(256));
-fs.writeFileSync(path.join(pub, 'tray.png'), pngCircle(32));
+fs.writeFileSync(path.join(pub, 'icon.png'), pngIcon(256));
+fs.writeFileSync(path.join(pub, 'tray.png'), pngIcon(32));
 
 const rate = 44100;
 const seconds = 0.72;

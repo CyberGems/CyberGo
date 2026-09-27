@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AuthMethod, Bootstrap, CsvResult, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
+import type { AccessLogEntry, AuthMethod, Bootstrap, CsvResult, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
 
 export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
@@ -16,6 +16,8 @@ export interface CyberGoAPI {
   saveGroup: (input: { id?: string; name: string; color: string }) => Promise<Group>;
   deleteGroup: (id: string) => Promise<void>;
   patchSettings: (patch: Partial<PublicSettings>) => Promise<PublicSettings>;
+  listAccessLog: () => Promise<AccessLogEntry[]>;
+  clearAccessLog: () => Promise<void>;
   setPassword: (password: string, hint: string, method: AuthMethod) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
   changePassword: (current: string, next: string, hint: string, method: AuthMethod) => Promise<{ ok: true; recoveryCode: string } | { ok: false; error: string }>;
   removePassword: (current: string) => Promise<boolean>;
@@ -62,6 +64,8 @@ const api: CyberGoAPI = {
   saveGroup: (input) => ipcRenderer.invoke('groups:save', input),
   deleteGroup: (id) => ipcRenderer.invoke('groups:delete', id),
   patchSettings: (patch) => ipcRenderer.invoke('settings:patch', patch),
+  listAccessLog: () => ipcRenderer.invoke('access-log:list'),
+  clearAccessLog: () => ipcRenderer.invoke('access-log:clear'),
   setPassword: (password, hint, method) => ipcRenderer.invoke('auth:set', password, hint, method),
   changePassword: (current, next, hint, method) => ipcRenderer.invoke('auth:change', current, next, hint, method),
   removePassword: (current) => ipcRenderer.invoke('auth:remove', current),

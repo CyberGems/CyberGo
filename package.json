@@ -12,7 +12,7 @@
     "build:electron": "tsc --noEmit && vite build && electron-builder",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "test": "tsx --test shared/schedule.test.ts shared/csv.test.ts shared/quick.test.ts shared/auth.test.ts shared/ics.test.ts src/lib/stats.test.ts",
+    "test": "tsx --test shared/schedule.test.ts shared/csv.test.ts shared/quick.test.ts shared/auth.test.ts shared/ics.test.ts src/lib/stats.test.ts electron/db.test.ts",
     "assets": "node scripts/gen-assets.mjs"
   },
   "build": {

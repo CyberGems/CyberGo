@@ -5,6 +5,7 @@ import { parseQuick, presetStart, type QuickPreset } from '@shared/quick';
 import type { Copy } from '../i18n';
 import { duePhrase, formatClock } from '../lib/format';
 import { EnterGlyph } from './ModalKeys';
+import { SlidersHorizontal, Sparkles } from 'lucide-react';
 
 const PRESETS: QuickPreset[] = ['10m', '1h', 'tonight', 'tomorrow9'];
 
@@ -106,13 +107,23 @@ export default function QuickAdd({
 
   return (
     <div className="quick">
+      <div className="quick-heading">
+        <div className="quick-title">
+          <span className="quick-title-mark"><Sparkles size={15} /></span>
+          <div className="quick-title-copy">
+            <strong>{copy.quickAddLabel}</strong>
+            <span>{copy.quickHint}</span>
+          </div>
+        </div>
+        <kbd className="quick-shortcut">{copy.quickShortcut}</kbd>
+      </div>
       <div className="quick-row">
         <div className="quick-field">
         <input
           ref={inputRef}
           value={text}
           aria-label={copy.quickHint}
-          placeholder=""
+          placeholder={!text && !exampleOn ? copy.quickPlaceholder : ''}
           onChange={(event) => {
             const next = event.target.value;
             setText(next);
@@ -126,12 +137,12 @@ export default function QuickAdd({
             }
           }}
         />
-        {!text && <span className={`quick-ghost ${exampleOn ? 'show' : ''}`}>{examples[example]}</span>}
+        {!text && <span className={`quick-ghost ${exampleOn ? 'show' : ''}`} aria-hidden="true">{examples[example]}</span>}
         </div>
         <button type="button" className="btn btn-primary" disabled={!canSave} onClick={() => void commit(null)}>
           {copy.create}<EnterGlyph />
         </button>
-        <button type="button" className="btn" onClick={() => onMore(draftFrom(text, armed, groupId, null))}>{copy.more}</button>
+        <button type="button" className="btn" onClick={() => onMore(draftFrom(text, armed, groupId, null))}><SlidersHorizontal size={14} />{copy.more}</button>
       </div>
       <div className="quick-presets">
         <span className={`quick-when ${text.trim() ? 'on' : ''}`}>{copy.quickWhen}</span>
@@ -148,6 +159,7 @@ export default function QuickAdd({
         ))}
       </div>
       <div className={`quick-preview ${text.trim() || armed ? '' : 'muted'}`}>
+        <Sparkles size={13} />
         {text.trim() || armed ? preview : copy.quickHint}
       </div>
     </div>

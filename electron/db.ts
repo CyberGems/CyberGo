@@ -2,7 +2,19 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { createRequire } from 'module';
 import { afterDismiss, buildSchedule, fireKey, parseLocal, snoozeUntilFromNow } from '../shared/schedule';
-import type { AuthMethod, Group, Importance, Item, ItemDraft, Kind, PublicSettings, Recurrence } from '../shared/types';
+import type {
+  AccessLogEntry,
+  AccessLogEvent,
+  AccessLogMethod,
+  AuthMethod,
+  Group,
+  Importance,
+  Item,
+  ItemDraft,
+  Kind,
+  PublicSettings,
+  Recurrence,
+} from '../shared/types';
 
 const require = createRequire(import.meta.url);
 
@@ -30,6 +42,20 @@ function queryAll(sql: string, params: unknown[] = []): any[] {
 
 function queryGet(sql: string, params: unknown[] = []): any | null {
   return queryAll(sql, params)[0] ?? null;
+}
+
+function ensureAccessLogSchema() {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS access_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      occurred_at TEXT NOT NULL,
+      event TEXT NOT NULL,
+      method TEXT NOT NULL
+    );
+  `);
+  if (getSetting('access_log_enabled') == null) {
+    db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', ['access_log_enabled', '1']);
+  }
 }
 
 function parseRecurrence(raw: string | null): Recurrence | null {
@@ -113,6 +139,7 @@ export function readSettings(locale: 'es' | 'en'): PublicSettings {
     reminderAlwaysOnTop: boolSetting('reminder_always_on_top', true),
     passwordHint: getSetting('password_hint') ?? '',
     authMethod: getSetting('auth_method') === 'pin' ? 'pin' : 'password',
+    accessLogEnabled: boolSetting('access_log_enabled', true),
   };
 }
 
@@ -173,6 +200,7 @@ export async function initDatabase(file: string, wasm: string, locale: 'es' | 'e
       updated_at TEXT NOT NULL
     );
   `);
+  ensureAccessLogSchema();
   if (!getSetting('theme')) setSetting('theme', 'cybergo');
   if (!getSetting('language')) setSetting('language', locale);
   if (!getSetting('autobackup')) setSetting('autobackup', '1');
@@ -185,6 +213,8 @@ export async function initDatabase(file: string, wasm: string, locale: 'es' | 'e
 export function reloadFromDisk() {
   if (db) db.close();
   db = new SQL.Database(fs.readFileSync(dbPath));
+  ensureAccessLogSchema();
+  saveSoon();
 }
 
 export function databasePath() {
@@ -361,11 +391,45 @@ export function applySettingsPatch(patch: Partial<PublicSettings>) {
     open_at_login: patch.openAtLogin == null ? undefined : patch.openAtLogin ? '1' : '0',
     reminder_always_on_top: patch.reminderAlwaysOnTop == null ? undefined : patch.reminderAlwaysOnTop ? '1' : '0',
     password_hint: patch.passwordHint,
+    access_log_enabled: patch.accessLogEnabled == null ? undefined : patch.accessLogEnabled ? '1' : '0',
   };
   for (const [key, value] of Object.entries(map)) {
     if (value === undefined) continue;
     db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, value]);
   }
+  saveSoon();
+}
+
+const ACCESS_LOG_RETENTION = 100;
+
+export function listAccessLog(limit = 50): AccessLogEntry[] {
+  const safeLimit = Math.min(ACCESS_LOG_RETENTION, Math.max(1, Math.floor(limit)));
+  return queryAll(
+    `SELECT id, occurred_at, event, method FROM access_log ORDER BY id DESC LIMIT ${safeLimit}`,
+  ).map((row) => ({
+    id: Number(row.id),
+    occurredAt: String(row.occurred_at),
+    event: row.event as AccessLogEvent,
+    method: row.method as AccessLogMethod,
+  }));
+}
+
+export function recordAccessEvent(event: AccessLogEvent, method: AccessLogMethod) {
+  if (!boolSetting('access_log_enabled', true)) return;
+  db.run(
+    `INSERT INTO access_log (occurred_at, event, method) VALUES (?, ?, ?)`,
+    [new Date().toISOString(), event, method],
+  );
+  db.run(
+    `DELETE FROM access_log WHERE id NOT IN (
+      SELECT id FROM access_log ORDER BY id DESC LIMIT ${ACCESS_LOG_RETENTION}
+    )`,
+  );
+  saveSoon();
+}
+
+export function clearAccessLog() {
+  db.run('DELETE FROM access_log');
   saveSoon();
 }
 

@@ -444,7 +444,10 @@ function registerIpc() {
     return true;
   });
   ipcMain.handle('auth:unlock', async (_e, password: string) => {
-    if (tooManyAttempts()) return 'wait';
+    if (tooManyAttempts()) {
+      db.recordAccessEvent('blocked', db.authMethod());
+      return 'wait';
+    }
     const hash = db.passwordHash();
     if (!hash) {
       sessionLocked = false;
@@ -453,9 +456,11 @@ function registerIpc() {
     const stored = db.authMethod();
     if (!(await bcrypt.compare(presented(password, stored), hash))) {
       noteFailure();
+      db.recordAccessEvent('failure', stored);
       return 'wrong';
     }
     noteSuccess();
+    db.recordAccessEvent('success', stored);
     sessionLocked = false;
     changed();
     flushNavigate();
@@ -463,11 +468,15 @@ function registerIpc() {
     return 'ok';
   });
   ipcMain.handle('auth:recover', async (_e, code: string, next: string, method: unknown) => {
-    if (tooManyAttempts()) return { ok: false as const, error: 'wait' };
+    if (tooManyAttempts()) {
+      db.recordAccessEvent('blocked', 'recovery');
+      return { ok: false as const, error: 'wait' };
+    }
     const hash = db.recoveryHash();
     const normalized = code.trim().toUpperCase().replace(/-/g, '');
     if (!hash || !(await bcrypt.compare(normalized, hash))) {
       noteFailure();
+      db.recordAccessEvent('recovery-failure', 'recovery');
       return { ok: false as const, error: 'wrong' };
     }
     const mode = method === undefined ? db.authMethod() : methodOf(method);
@@ -478,6 +487,7 @@ function registerIpc() {
     db.setRecoveryHash(await bcrypt.hash(fresh.replace('-', ''), 10));
     db.setAuthMethod(mode);
     noteSuccess();
+    db.recordAccessEvent('recovery-success', 'recovery');
     sessionLocked = false;
     changed();
     flushNavigate();
@@ -491,6 +501,12 @@ function registerIpc() {
     changed();
     showMain();
     return true;
+  });
+
+  ipcMain.handle('access-log:list', () => db.listAccessLog());
+  ipcMain.handle('access-log:clear', () => {
+    db.clearAccessLog();
+    changed();
   });
 
   ipcMain.handle('reminders:due', () => db.listItems().filter((item) => isDue(item, Date.now())));
