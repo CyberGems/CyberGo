@@ -3,6 +3,10 @@ import type { Copy } from '../i18n';
 import type { Group, Item, Lang } from '@shared/types';
 import { daysLeft, formatDate, formatTimeRange } from '../lib/format';
 
+function safeTint(value: string): string {
+  return /^#[0-9a-fA-F]{6}$/.test(value) ? value : '';
+}
+
 export default function ItemTable({
   copy,
   lang,
@@ -34,7 +38,7 @@ export default function ItemTable({
       <div className="rows">
         {items.map((item) => {
           const group = groups.find((g) => g.id === item.groupId);
-          const tint = item.color || group?.color || '';
+          const tint = safeTint(item.color || group?.color || '');
           return (
             <div
               key={item.id}

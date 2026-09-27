@@ -59,6 +59,22 @@ export default function ItemModal({
   const custom = !presets.includes(draft.remindMinutes);
   const set = (patch: Partial<ItemDraft>) => setDraft((prev) => ({ ...prev, ...patch }));
 
+  function toggleAllDay(next: boolean) {
+    setDraft((prev) => {
+      const convert = (value: string): string => {
+        if (!value) return value;
+        if (next) return value.slice(0, 10);
+        return value.length <= 10 ? `${value}T09:00` : value;
+      };
+      return {
+        ...prev,
+        allDay: next,
+        startLocal: convert(prev.startLocal || ''),
+        endLocal: convert(prev.endLocal || ''),
+      };
+    });
+  }
+
   let endInvalid = false;
   if (draft.startLocal && draft.endLocal) {
     try {
@@ -103,7 +119,7 @@ export default function ItemModal({
         <label className="field"><span>{copy.title}</span><input value={draft.title} onChange={(e) => set({ title: e.target.value })} autoFocus /></label>
         <label className="field"><span>{copy.notes}</span><textarea value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></label>
         <label className="check">
-          <input type="checkbox" checked={draft.allDay} onChange={(e) => set({ allDay: e.target.checked, startLocal: '', endLocal: '' })} />
+          <input type="checkbox" checked={draft.allDay} onChange={(e) => toggleAllDay(e.target.checked)} />
           {copy.allDay}
         </label>
         <div className="grid-2">

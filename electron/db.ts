@@ -264,6 +264,7 @@ function writeSchedule(id: string, draft: ItemDraft, keepAlert: boolean) {
 export function saveItem(draft: ItemDraft): Item {
   const title = draft.title.trim();
   if (!title) throw new Error('title');
+  const color = /^#[0-9a-fA-F]{6}$/.test((draft.color || '').trim()) ? draft.color.trim() : '';
   if (draft.kind === 'event' && !draft.startLocal) throw new Error('date');
   if (draft.startLocal && draft.endLocal) {
     const start = parseLocal(draft.startLocal, draft.allDay);
@@ -271,7 +272,7 @@ export function saveItem(draft: ItemDraft): Item {
     if (end.getTime() < start.getTime()) throw new Error('end');
   }
   const id = draft.id || crypto.randomUUID();
-  writeSchedule(id, { ...draft, title }, true);
+  writeSchedule(id, { ...draft, title, color }, true);
   saveSoon();
   return mapItem(queryGet('SELECT * FROM items WHERE id = ?', [id]));
 }

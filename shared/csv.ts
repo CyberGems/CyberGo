@@ -116,6 +116,12 @@ function asFreq(value: string): Freq | null {
   return null;
 }
 
+/** Only #rrggbb or empty. Anything else becomes empty so a crafted CSV cannot inject CSS. */
+export function sanitizeColor(value: string): string {
+  const v = value.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v : '';
+}
+
 export function itemToCsvRow(item: Item, groups: Group[]): Record<string, string> {
   const group = groups.find((g) => g.id === item.groupId);
   const start = item.allDay ? (item.startAt ? localDate(item.startAt) : '') : localStamp(item.startAt);
@@ -174,7 +180,7 @@ export function rowToDraft(row: Record<string, string>, groups: Group[]): { draf
     startLocal: startRaw ? startRaw.replace(' ', 'T') : null,
     endLocal: endRaw ? endRaw.replace(' ', 'T') : null,
     importance: asImportance(row.importance || ''),
-    color: (row.color || '').trim(),
+    color: sanitizeColor(row.color || ''),
     groupId: existing?.id ?? null,
     recurrence: freq ? { freq, interval, until: until || null } : null,
     remindMinutes: remind,
