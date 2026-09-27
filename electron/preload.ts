@@ -39,6 +39,7 @@ export interface CyberGoAPI {
   openDataFolder: () => Promise<string>;
   exportCsv: () => Promise<boolean>;
   importCsv: () => Promise<CsvResult | null>;
+  importIcs: () => Promise<CsvResult | null>;
   onDataChanged: (cb: () => void) => () => void;
   onQuickAddFocus: (cb: () => void) => () => void;
   onReminderUpdate: (cb: (payload: { sound: boolean; pulseIds: string[] }) => void) => () => void;
@@ -84,6 +85,7 @@ const api: CyberGoAPI = {
   openDataFolder: () => ipcRenderer.invoke('data:open-folder'),
   exportCsv: () => ipcRenderer.invoke('csv:export'),
   importCsv: () => ipcRenderer.invoke('csv:import'),
+  importIcs: () => ipcRenderer.invoke('ics:import'),
   onDataChanged: (cb) => {
     const listener = () => cb();
     ipcRenderer.on('data:changed', listener);

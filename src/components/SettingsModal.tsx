@@ -221,8 +221,10 @@ export default function SettingsModal({
               <button className="btn" onClick={() => void api.openDataFolder()}>{copy.openFolder}</button>
               <button className="btn" onClick={() => void api.exportCsv()}>{copy.exportCsv}</button>
               <button className="btn" onClick={() => void api.importCsv().then((result) => result && setMessage(`${copy.imported}: ${result.added}${result.errors.length ? ` (${result.errors.length})` : ''}`))}>{copy.importCsv}</button>
+              <button className="btn" onClick={() => void api.importIcs().then((result) => result && setMessage(`${copy.imported}: ${result.added}${result.errors.length ? ` (${result.errors.length})` : ''}`))}>{copy.importIcs}</button>
             </div>
             <p className="hint">{copy.csvHelp}</p>
+            <p className="hint">{copy.icsHelp}</p>
             <p className="hint">{copy.preRestore}</p>
             {backups.length === 0 && <p className="hint">{copy.noBackups}</p>}
             {backups.map((backup) => (

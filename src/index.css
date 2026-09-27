@@ -111,7 +111,9 @@ button { cursor: pointer; }
 .statusbar {
   height: 28px; border-top: 1px solid var(--border); display: flex; align-items: center;
   padding: 0 14px; color: var(--text-muted); font-size: 12px; background: var(--bg-sidebar);
+  gap: 8px;
 }
+.streak { display: inline-flex; align-items: center; gap: 4px; }
 
 .search {
   height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--border);

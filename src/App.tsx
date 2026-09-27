@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, CalendarDays, Command, List, Lock, Plus, Settings, Trash2 } from 'lucide-react';
+import { Bell, CalendarDays, Command, Flame, List, Lock, Plus, Settings, Trash2 } from 'lucide-react';
 import type { Bootstrap, Item, ItemDraft } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf } from './i18n';
 import { matchesFilter, sortItems, type FilterId } from './lib/view';
+import { computeStats } from './lib/stats';
 import { applyTheme } from './themes';
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
@@ -128,6 +129,7 @@ function MainApp() {
     return sortItems(filtered, filter);
   }, [items, filter, groupId, query]);
   const selected = items.find((item) => item.id === selectedId) ?? null;
+  const stats = useMemo(() => computeStats(items.map((item) => item.completedAt)), [items]);
 
   useModalKeys(!!confirm, {
     esc: () => setConfirm(null),
@@ -233,7 +235,14 @@ function MainApp() {
           )}
         </section>
       </div>
-      <footer className="statusbar">{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</footer>
+      <footer className="statusbar">
+        <span>{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</span>
+        <span className="grow" />
+        <span className="streak" title={`${stats.doneWeek} ${copy.streakWeek}`}>
+          <Flame size={12} />
+          {stats.streak > 0 ? `${copy.streak}: ${stats.streak}` : copy.streakNone}
+        </span>
+      </footer>
       {editing && (
         <ItemModal
           key={editing === 'new' ? `new-${seed?.title ?? ''}-${seed?.startLocal ?? ''}` : editing.id}

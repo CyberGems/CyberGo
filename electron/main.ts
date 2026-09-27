@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
+import { parseIcs } from '../shared/ics';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { normalizeAuthSecret } from '../shared/auth';
 import type { AuthMethod, Item, ItemDraft, PublicSettings } from '../shared/types';
@@ -610,6 +611,38 @@ function registerIpc() {
         added += 1;
       } catch (error) {
         errors.push(`${index + 2}: ${error instanceof Error ? error.message : 'invalid'}`);
+      }
+    });
+    changed();
+    void evaluateReminders('tick');
+    return { added, errors };
+  });
+  ipcMain.handle('ics:import', async () => {
+    const result = mainWindow
+      ? await dialog.showOpenDialog(mainWindow, {
+        filters: [{ name: 'Calendar', extensions: ['ics'] }],
+        properties: ['openFile'],
+      })
+      : await dialog.showOpenDialog({
+        filters: [{ name: 'Calendar', extensions: ['ics'] }],
+        properties: ['openFile'],
+      });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const text = fs.readFileSync(result.filePaths[0], 'utf8');
+    let events;
+    try {
+      events = parseIcs(text);
+    } catch (error) {
+      return { added: 0, errors: [error instanceof Error ? error.message : 'invalid'] };
+    }
+    const errors: string[] = [];
+    let added = 0;
+    events.forEach(({ draft }, index) => {
+      try {
+        db.saveItem(draft);
+        added += 1;
+      } catch (error) {
+        errors.push(`${index + 1}: ${error instanceof Error ? error.message : 'invalid'}`);
       }
     });
     changed();

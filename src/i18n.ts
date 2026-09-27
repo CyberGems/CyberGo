@@ -194,6 +194,11 @@ const es = {
   viewCalendar: 'Calendario',
   calMore: 'más',
   calNewHint: 'Doble clic para crear aquí',
+  importIcs: 'Importar ICS',
+  icsHelp: 'El ICS trae eventos de otros calendarios. Importar agrega, no reemplaza.',
+  streak: 'Racha',
+  streakNone: 'Sin racha',
+  streakWeek: 'esta semana',
 };
 
 const en: typeof es = {
@@ -390,6 +395,11 @@ const en: typeof es = {
   viewCalendar: 'Calendar',
   calMore: 'more',
   calNewHint: 'Double-click to create here',
+  importIcs: 'Import ICS',
+  icsHelp: 'ICS brings events from other calendars. Import adds, it does not replace.',
+  streak: 'Streak',
+  streakNone: 'No streak',
+  streakWeek: 'this week',
 };
 
 export type Copy = typeof es;
