@@ -185,6 +185,11 @@ const es = {
   pickerToday: 'Hoy',
   pickerClear: 'Borrar',
   pickDate: 'Elegir fecha',
+  cmdSearch: 'Escribe un comando o busca',
+  cmdActions: 'Acciones',
+  cmdGo: 'Ir a',
+  cmdItems: 'Elementos',
+  cmdEmpty: 'Sin resultados',
 };
 
 const en: typeof es = {
@@ -372,6 +377,11 @@ const en: typeof es = {
   pickerToday: 'Today',
   pickerClear: 'Clear',
   pickDate: 'Choose date',
+  cmdSearch: 'Type a command or search',
+  cmdActions: 'Actions',
+  cmdGo: 'Go to',
+  cmdItems: 'Items',
+  cmdEmpty: 'No results',
 };
 
 export type Copy = typeof es;

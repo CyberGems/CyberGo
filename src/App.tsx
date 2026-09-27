@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, Lock, Plus, Settings, Trash2 } from 'lucide-react';
+import { Bell, Command, Lock, Plus, Settings, Trash2 } from 'lucide-react';
 import type { Bootstrap, Item, ItemDraft } from '@shared/types';
 import { copyOf } from './i18n';
 import { matchesFilter, sortItems, type FilterId } from './lib/view';
@@ -8,6 +8,7 @@ import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import ItemTable from './components/ItemTable';
 import ItemModal from './components/ItemModal';
+import CommandPalette from './components/CommandPalette';
 import QuickAdd from './components/QuickAdd';
 import SettingsModal from './components/SettingsModal';
 import LockScreen from './components/LockScreen';
@@ -33,6 +34,7 @@ function MainApp() {
   const [editing, setEditing] = useState<Item | null | 'new'>(null);
   const [seed, setSeed] = useState<ItemDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [confirm, setConfirm] = useState<null | { title: string; body: string; danger?: boolean; run: () => void }>(null);
 
   async function reload() {
@@ -57,6 +59,34 @@ function MainApp() {
     });
     return () => { off(); open(); focusQuick(); };
   }, []);
+
+  useEffect(() => {
+    function keys(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener('keydown', keys);
+    return () => document.removeEventListener('keydown', keys);
+  }, []);
+
+  function newFromPalette(kind: 'event' | 'task') {
+    setSeed({
+      kind,
+      title: '',
+      notes: '',
+      allDay: false,
+      startLocal: '',
+      endLocal: '',
+      importance: 'normal',
+      color: '',
+      groupId,
+      recurrence: null,
+      remindMinutes: 0,
+    });
+    setEditing('new');
+  }
 
   const copy = copyOf(boot?.settings.language || 'es');
   const items = boot?.items ?? [];
@@ -101,6 +131,7 @@ function MainApp() {
           <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt} onClick={() => selected && void api.completeItem(selected.id)}>{copy.done}</button>
           <button className="btn" onClick={() => void api.showReminders()}><Bell size={14} />{copy.reminders}</button>
           <input className="search" placeholder={copy.search} value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button className="icon-btn" title="Ctrl+K" onClick={() => setPaletteOpen(true)}><Command size={15} /></button>
           <button className="icon-btn" title={copy.lock} onClick={() => void api.lock()}><Lock size={15} /></button>
           <button className="icon-btn" title={copy.settings} onClick={() => setSettingsOpen(true)}><Settings size={15} /></button>
         </div>
@@ -180,6 +211,20 @@ function MainApp() {
           hasPassword={boot.hasPassword}
           onClose={() => setSettingsOpen(false)}
           onLock={() => { setSettingsOpen(false); void api.lock(); }}
+        />
+      )}
+      {paletteOpen && (
+        <CommandPalette
+          copy={copy}
+          lang={boot.settings.language}
+          items={items}
+          onClose={() => setPaletteOpen(false)}
+          onOpenItem={(item) => { setSelectedId(item.id); setEditing(item); }}
+          onNew={newFromPalette}
+          onGoFilter={(next) => { setFilter(next); setGroupId(null); }}
+          onShowReminders={() => void api.showReminders()}
+          onLock={() => void api.lock()}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       )}
       {confirm && (

@@ -378,3 +378,47 @@ button { cursor: pointer; }
   border-top: 1px solid var(--border);
   padding: 4px 8px;
 }
+
+.palette-backdrop { align-items: flex-start; }
+.palette {
+  width: min(560px, calc(100% - 32px));
+  margin-top: 12vh;
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.palette input {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  padding: 12px 14px;
+  outline: none;
+  font-size: 14px;
+}
+.palette-list { max-height: 320px; overflow: auto; padding: 6px; }
+.palette-group {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 8px 4px;
+}
+.palette-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  text-align: left;
+  color: var(--text-primary);
+}
+.palette-row.selected { background: var(--bg-active); }
+.palette-empty { padding: 16px; text-align: center; color: var(--text-muted); }
