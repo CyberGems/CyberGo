@@ -152,7 +152,7 @@ export default function QuickAdd({
                 ref={inputRef}
                 value={text}
                 aria-label={copy.quickHint}
-                placeholder={!text && !exampleOn ? copy.quickPlaceholder : ''}
+                placeholder=""
                 onChange={(event) => {
                   const next = event.target.value;
                   setText(next);

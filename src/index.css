@@ -810,6 +810,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   border-color: var(--border-strong);
   background: var(--bg-input);
 }
+.quick-ghost { left: 12px; right: 12px; height: 38px; }
 .quick-row input:hover { border-color: var(--border-focus); }
 .quick-row .btn { min-height: 38px; }
 .quick-presets { gap: 6px; }
