@@ -729,6 +729,25 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   justify-content: space-between;
   gap: 12px;
 }
+.quick-heading-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+.quick-heading-toggle:hover .quick-title-copy strong { color: var(--accent-light); }
+.quick-heading-toggle:focus-visible { outline-offset: 4px; }
+.quick-heading-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.quick-collapse { flex-shrink: 0; }
+.quick-content { display: flex; flex-direction: column; gap: 10px; }
+.quick.collapsed { gap: 0; }
 .quick-title {
   display: flex;
   align-items: center;
