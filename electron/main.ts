@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, shell, Tray } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, shell, Tray } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import { itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { normalizeAuthSecret } from '../shared/auth';
-import type { AuthMethod, ItemDraft, PublicSettings } from '../shared/types';
+import type { AuthMethod, Item, ItemDraft, PublicSettings } from '../shared/types';
 import * as db from './db';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -205,6 +205,36 @@ function hideReminders() {
   if (reminderWindow && !reminderWindow.isDestroyed() && reminderWindow.isVisible()) reminderWindow.hide();
 }
 
+/** Native Windows toast as a fallback for the floating window. Click opens reminders, buttons act directly. */
+function toastFor(fresh: Item[]) {
+  if (!fresh.length || !Notification.isSupported()) return;
+  const settings = db.readSettings(locale());
+  const es = locale() === 'es';
+  const title = fresh.length === 1
+    ? fresh[0].title
+    : es ? `${fresh.length} avisos pendientes` : `${fresh.length} pending reminders`;
+  const note = new Notification({
+    title: `CyberGo: ${title}`,
+    body: es ? 'Clic para ver los avisos' : 'Click to view reminders',
+    silent: !settings.soundEnabled,
+    icon: fromPublic('icon.png'),
+    actions: [
+      { type: 'button', text: es ? 'Abrir' : 'Open' },
+      { type: 'button', text: es ? 'Descartar' : 'Dismiss' },
+    ],
+  });
+  note.on('click', () => void evaluateReminders('show'));
+  note.on('action', (_event, index) => {
+    if (index === 0) {
+      void evaluateReminders('show');
+      return;
+    }
+    for (const item of fresh) db.dismissItem(item.id);
+    afterReminderChange();
+  });
+  note.show();
+}
+
 async function evaluateReminders(reason: 'tick' | 'unlock' | 'show') {
   const settings = db.readSettings(locale());
   if (sessionLocked && settings.lockLevel === 'hard') {
@@ -225,6 +255,7 @@ async function evaluateReminders(reason: 'tick' | 'unlock' | 'show') {
     focus: reason === 'show',
   });
   if (fresh.length) db.markAlerted(fresh.map((item) => item.id));
+  if (reason === 'tick' && fresh.length) toastFor(fresh);
 }
 
 function changed() {
