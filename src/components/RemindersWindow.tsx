@@ -5,6 +5,7 @@ import { duePhrase } from '../lib/format';
 import { playAlert, stopAlert } from '../lib/sound';
 import { applyTheme } from '../themes';
 import TitleBar from './TitleBar';
+import TextContextMenu from './TextContextMenu';
 import { BellRing, CheckCircle2, ChevronRight, Clock3, ExternalLink, Timer, VolumeX, X, XCircle } from 'lucide-react';
 
 export default function RemindersWindow() {
@@ -128,6 +129,7 @@ export default function RemindersWindow() {
           </>
         )}
       </div>
+      <TextContextMenu copy={copy} />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import QuickAdd from './components/QuickAdd';
 import SettingsModal from './components/SettingsModal';
 import LockScreen from './components/LockScreen';
 import RemindersWindow from './components/RemindersWindow';
+import TextContextMenu from './components/TextContextMenu';
 import { EnterGlyph, EscHint, useModalKeys } from './components/ModalKeys';
 
 export default function App() {
@@ -162,10 +163,18 @@ function MainApp() {
   }
 
   if (!boot) return <div className="boot" />;
-  if (boot.locked) return <LockScreen copy={copy} hint={boot.settings.passwordHint} method={boot.settings.authMethod} hasPassword={boot.hasPassword} />;
+  if (boot.locked) {
+    return (
+      <>
+        <LockScreen copy={copy} hint={boot.settings.passwordHint} method={boot.settings.authMethod} hasPassword={boot.hasPassword} />
+        <TextContextMenu copy={copy} />
+      </>
+    );
+  }
 
   return (
-    <div className="app">
+    <>
+      <div className="app">
       <TitleBar
         title={<><span>Cyber</span>Go</>}
         windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, close: copy.closeWindow }}
@@ -334,6 +343,8 @@ function MainApp() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+      <TextContextMenu copy={copy} />
+    </>
   );
 }
