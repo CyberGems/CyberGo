@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, shell, Tray } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, shell, Tray } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -75,6 +75,13 @@ function showMain() {
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
+}
+
+/** Global quick capture: bring the app up and land the cursor in the QuickAdd field. */
+function quickCapture() {
+  showMain();
+  if (!mainWindow || sessionLocked) return;
+  mainWindow.webContents.send('quick-add:focus');
 }
 
 let trayToggleAt = 0;
@@ -303,6 +310,7 @@ function createTray() {
   const es = locale() === 'es';
   const menu = Menu.buildFromTemplate([
     { label: es ? 'Abrir CyberGo' : 'Open CyberGo', click: () => showMain() },
+    { label: es ? 'Captura rápida' : 'Quick capture', accelerator: 'Alt+Shift+G', click: () => quickCapture() },
     { label: es ? 'Avisos' : 'Reminders', click: () => void evaluateReminders('show') },
     { label: es ? 'Bloquear' : 'Lock', click: () => { if (db.hasPassword()) { sessionLocked = true; hideReminders(); changed(); showMain(); } } },
     { type: 'separator' },
@@ -597,6 +605,9 @@ if (!gotLock) {
     registerIpc();
     createMain();
     createTray();
+    if (!globalShortcut.register('Alt+Shift+G', () => quickCapture())) {
+      console.error('CyberGo: could not register the Alt+Shift+G quick-capture hotkey.');
+    }
     setTimeout(() => void evaluateReminders('tick'), 800);
     setInterval(() => void evaluateReminders('tick'), 15_000);
     setInterval(() => maybeAutoBackup(), 60 * 60 * 1000);
@@ -630,4 +641,8 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   quitting = true;
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });

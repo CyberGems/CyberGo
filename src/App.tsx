@@ -52,7 +52,10 @@ function MainApp() {
         if (item) setEditing(item);
       });
     });
-    return () => { off(); open(); };
+    const focusQuick = api.onQuickAddFocus(() => {
+      window.dispatchEvent(new Event('cybergo:focus-quick'));
+    });
+    return () => { off(); open(); focusQuick(); };
   }, []);
 
   const copy = copyOf(boot?.settings.language || 'es');

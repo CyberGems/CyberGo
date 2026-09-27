@@ -54,6 +54,12 @@ export default function QuickAdd({
   const examples = copy.quickExamples;
 
   useEffect(() => {
+    const focus = () => inputRef.current?.focus();
+    window.addEventListener('cybergo:focus-quick', focus);
+    return () => window.removeEventListener('cybergo:focus-quick', focus);
+  }, []);
+
+  useEffect(() => {
     if (text.trim()) return;
     let fade = 0;
     const tick = window.setInterval(() => {

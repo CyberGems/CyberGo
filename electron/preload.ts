@@ -40,6 +40,7 @@ export interface CyberGoAPI {
   exportCsv: () => Promise<boolean>;
   importCsv: () => Promise<CsvResult | null>;
   onDataChanged: (cb: () => void) => () => void;
+  onQuickAddFocus: (cb: () => void) => () => void;
   onReminderUpdate: (cb: (payload: { sound: boolean; pulseIds: string[] }) => void) => () => void;
   onOpenItem: (cb: (id: string) => void) => () => void;
   onMaximized: (cb: (value: boolean) => void) => () => void;
@@ -97,6 +98,11 @@ const api: CyberGoAPI = {
     const listener = (_e: unknown, id: string) => cb(id);
     ipcRenderer.on('open-item', listener);
     return () => ipcRenderer.removeListener('open-item', listener);
+  },
+  onQuickAddFocus: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on('quick-add:focus', listener);
+    return () => ipcRenderer.removeListener('quick-add:focus', listener);
   },
   onMaximized: (cb) => {
     const listener = (_e: unknown, value: boolean) => cb(value);
