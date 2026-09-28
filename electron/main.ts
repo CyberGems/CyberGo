@@ -34,6 +34,10 @@ let quitting = false;
 let pendingNavigate: string | null = null;
 let failCount = 0;
 let failUntil = 0;
+const REMINDER_DEFAULT_WIDTH = 380;
+const REMINDER_DEFAULT_HEIGHT = 460;
+const REMINDER_MIN_WIDTH = 340;
+const REMINDER_MIN_HEIGHT = 380;
 const locale = () => (app.getLocale().toLowerCase().startsWith('es') ? 'es' : 'en') as 'es' | 'en';
 
 function fromPublic(rel: string): string {
@@ -295,10 +299,10 @@ async function showReminderWindow(
   const always = activeSettings.reminderAlwaysOnTop;
   if (!reminderWindow || reminderWindow.isDestroyed()) {
     reminderWindow = new BrowserWindow({
-      width: 440,
-      height: 560,
-      minWidth: 360,
-      minHeight: 420,
+      width: REMINDER_DEFAULT_WIDTH,
+      height: REMINDER_DEFAULT_HEIGHT,
+      minWidth: REMINDER_MIN_WIDTH,
+      minHeight: REMINDER_MIN_HEIGHT,
       show: false,
       frame: false,
       alwaysOnTop: always,

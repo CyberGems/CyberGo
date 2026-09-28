@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Download,
+  Eye,
   FileSpreadsheet,
   FolderOpen,
   HardDrive,
@@ -18,6 +19,7 @@ import {
   ShieldCheck,
   Trash2,
   Upload,
+  Volume2,
   X,
 } from 'lucide-react';
 import type { Copy } from '../i18n';
@@ -431,6 +433,7 @@ export default function SettingsModal({
                 className="btn btn-primary"
                 onClick={() => void playAlert(settings.soundPath || builtInSoundUrl())}
               >
+                <Volume2 size={14} />
                 {copy.testSound}
               </button>
             </div>
@@ -495,7 +498,7 @@ export default function SettingsModal({
                   </div>
                 </div>
                 <button className="btn btn-primary notification-preview-btn" disabled={previewing} onClick={() => void previewReminderPlacement()}>
-                  {previewing ? <LoaderCircle className="spin" size={15} /> : <BellRing size={15} />}
+                  {previewing ? <LoaderCircle className="spin" size={15} /> : <Eye size={15} />}
                   {previewing ? copy.previewingNotification : copy.previewNotification}
                 </button>
               </div>
