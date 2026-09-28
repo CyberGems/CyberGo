@@ -108,6 +108,9 @@ export interface AccessLogEntry {
 export interface CsvResult {
   added: number;
   errors: string[];
+  total?: number;
+  fileName?: string;
+  format?: 'cybergo' | 'legacy' | 'unknown' | 'ics';
 }
 
 export const SWATCHES = [

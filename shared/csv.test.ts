@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { itemToCsvRow, parseCsv, rowToDraft, toCsv } from './csv';
+import { detectCsvFormat, itemToCsvRow, parseCsv, rowToDraft, toCsv } from './csv';
 import type { Group, Item } from './types';
 
 const group: Group = {
@@ -57,4 +57,35 @@ test('unknown group name is reported so the importer can create it', () => {
   const { draft, newGroupName } = rowToDraft(rows[0], []);
   assert.equal(draft.title, 'Respaldos');
   assert.equal(newGroupName, 'Trabajo');
+});
+
+test('legacy calendar CSV rows are imported with dates, reminders and recurrence', () => {
+  const csv = [
+    '"Start Date","Start Time","End Date","End Time","Reminder On/Off","Reminder Date","Reminder Time",Recurrence,Importance,Subject,Location,Comment,Group',
+    '27/09/2026,"9:30 AM",27/09/2026,"2:00 PM",Yes,27/09/2026,"9:00 AM","every day effective 25/02/2024 from 9:30 AM to 2:00 PM.",Normal,"TOMAR SOL",,, "Default Group"',
+  ].join('\n');
+  const rows = parseCsv(csv);
+  assert.equal(detectCsvFormat(rows), 'legacy');
+  const { draft, newGroupName } = rowToDraft(rows[0], []);
+  assert.equal(draft.title, 'TOMAR SOL');
+  assert.equal(draft.startLocal, '2026-09-27T09:30');
+  assert.equal(draft.endLocal, '2026-09-27T14:00');
+  assert.equal(draft.recurrence?.freq, 'daily');
+  assert.equal(draft.remindMinutes, 30);
+  assert.equal(newGroupName, 'Default Group');
+});
+
+test('legacy all-day rows and monthly day are preserved', () => {
+  const csv = [
+    '"Start Date","Start Time","End Date","End Time","Reminder On/Off","Reminder Date","Reminder Time",Recurrence,Importance,Subject,Location,Comment,Group',
+    '30/09/2026,"12:00 AM",1/10/2026,"12:00 AM",Yes,28/09/2026,"12:00 AM","the 30th of every month effective 30/04/2024.",Normal,"RESPALDO DISTRI",,, "Default Group"',
+  ].join('\n');
+  const rows = parseCsv(csv);
+  const { draft } = rowToDraft(rows[0], []);
+  assert.equal(draft.allDay, true);
+  assert.equal(draft.startLocal, '2026-09-30');
+  assert.equal(draft.endLocal, '2026-10-01');
+  assert.equal(draft.recurrence?.freq, 'monthly');
+  assert.equal(draft.recurrence?.dayOfMonth, 30);
+  assert.equal(draft.remindMinutes, 2880);
 });

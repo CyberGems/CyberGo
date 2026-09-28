@@ -1,7 +1,22 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, CircleAlert, KeyRound, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  Archive,
+  CheckCircle2,
+  CircleAlert,
+  Download,
+  FileSpreadsheet,
+  FolderOpen,
+  HardDrive,
+  Info,
+  KeyRound,
+  LoaderCircle,
+  ShieldCheck,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import type { Copy } from '../i18n';
-import type { AccessLogEntry, AccessLogEvent, AccessLogMethod, AuthMethod, PublicSettings } from '@shared/types';
+import type { AccessLogEntry, AccessLogEvent, AccessLogMethod, AuthMethod, BackupInfo, CsvResult, PublicSettings } from '@shared/types';
 import { applyTheme } from '../themes';
 import { playAlert } from '../lib/sound';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
@@ -37,6 +52,47 @@ function formatAccessTime(iso: string, language: 'es' | 'en') {
   }).format(date);
 }
 
+function formatBackupDate(iso: string, language: 'es' | 'en') {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat(language === 'es' ? 'es-ES' : 'en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function formatBytes(bytes: number, language: 'es' | 'en') {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = language === 'es' ? ['KB', 'MB', 'GB'] : ['KB', 'MB', 'GB'];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
+}
+
+function importErrorLabel(copy: Copy, error: string) {
+  const match = /^(?:row\s+(\d+):\s*)?(.+)$/.exec(error);
+  const row = match?.[1];
+  const code = match?.[2] ?? error;
+  const labels: Record<string, string> = {
+    read: copy.dataReadError,
+    'unsupported headers': copy.csvUnsupported,
+    'missing title': copy.csvMissingTitle,
+    'invalid date': copy.csvInvalidDate,
+    'invalid time': copy.csvInvalidTime,
+    end: copy.csvInvalidEnd,
+    invalid: copy.csvInvalidRow,
+  };
+  const text = labels[code] ?? code;
+  return row ? `${copy.csvRow} ${row}: ${text}` : text;
+}
+
+type DataBusy = 'backup' | 'export' | 'csv' | 'ics';
+type DataNotice = { tone: 'success' | 'info' | 'error'; title: string; body?: string; details?: string[] };
+
 export default function SettingsModal({
   copy,
   settings,
@@ -58,11 +114,13 @@ export default function SettingsModal({
   const [next, setNext] = useState('');
   const [message, setMessage] = useState('');
   const [recovery, setRecovery] = useState('');
-  const [backups, setBackups] = useState<{ name: string; createdAt: string; bytes: number }[]>([]);
+  const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [keep, setKeep] = useState(settings.autobackupKeep);
   const [restoreName, setRestoreName] = useState<string | null>(null);
   const [accessLog, setAccessLog] = useState<AccessLogEntry[]>([]);
   const [clearAccessConfirm, setClearAccessConfirm] = useState(false);
+  const [dataBusy, setDataBusy] = useState<DataBusy | null>(null);
+  const [dataNotice, setDataNotice] = useState<DataNotice | null>(null);
 
   useModalKeys(true, {
     esc: () => {
@@ -77,7 +135,11 @@ export default function SettingsModal({
 
   const refreshBackups = () => api.listBackups().then(setBackups);
   const refreshAccessLog = () => api.listAccessLog().then(setAccessLog);
-  useEffect(() => { if (tab === 'data') void refreshBackups(); }, [tab]);
+  useEffect(() => {
+    if (tab === 'data') {
+      void refreshBackups().catch(() => setDataNotice({ tone: 'error', title: copy.dataLoadError }));
+    }
+  }, [tab]);
   useEffect(() => { if (tab === 'security') void refreshAccessLog(); }, [tab]);
 
   async function patch(partial: Partial<PublicSettings>) {
@@ -85,6 +147,76 @@ export default function SettingsModal({
     if (partial.theme) applyTheme(saved.theme);
     if (partial.accessLogEnabled != null) void refreshAccessLog();
     setMessage(copy.saved);
+  }
+
+  async function createBackup() {
+    setDataBusy('backup');
+    setDataNotice(null);
+    try {
+      await api.backupNow();
+      await refreshBackups();
+      setDataNotice({ tone: 'success', title: copy.backupDone, body: copy.backupCreatedBody });
+    } catch {
+      setDataNotice({ tone: 'error', title: copy.backupError });
+    } finally {
+      setDataBusy(null);
+    }
+  }
+
+  async function exportCsv() {
+    setDataBusy('export');
+    setDataNotice(null);
+    try {
+      const exported = await api.exportCsv();
+      setDataNotice(exported
+        ? { tone: 'success', title: copy.exported, body: copy.exportedBody }
+        : { tone: 'info', title: copy.actionCanceled });
+    } catch {
+      setDataNotice({ tone: 'error', title: copy.exportError });
+    } finally {
+      setDataBusy(null);
+    }
+  }
+
+  function importNotice(result: CsvResult, kind: 'csv' | 'ics') {
+    if (result.added === 0 && result.errors.length > 0) {
+      return {
+        tone: 'error' as const,
+        title: kind === 'csv' ? copy.csvImportFailed : copy.icsImportFailed,
+        body: result.errors.length === 1 ? importErrorLabel(copy, result.errors[0]) : `${result.errors.length} ${copy.importErrors}`,
+        details: result.errors.length > 1 ? result.errors.slice(0, 8).map((error) => importErrorLabel(copy, error)) : undefined,
+      };
+    }
+    if (result.errors.length > 0) {
+      return {
+        tone: 'info' as const,
+        title: kind === 'csv' ? copy.csvImportPartial : copy.icsImportPartial,
+        body: `${result.added} ${copy.importedItems} · ${result.errors.length} ${copy.importErrors}`,
+        details: result.errors.slice(0, 8).map((error) => importErrorLabel(copy, error)),
+      };
+    }
+    return {
+      tone: 'success' as const,
+      title: kind === 'csv' ? copy.csvImportSuccess : copy.icsImportSuccess,
+      body: `${result.added} ${copy.importedItems}${result.fileName ? ` · ${result.fileName}` : ''}`,
+    };
+  }
+
+  async function importData(kind: 'csv' | 'ics') {
+    setDataBusy(kind);
+    setDataNotice(null);
+    try {
+      const result = kind === 'csv' ? await api.importCsv() : await api.importIcs();
+      if (!result) {
+        setDataNotice({ tone: 'info', title: copy.actionCanceled });
+      } else {
+        setDataNotice(importNotice(result, kind));
+      }
+    } catch {
+      setDataNotice({ tone: 'error', title: kind === 'csv' ? copy.csvImportFailed : copy.icsImportFailed, body: copy.dataReadError });
+    } finally {
+      setDataBusy(null);
+    }
   }
 
   function explain(error: string) {
@@ -297,33 +429,140 @@ export default function SettingsModal({
         )}
 
         {tab === 'data' && (
-          <>
-            <label className="check">
-              <input type="checkbox" checked={settings.autobackup} onChange={(e) => void patch({ autobackup: e.target.checked })} />
-              {copy.autobackup}
-            </label>
-            <label className="field">
-              <span>{copy.keepLast}</span>
-              <input type="number" min={1} max={60} value={keep} onChange={(e) => setKeep(Number(e.target.value))} onBlur={() => void patch({ autobackupKeep: keep || 7 })} />
-            </label>
-            <div className="row-actions" style={{ justifyContent: 'flex-start' }}>
-              <button className="btn btn-primary" onClick={() => void api.backupNow().then(() => { setMessage(copy.backupDone); void refreshBackups(); })}>{copy.backupNow}</button>
-              <button className="btn" onClick={() => void api.openDataFolder()}>{copy.openFolder}</button>
-              <button className="btn" onClick={() => void api.exportCsv()}>{copy.exportCsv}</button>
-              <button className="btn" onClick={() => void api.importCsv().then((result) => result && setMessage(`${copy.imported}: ${result.added}${result.errors.length ? ` (${result.errors.length})` : ''}`))}>{copy.importCsv}</button>
-              <button className="btn" onClick={() => void api.importIcs().then((result) => result && setMessage(`${copy.imported}: ${result.added}${result.errors.length ? ` (${result.errors.length})` : ''}`))}>{copy.importIcs}</button>
-            </div>
-            <p className="hint">{copy.csvHelp}</p>
-            <p className="hint">{copy.icsHelp}</p>
-            <p className="hint">{copy.preRestore}</p>
-            {backups.length === 0 && <p className="hint">{copy.noBackups}</p>}
-            {backups.map((backup) => (
-              <div className="backup-row" key={backup.name}>
-                <span>{backup.name}</span>
-                <button className="btn" onClick={() => setRestoreName(backup.name)}>{copy.restoreBackup}</button>
+          <div className="data-tab">
+            <div className="data-intro">
+              <div className="data-intro-icon"><HardDrive size={21} /></div>
+              <div>
+                <h3>{copy.dataTitle}</h3>
+                <p>{copy.dataIntro}</p>
               </div>
-            ))}
-          </>
+            </div>
+
+            <section className="data-card">
+              <div className="data-card-heading">
+                <div className="data-card-icon"><Archive size={17} /></div>
+                <div>
+                  <h3>{copy.automaticBackupTitle}</h3>
+                  <p>{copy.automaticBackupHelp}</p>
+                </div>
+              </div>
+              <label className="check data-check">
+                <input type="checkbox" checked={settings.autobackup} onChange={(e) => { setDataNotice(null); void patch({ autobackup: e.target.checked }); }} />
+                <span>{copy.autobackup}</span>
+              </label>
+              <label className="field data-retention">
+                <span>{copy.keepLast}</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={keep}
+                  disabled={!settings.autobackup}
+                  onChange={(e) => setKeep(Number(e.target.value))}
+                  onBlur={() => void patch({ autobackupKeep: keep || 7 })}
+                />
+              </label>
+            </section>
+
+            <section className="data-card">
+              <div className="data-card-heading">
+                <div className="data-card-icon"><ShieldCheck size={17} /></div>
+                <div>
+                  <h3>{copy.dataActionsTitle}</h3>
+                  <p>{copy.dataActionsHelp}</p>
+                </div>
+              </div>
+              <div className="data-action-grid">
+                <button className="data-action data-action-primary" disabled={dataBusy !== null} onClick={() => void createBackup()}>
+                  {dataBusy === 'backup' ? <LoaderCircle className="spin" size={18} /> : <Archive size={18} />}
+                  <span><strong>{copy.backupNow}</strong><small>{copy.backupNowHelp}</small></span>
+                </button>
+                <button
+                  className="data-action"
+                  disabled={dataBusy !== null}
+                  onClick={() => void api.openDataFolder().then(() => setDataNotice({ tone: 'info', title: copy.folderOpened })).catch(() => setDataNotice({ tone: 'error', title: copy.folderError }))}
+                >
+                  <FolderOpen size={18} />
+                  <span><strong>{copy.openFolder}</strong><small>{copy.openFolderHelp}</small></span>
+                </button>
+              </div>
+            </section>
+
+            <section className="data-card">
+              <div className="data-card-heading">
+                <div className="data-card-icon"><FileSpreadsheet size={17} /></div>
+                <div>
+                  <h3>{copy.transferTitle}</h3>
+                  <p>{copy.transferHelp}</p>
+                </div>
+              </div>
+              <div className="data-transfer-grid">
+                <div className="data-transfer">
+                  <Download size={16} />
+                  <div><strong>{copy.exportTitle}</strong><p>{copy.exportHelp}</p></div>
+                  <button className="btn" disabled={dataBusy !== null} onClick={() => void exportCsv()}>
+                    {dataBusy === 'export' ? <LoaderCircle className="spin" size={14} /> : <Download size={14} />}{copy.exportCsv}
+                  </button>
+                </div>
+                <div className="data-transfer">
+                  <Upload size={16} />
+                  <div><strong>{copy.importTitle}</strong><p>{copy.importHelp}</p></div>
+                  <div className="data-transfer-actions">
+                    <button className="btn" disabled={dataBusy !== null} onClick={() => void importData('csv')}>
+                      {dataBusy === 'csv' ? <LoaderCircle className="spin" size={14} /> : <FileSpreadsheet size={14} />}{copy.importCsv}
+                    </button>
+                    <button className="btn" disabled={dataBusy !== null} onClick={() => void importData('ics')}>
+                      {dataBusy === 'ics' ? <LoaderCircle className="spin" size={14} /> : <Upload size={14} />}{copy.importIcs}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p className="data-format-note"><Info size={14} />{copy.csvHelp}</p>
+              <p className="data-format-note"><Info size={14} />{copy.icsHelp}</p>
+            </section>
+
+            {dataNotice && (
+              <div className={`data-notice ${dataNotice.tone}`} role={dataNotice.tone === 'error' ? 'alert' : 'status'} aria-live="polite">
+                <span className="data-notice-icon">
+                  {dataNotice.tone === 'success' ? <CheckCircle2 size={18} /> : dataNotice.tone === 'error' ? <CircleAlert size={18} /> : <Info size={18} />}
+                </span>
+                <div>
+                  <strong>{dataNotice.title}</strong>
+                  {dataNotice.body && <p>{dataNotice.body}</p>}
+                  {dataNotice.details && dataNotice.details.length > 0 && (
+                    <ul>{dataNotice.details.map((detail, index) => <li key={`${detail}-${index}`}>{detail}</li>)}</ul>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <section className="data-card backup-list-card">
+              <div className="data-card-heading backup-list-heading">
+                <div className="data-card-icon"><Archive size={17} /></div>
+                <div>
+                  <h3>{copy.backupListTitle}</h3>
+                  <p>{backups.length ? `${backups.length} ${copy.backupCount}` : copy.noBackups}</p>
+                </div>
+              </div>
+              <p className="data-format-note"><ShieldCheck size={14} />{copy.preRestore}</p>
+              {backups.length === 0 ? (
+                <div className="backup-empty"><Archive size={22} /><span>{copy.noBackupsBody}</span></div>
+              ) : (
+                <div className="backup-list">
+                  {backups.map((backup) => (
+                    <div className="backup-row" key={backup.name}>
+                      <div className="backup-row-icon"><Archive size={16} /></div>
+                      <div className="backup-row-copy">
+                        <strong>{backup.name}</strong>
+                        <span>{formatBackupDate(backup.createdAt, settings.language)} · {formatBytes(backup.bytes, settings.language)}</span>
+                      </div>
+                      <button className="btn" onClick={() => setRestoreName(backup.name)}>{copy.restoreBackup}</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
         )}
 
         {restoreName && (

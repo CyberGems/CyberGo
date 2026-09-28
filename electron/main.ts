@@ -5,7 +5,7 @@ import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
-import { itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
+import { detectCsvFormat, itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
 import { parseIcs } from '../shared/ics';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { normalizeAuthSecret } from '../shared/auth';
@@ -607,8 +607,19 @@ function registerIpc() {
         properties: ['openFile'],
       });
     if (result.canceled || !result.filePaths[0]) return null;
-    const text = fs.readFileSync(result.filePaths[0], 'utf8');
+    const filePath = result.filePaths[0];
+    const fileName = path.basename(filePath);
+    let text: string;
+    try {
+      text = fs.readFileSync(filePath, 'utf8');
+    } catch {
+      return { added: 0, total: 0, fileName, format: 'unknown' as const, errors: ['read'] };
+    }
     const rows = parseCsv(text);
+    const format = detectCsvFormat(rows);
+    if (format === 'unknown') {
+      return { added: 0, total: rows.length, fileName, format, errors: ['unsupported headers'] };
+    }
     const errors: string[] = [];
     let added = 0;
     rows.forEach((row, index) => {
@@ -629,9 +640,11 @@ function registerIpc() {
         errors.push(`${index + 2}: ${error instanceof Error ? error.message : 'invalid'}`);
       }
     });
-    changed();
-    void evaluateReminders('tick');
-    return { added, errors };
+    if (added) {
+      changed();
+      void evaluateReminders('tick');
+    }
+    return { added, total: rows.length, fileName, format, errors };
   });
   ipcMain.handle('ics:import', async () => {
     const result = mainWindow
@@ -644,12 +657,14 @@ function registerIpc() {
         properties: ['openFile'],
       });
     if (result.canceled || !result.filePaths[0]) return null;
-    const text = fs.readFileSync(result.filePaths[0], 'utf8');
+    const filePath = result.filePaths[0];
+    const fileName = path.basename(filePath);
+    const text = fs.readFileSync(filePath, 'utf8');
     let events;
     try {
       events = parseIcs(text);
     } catch (error) {
-      return { added: 0, errors: [error instanceof Error ? error.message : 'invalid'] };
+      return { added: 0, total: 0, fileName, format: 'ics' as const, errors: [error instanceof Error ? error.message : 'invalid'] };
     }
     const errors: string[] = [];
     let added = 0;
@@ -663,7 +678,7 @@ function registerIpc() {
     });
     changed();
     void evaluateReminders('tick');
-    return { added, errors };
+    return { added, total: events.length, fileName, format: 'ics' as const, errors };
   });
 }
 
