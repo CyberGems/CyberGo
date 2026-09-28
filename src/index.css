@@ -85,7 +85,7 @@ button { cursor: pointer; }
 .list-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-list); }
 .list-head, .row {
   display: grid;
-  grid-template-columns: 14px 132px minmax(120px, 160px) 88px minmax(0, 1fr) 72px;
+  grid-template-columns: 14px 132px minmax(120px, 160px) 126px minmax(0, 1fr) 72px;
   gap: 8px; align-items: center; padding: 0 16px;
 }
 .list-head {
@@ -930,7 +930,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .quick-preview svg { color: var(--accent-light); }
 
 .list-head, .row {
-  grid-template-columns: 14px minmax(132px, 1.1fr) minmax(118px, 0.9fr) 104px minmax(180px, 1fr) 76px;
+  grid-template-columns: 14px minmax(132px, 1.1fr) minmax(118px, 0.9fr) 126px minmax(180px, 1fr) 76px;
 }
 .list-head {
   height: 38px;
@@ -968,7 +968,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .date-cell, .time-cell, .row-status { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .date-value { font-variant-numeric: tabular-nums; font-weight: 600; }
 .date-relative, .time-cell span { color: var(--text-muted); font-size: 11px; }
-.row-status { align-items: flex-start; }
+.row-status { align-items: flex-start; min-width: 0; }
 .status-pill, .kind-tag {
   display: inline-flex;
   align-items: center;
@@ -980,6 +980,9 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   color: var(--text-secondary);
   font-size: 11px;
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .status-pill.today { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); color: var(--accent-light); background: var(--accent-dim); }
 .status-pill.overdue { border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); color: var(--danger); background: var(--danger-dim); }
@@ -1176,7 +1179,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   .toolbar .btn-primary { padding-inline: 9px; }
   .search-wrap .search { width: 132px; min-width: 110px; }
   .list-head, .row {
-    grid-template-columns: 14px minmax(112px, 1fr) minmax(92px, 0.8fr) 86px minmax(120px, 1fr) 64px;
+    grid-template-columns: 14px minmax(112px, 1fr) minmax(92px, 0.8fr) 112px minmax(120px, 1fr) 64px;
   }
   .date-relative, .kind-tag { display: none; }
 }
@@ -1194,7 +1197,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   .list-head { display: none; }
   .rows { margin-top: 16px; border-top: 1px solid var(--border); border-radius: var(--radius-md); }
   .row {
-    grid-template-columns: 12px minmax(100px, 1fr) 82px minmax(100px, 1fr);
+    grid-template-columns: 12px minmax(100px, 1fr) 110px minmax(100px, 1fr);
     gap: 7px;
   }
   .row > .time-cell { display: none; }
