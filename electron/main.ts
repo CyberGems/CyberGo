@@ -38,7 +38,7 @@ const REMINDER_DEFAULT_WIDTH = 380;
 const REMINDER_DEFAULT_HEIGHT = 460;
 const REMINDER_MIN_WIDTH = 340;
 const REMINDER_MIN_HEIGHT = 380;
-const REMINDER_PREVIEW_DURATION = 4_000;
+const REMINDER_PREVIEW_DURATION = 3_000;
 const locale = () => (app.getLocale().toLowerCase().startsWith('es') ? 'es' : 'en') as 'es' | 'en';
 
 function fromPublic(rel: string): string {
