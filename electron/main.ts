@@ -1,16 +1,17 @@
 import crypto from 'crypto';
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, shell, Tray } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, shell, Tray } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
-import { itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
+import { detectCsvFormat, itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
 import { parseIcs } from '../shared/ics';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { normalizeAuthSecret } from '../shared/auth';
-import type { AuthMethod, Item, ItemDraft, PublicSettings } from '../shared/types';
+import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition } from '../shared/types';
 import * as db from './db';
+import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verify = process.env.CYBERGO_VERIFY === '1';
@@ -26,6 +27,7 @@ if (verify) {
 
 let mainWindow: BrowserWindow | null = null;
 let reminderWindow: BrowserWindow | null = null;
+let reminderPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 let tray: Tray | null = null;
 let sessionLocked = false;
 let quitting = false;
@@ -121,6 +123,93 @@ function backupsDir() {
   return dir;
 }
 
+function readMainWindowState(): SavedWindowBounds {
+  const raw = db.getSetting('main_window_state');
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as SavedWindowBounds;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistMainWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible() || mainWindow.isMinimized()) return;
+  try {
+    const live = mainWindow.getBounds();
+    const matching = screen.getDisplayMatching(live);
+    const normal = mainWindow.isMaximized() ? mainWindow.getNormalBounds() : live;
+    const resolved = resolveWindowBounds(
+      { ...normal, displayId: matching.id, maximized: mainWindow.isMaximized() },
+      screen.getAllDisplays(),
+      screen.getPrimaryDisplay(),
+    );
+    db.setSetting('main_window_state', JSON.stringify({
+      x: resolved.x,
+      y: resolved.y,
+      width: resolved.width,
+      height: resolved.height,
+      displayId: matching.id,
+      maximized: mainWindow.isMaximized(),
+    }));
+  } catch (error) {
+    console.error('CyberGo: could not save main window state.', error);
+  }
+}
+
+function displayInfoList(): DisplayInfo[] {
+  const primary = screen.getPrimaryDisplay();
+  const displays = screen.getAllDisplays();
+  const es = locale() === 'es';
+  return [
+    ...displays.filter((display) => display.id === primary.id),
+    ...displays.filter((display) => display.id !== primary.id),
+  ].map((display, index) => ({
+    id: display.id,
+    label: `${es ? 'Pantalla' : 'Display'} ${index + 1} · ${display.bounds.width}×${display.bounds.height}${display.id === primary.id ? ` (${es ? 'Principal' : 'Primary'})` : ''}`,
+    isPrimary: display.id === primary.id,
+    ...display.bounds,
+    workArea: display.workArea,
+  }));
+}
+
+function sameDisplayBounds(a: DisplayBounds | null, b: DisplayBounds): boolean {
+  return !!a && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
+function resolveReminderDisplay(settings: PublicSettings) {
+  const displays = screen.getAllDisplays();
+  const primary = screen.getPrimaryDisplay();
+  if (settings.reminderDisplayId === -1) {
+    return screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  }
+  const byBounds = displays.find((display) => sameDisplayBounds(settings.reminderDisplayBounds, display.bounds));
+  if (byBounds) return byBounds;
+  return displays.find((display) => display.id === settings.reminderDisplayId) ?? primary;
+}
+
+function positionReminderWindow(win: BrowserWindow, settings: PublicSettings) {
+  const display = resolveReminderDisplay(settings);
+  const area = display.workArea || display.bounds;
+  const bounds = win.getBounds();
+  const marginX = 16;
+  const marginY = 16;
+  const positions: Record<ReminderPosition, { x: number; y: number }> = {
+    'top-left': { x: area.x + marginX, y: area.y + marginY },
+    'top-center': { x: area.x + Math.round((area.width - bounds.width) / 2), y: area.y + marginY },
+    'top-right': { x: area.x + area.width - bounds.width - marginX, y: area.y + marginY },
+    'bottom-left': { x: area.x + marginX, y: area.y + area.height - bounds.height - marginY },
+    'bottom-center': { x: area.x + Math.round((area.width - bounds.width) / 2), y: area.y + area.height - bounds.height - marginY },
+    'bottom-right': { x: area.x + area.width - bounds.width - marginX, y: area.y + area.height - bounds.height - marginY },
+  };
+  const target = positions[settings.reminderPosition] ?? positions['bottom-right'];
+  const x = Math.min(area.x + Math.max(0, area.width - bounds.width), Math.max(area.x, target.x));
+  const y = Math.min(area.y + Math.max(0, area.height - bounds.height), Math.max(area.y, target.y));
+  win.setBounds({ ...bounds, x, y }, false);
+  if (process.platform === 'win32') win.setPosition(x, y, false);
+}
+
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
@@ -163,8 +252,47 @@ function listBackups() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-async function showReminderWindow(opts: { sound: boolean; pulseIds: string[]; focus?: boolean }) {
-  const always = db.readSettings(locale()).reminderAlwaysOnTop;
+function previewReminderItems(): Item[] {
+  const now = new Date();
+  const make = (id: string, title: string, offsetMinutes: number, kind: Item['kind']): Item => {
+    const at = new Date(now.getTime() + offsetMinutes * 60_000).toISOString();
+    return {
+      id,
+      kind,
+      title,
+      notes: '',
+      allDay: false,
+      startAt: at,
+      endAt: null,
+      importance: 'normal',
+      color: '',
+      groupId: null,
+      recurrence: null,
+      remindMinutes: 0,
+      occurrenceAt: at,
+      nextFireAt: at,
+      snoozeUntil: null,
+      alertKey: null,
+      completedAt: null,
+      deletedAt: null,
+      remoteId: null,
+      syncRev: 0,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+  };
+  return [
+    make('preview-reminder-1', locale() === 'es' ? 'Revisar el informe semanal' : 'Review the weekly report', 20, 'task'),
+    make('preview-reminder-2', locale() === 'es' ? 'Llamar a Laura' : 'Call Laura', 90, 'event'),
+  ];
+}
+
+async function showReminderWindow(
+  opts: { sound: boolean; pulseIds: string[]; focus?: boolean },
+  preview?: { items: Item[]; settings: PublicSettings },
+) {
+  const activeSettings = preview?.settings ?? db.readSettings(locale());
+  const always = activeSettings.reminderAlwaysOnTop;
   if (!reminderWindow || reminderWindow.isDestroyed()) {
     reminderWindow = new BrowserWindow({
       width: 440,
@@ -182,7 +310,6 @@ async function showReminderWindow(opts: { sound: boolean; pulseIds: string[]; fo
         nodeIntegration: false,
       },
     });
-    reminderWindow.setAlwaysOnTop(always, 'floating');
     reminderWindow.on('close', (event) => {
       if (quitting) return;
       event.preventDefault();
@@ -192,17 +319,37 @@ async function showReminderWindow(opts: { sound: boolean; pulseIds: string[]; fo
     if (dev) await reminderWindow.loadURL(dev + '#/reminders');
     else await reminderWindow.loadFile(path.join(here, '../dist/index.html'), { hash: '/reminders' });
   }
+  reminderWindow.setAlwaysOnTop(always, 'floating');
+  positionReminderWindow(reminderWindow, activeSettings);
+  if (reminderPreviewTimer) {
+    clearTimeout(reminderPreviewTimer);
+    reminderPreviewTimer = null;
+  }
+  if (preview) {
+    reminderPreviewTimer = setTimeout(() => {
+      reminderPreviewTimer = null;
+      if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.hide();
+    }, 8_000);
+  }
   const send = () => {
     if (!reminderWindow || reminderWindow.isDestroyed()) return;
-    reminderWindow.webContents.send('reminder:update', opts);
+    if (preview) reminderWindow.webContents.send('reminder:preview', preview);
+    else reminderWindow.webContents.send('reminder:update', opts);
   };
-  if (reminderWindow.webContents.isLoading()) reminderWindow.webContents.once('did-finish-load', send);
+  if (reminderWindow.webContents.isLoading()) {
+    reminderWindow.webContents.once('did-finish-load', () => setTimeout(send, 80));
+  }
   else send();
   if (opts.focus) reminderWindow.show();
   else reminderWindow.showInactive();
+  positionReminderWindow(reminderWindow, activeSettings);
 }
 
 function hideReminders() {
+  if (reminderPreviewTimer) {
+    clearTimeout(reminderPreviewTimer);
+    reminderPreviewTimer = null;
+  }
   if (reminderWindow && !reminderWindow.isDestroyed() && reminderWindow.isVisible()) reminderWindow.hide();
 }
 
@@ -305,11 +452,18 @@ function noteSuccess() {
 }
 
 function createMain() {
+  const startup = resolveWindowBounds(
+    readMainWindowState(),
+    screen.getAllDisplays(),
+    screen.getPrimaryDisplay(),
+  );
   mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 760,
-    minWidth: 900,
-    minHeight: 600,
+    x: startup.x,
+    y: startup.y,
+    width: startup.width,
+    height: startup.height,
+    minWidth: MAIN_MIN_WIDTH,
+    minHeight: MAIN_MIN_HEIGHT,
     show: false,
     frame: false,
     backgroundColor: '#0c0c12',
@@ -320,14 +474,33 @@ function createMain() {
       nodeIntegration: false,
     },
   });
+  let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  const schedulePersist = () => {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      persistTimer = null;
+      persistMainWindowState();
+    }, 350);
+  };
   mainWindow.on('close', (event) => {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistMainWindowState();
     if (quitting) return;
     event.preventDefault();
     mainWindow?.hide();
   });
-  mainWindow.on('maximize', () => mainWindow?.webContents.send('window:maximized', true));
-  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window:maximized', false));
+  mainWindow.on('move', schedulePersist);
+  mainWindow.on('resize', schedulePersist);
+  mainWindow.on('maximize', () => {
+    persistMainWindowState();
+    mainWindow?.webContents.send('window:maximized', true);
+  });
+  mainWindow.on('unmaximize', () => {
+    persistMainWindowState();
+    mainWindow?.webContents.send('window:maximized', false);
+  });
   mainWindow.once('ready-to-show', () => {
+    if (startup.maximized && !mainWindow?.isMaximized()) mainWindow?.maximize();
     mainWindow?.show();
   });
   const dev = process.env.VITE_DEV_SERVER_URL;
@@ -390,6 +563,13 @@ function registerIpc() {
     if (patch.reminderAlwaysOnTop != null && reminderWindow && !reminderWindow.isDestroyed()) {
       reminderWindow.setAlwaysOnTop(patch.reminderAlwaysOnTop, 'floating');
     }
+    if (
+      (patch.reminderDisplayId != null || patch.reminderDisplayBounds !== undefined || patch.reminderPosition != null)
+      && reminderWindow
+      && !reminderWindow.isDestroyed()
+    ) {
+      positionReminderWindow(reminderWindow, db.readSettings(locale()));
+    }
     if (patch.lockLevel === 'hard' && sessionLocked) hideReminders();
     if (patch.lockLevel === 'soft' && sessionLocked) void evaluateReminders('tick');
     changed();
@@ -444,7 +624,10 @@ function registerIpc() {
     return true;
   });
   ipcMain.handle('auth:unlock', async (_e, password: string) => {
-    if (tooManyAttempts()) return 'wait';
+    if (tooManyAttempts()) {
+      db.recordAccessEvent('blocked', db.authMethod());
+      return 'wait';
+    }
     const hash = db.passwordHash();
     if (!hash) {
       sessionLocked = false;
@@ -453,9 +636,11 @@ function registerIpc() {
     const stored = db.authMethod();
     if (!(await bcrypt.compare(presented(password, stored), hash))) {
       noteFailure();
+      db.recordAccessEvent('failure', stored);
       return 'wrong';
     }
     noteSuccess();
+    db.recordAccessEvent('success', stored);
     sessionLocked = false;
     changed();
     flushNavigate();
@@ -463,11 +648,15 @@ function registerIpc() {
     return 'ok';
   });
   ipcMain.handle('auth:recover', async (_e, code: string, next: string, method: unknown) => {
-    if (tooManyAttempts()) return { ok: false as const, error: 'wait' };
+    if (tooManyAttempts()) {
+      db.recordAccessEvent('blocked', 'recovery');
+      return { ok: false as const, error: 'wait' };
+    }
     const hash = db.recoveryHash();
     const normalized = code.trim().toUpperCase().replace(/-/g, '');
     if (!hash || !(await bcrypt.compare(normalized, hash))) {
       noteFailure();
+      db.recordAccessEvent('recovery-failure', 'recovery');
       return { ok: false as const, error: 'wrong' };
     }
     const mode = method === undefined ? db.authMethod() : methodOf(method);
@@ -478,6 +667,7 @@ function registerIpc() {
     db.setRecoveryHash(await bcrypt.hash(fresh.replace('-', ''), 10));
     db.setAuthMethod(mode);
     noteSuccess();
+    db.recordAccessEvent('recovery-success', 'recovery');
     sessionLocked = false;
     changed();
     flushNavigate();
@@ -492,6 +682,34 @@ function registerIpc() {
     showMain();
     return true;
   });
+
+  ipcMain.handle('access-log:list', () => db.listAccessLog());
+  ipcMain.handle('access-log:clear', () => {
+    db.clearAccessLog();
+    changed();
+  });
+
+  ipcMain.handle('displays:list', () => displayInfoList());
+  ipcMain.handle(
+    'reminders:preview',
+    async (
+      _e,
+      placement: Partial<Pick<PublicSettings, 'reminderDisplayId' | 'reminderDisplayBounds' | 'reminderPosition'>> = {},
+    ) => {
+      const settings = db.readSettings(locale());
+      const previewSettings: PublicSettings = {
+        ...settings,
+        reminderDisplayId: Number.isFinite(placement.reminderDisplayId) ? Math.trunc(placement.reminderDisplayId as number) : settings.reminderDisplayId,
+        reminderDisplayBounds: placement.reminderDisplayBounds ?? settings.reminderDisplayBounds,
+        reminderPosition: placement.reminderPosition ?? settings.reminderPosition,
+      };
+      await showReminderWindow(
+        { sound: false, pulseIds: [], focus: true },
+        { items: previewReminderItems(), settings: previewSettings },
+      );
+      return true;
+    },
+  );
 
   ipcMain.handle('reminders:due', () => db.listItems().filter((item) => isDue(item, Date.now())));
   ipcMain.handle('reminders:show', () => evaluateReminders('show'));
@@ -591,8 +809,19 @@ function registerIpc() {
         properties: ['openFile'],
       });
     if (result.canceled || !result.filePaths[0]) return null;
-    const text = fs.readFileSync(result.filePaths[0], 'utf8');
+    const filePath = result.filePaths[0];
+    const fileName = path.basename(filePath);
+    let text: string;
+    try {
+      text = fs.readFileSync(filePath, 'utf8');
+    } catch {
+      return { added: 0, total: 0, fileName, format: 'unknown' as const, errors: ['read'] };
+    }
     const rows = parseCsv(text);
+    const format = detectCsvFormat(rows);
+    if (format === 'unknown') {
+      return { added: 0, total: rows.length, fileName, format, errors: ['unsupported headers'] };
+    }
     const errors: string[] = [];
     let added = 0;
     rows.forEach((row, index) => {
@@ -613,9 +842,11 @@ function registerIpc() {
         errors.push(`${index + 2}: ${error instanceof Error ? error.message : 'invalid'}`);
       }
     });
-    changed();
-    void evaluateReminders('tick');
-    return { added, errors };
+    if (added) {
+      changed();
+      void evaluateReminders('tick');
+    }
+    return { added, total: rows.length, fileName, format, errors };
   });
   ipcMain.handle('ics:import', async () => {
     const result = mainWindow
@@ -628,12 +859,14 @@ function registerIpc() {
         properties: ['openFile'],
       });
     if (result.canceled || !result.filePaths[0]) return null;
-    const text = fs.readFileSync(result.filePaths[0], 'utf8');
+    const filePath = result.filePaths[0];
+    const fileName = path.basename(filePath);
+    const text = fs.readFileSync(filePath, 'utf8');
     let events;
     try {
       events = parseIcs(text);
     } catch (error) {
-      return { added: 0, errors: [error instanceof Error ? error.message : 'invalid'] };
+      return { added: 0, total: 0, fileName, format: 'ics' as const, errors: [error instanceof Error ? error.message : 'invalid'] };
     }
     const errors: string[] = [];
     let added = 0;
@@ -647,7 +880,7 @@ function registerIpc() {
     });
     changed();
     void evaluateReminders('tick');
-    return { added, errors };
+    return { added, total: events.length, fileName, format: 'ics' as const, errors };
   });
 }
 
@@ -704,6 +937,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  persistMainWindowState();
   quitting = true;
 });
 

@@ -56,3 +56,28 @@ test('tonight preset is 21:00 when it is still early', () => {
   assert.equal(start.getHours(), 21);
   assert.equal(start.getDate(), 26);
 });
+
+test('Spanish interval words create a daily recurrence', () => {
+  const parsed = parseQuick('Pagar el agua cada treinta días a las 9', now);
+  assert.equal(parsed.title, 'Pagar el agua');
+  assert.deepEqual(parsed.recurrence, { freq: 'daily', interval: 30, until: null });
+  assert.equal(parsed.start?.getDate(), 26);
+  assert.equal(parsed.start?.getMonth(), 9);
+  assert.equal(parsed.start?.getHours(), 9);
+});
+
+test('a Spanish day of month keeps its monthly anchor', () => {
+  const parsed = parseQuick('Ir al super los quince de cada mes', now);
+  assert.equal(parsed.title, 'Ir al super');
+  assert.deepEqual(parsed.recurrence, { freq: 'monthly', interval: 1, until: null, dayOfMonth: 15 });
+  assert.equal(parsed.start?.getDate(), 15);
+  assert.equal(parsed.start?.getMonth(), 9);
+});
+
+test('English weekdays and until dates are supported', () => {
+  const parsed = parseQuick('Take bins every monday at 8am until 2026-12-31', now);
+  assert.equal(parsed.title, 'Take bins');
+  assert.deepEqual(parsed.recurrence, { freq: 'weekly', interval: 1, until: '2026-12-31' });
+  assert.equal(parsed.start?.getDay(), 1);
+  assert.equal(parsed.start?.getHours(), 8);
+});

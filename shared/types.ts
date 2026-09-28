@@ -5,12 +5,31 @@ export type Importance = 'low' | 'normal' | 'high';
 export type Freq = 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type LockLevel = 'soft' | 'hard';
 export type AuthMethod = 'password' | 'pin';
+export type AccessLogEvent = 'success' | 'failure' | 'recovery-success' | 'recovery-failure' | 'blocked';
+export type AccessLogMethod = AuthMethod | 'recovery';
+export type ReminderPosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
+export interface DisplayBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface DisplayInfo extends DisplayBounds {
+  id: number;
+  label: string;
+  isPrimary: boolean;
+  workArea: DisplayBounds;
+}
 
 export interface Recurrence {
   freq: Freq;
   interval: number;
   /** YYYY-MM-DD, inclusive. Null means no end. */
   until: string | null;
+  /** Optional calendar day to preserve for monthly recurrences, from 1 to 31. */
+  dayOfMonth?: number | null;
 }
 
 export interface Group {
@@ -74,9 +93,13 @@ export interface PublicSettings {
   autobackupKeep: number;
   openAtLogin: boolean;
   reminderAlwaysOnTop: boolean;
+  reminderDisplayId: number;
+  reminderDisplayBounds: DisplayBounds | null;
+  reminderPosition: ReminderPosition;
   passwordHint: string;
   /** How the lock secret is entered. The hash itself stays out of this object. */
   authMethod: AuthMethod;
+  accessLogEnabled: boolean;
 }
 
 export interface Bootstrap {
@@ -93,9 +116,19 @@ export interface BackupInfo {
   bytes: number;
 }
 
+export interface AccessLogEntry {
+  id: number;
+  occurredAt: string;
+  event: AccessLogEvent;
+  method: AccessLogMethod;
+}
+
 export interface CsvResult {
   added: number;
   errors: string[];
+  total?: number;
+  fileName?: string;
+  format?: 'cybergo' | 'legacy' | 'unknown' | 'ics';
 }
 
 export const SWATCHES = [

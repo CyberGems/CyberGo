@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, CalendarDays, Command, Flame, List, Lock, Plus, Settings, Trash2 } from 'lucide-react';
+import { Bell, CalendarDays, Command, Flame, List, Lock, Pencil, Plus, Search, Settings, Trash2, X } from 'lucide-react';
 import type { Bootstrap, Item, ItemDraft } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf } from './i18n';
@@ -16,6 +16,8 @@ import QuickAdd from './components/QuickAdd';
 import SettingsModal from './components/SettingsModal';
 import LockScreen from './components/LockScreen';
 import RemindersWindow from './components/RemindersWindow';
+import TextContextMenu from './components/TextContextMenu';
+import Tooltip from './components/Tooltip';
 import { EnterGlyph, EscHint, useModalKeys } from './components/ModalKeys';
 
 export default function App() {
@@ -119,6 +121,17 @@ function MainApp() {
   const copy = copyOf(boot?.settings.language || 'es');
   const items = boot?.items ?? [];
   const groups = boot?.groups ?? [];
+  const filterLabels: Record<FilterId, string> = {
+    all: copy.all,
+    today: copy.today,
+    next7: copy.next7,
+    next30: copy.next30,
+    upcoming: copy.upcoming,
+    overdue: copy.overdue,
+    high: copy.high,
+    completed: copy.completed,
+    trash: copy.trash,
+  };
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = items.filter((item) => {
@@ -128,6 +141,9 @@ function MainApp() {
     });
     return sortItems(filtered, filter);
   }, [items, filter, groupId, query]);
+  useEffect(() => {
+    if (selectedId && !visible.some((item) => item.id === selectedId)) setSelectedId(null);
+  }, [selectedId, visible]);
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const stats = useMemo(() => computeStats(items.map((item) => item.completedAt)), [items]);
 
@@ -148,25 +164,62 @@ function MainApp() {
   }
 
   if (!boot) return <div className="boot" />;
-  if (boot.locked) return <LockScreen copy={copy} hint={boot.settings.passwordHint} method={boot.settings.authMethod} />;
+  if (boot.locked) {
+    return (
+      <>
+        <LockScreen copy={copy} hint={boot.settings.passwordHint} method={boot.settings.authMethod} hasPassword={boot.hasPassword} />
+        <TextContextMenu copy={copy} />
+      </>
+    );
+  }
 
   return (
-    <div className="app">
-      <TitleBar title={<><span>Cyber</span>Go</>}>
+    <>
+      <div className="app">
+      <TitleBar
+        title={<><span>Cyber</span>Go</>}
+        windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, close: copy.closeWindow }}
+      >
         <div className="toolbar">
-          <button className="btn btn-primary" onClick={() => { setSeed(null); setEditing('new'); }}><Plus size={14} />{copy.newItem}</button>
-          <button className="btn" disabled={!selected || filter === 'trash'} onClick={() => selected && setEditing(selected)}>{copy.edit}</button>
-          <button className="btn" disabled={!selected} onClick={() => selected && askDelete(selected)}><Trash2 size={14} />{copy.delete}</button>
-          <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt} onClick={() => selected && void api.completeItem(selected.id)}>{copy.done}</button>
-          <button className="btn" onClick={() => void api.showReminders()}><Bell size={14} />{copy.reminders}</button>
-          <span className="seg">
-            <button type="button" title={copy.viewList} className={view === 'list' ? 'on' : ''} onClick={() => switchView('list')}><List size={14} /></button>
-            <button type="button" title={copy.viewCalendar} className={view === 'calendar' ? 'on' : ''} onClick={() => switchView('calendar')}><CalendarDays size={14} /></button>
-          </span>
-          <input className="search" placeholder={copy.search} value={query} onChange={(e) => setQuery(e.target.value)} />
-          <button className="icon-btn" title="Ctrl+K" onClick={() => setPaletteOpen(true)}><Command size={15} /></button>
-          <button className="icon-btn" title={copy.lock} onClick={() => void api.lock()}><Lock size={15} /></button>
-          <button className="icon-btn" title={copy.settings} onClick={() => setSettingsOpen(true)}><Settings size={15} /></button>
+          <div className="toolbar-section">
+            <button className="btn btn-primary" onClick={() => { setSeed(null); setEditing('new'); }}>
+              <Plus size={14} /><span className="toolbar-label">{copy.newItem}</span>
+            </button>
+          </div>
+          <span className="toolbar-divider" />
+          <div className="selection-actions">
+            <button className="btn" disabled={!selected || filter === 'trash'} onClick={() => selected && setEditing(selected)}>
+              <Pencil size={14} /><span className="toolbar-label">{copy.edit}</span>
+            </button>
+            <button className="btn" disabled={!selected} onClick={() => selected && askDelete(selected)}>
+              <Trash2 size={14} /><span className="toolbar-label">{copy.delete}</span>
+            </button>
+            <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt} onClick={() => selected && void api.completeItem(selected.id)}>
+              <span className="toolbar-label">{copy.done}</span>
+            </button>
+          </div>
+          <span className="toolbar-divider" />
+          <div className="toolbar-utility">
+            <button className="btn" onClick={() => void api.showReminders()}><Bell size={14} /><span className="toolbar-label">{copy.reminders}</span></button>
+            <div className="search-wrap">
+              <Search size={14} />
+              <input className="search" aria-label={copy.search} placeholder={copy.search} value={query} onChange={(e) => setQuery(e.target.value)} />
+              {query && (
+                <Tooltip label={copy.clearSearch} placement="bottom">
+                  <button type="button" className="search-clear" aria-label={copy.clearSearch} onClick={() => setQuery('')}><X size={13} /></button>
+                </Tooltip>
+              )}
+            </div>
+            <Tooltip label={copy.commandShortcut} placement="bottom">
+              <button className="icon-btn" aria-label={copy.commandShortcut} onClick={() => setPaletteOpen(true)}><Command size={15} /></button>
+            </Tooltip>
+            <Tooltip label={copy.lock} placement="bottom">
+              <button className="icon-btn" aria-label={copy.lock} onClick={() => void api.lock()}><Lock size={15} /></button>
+            </Tooltip>
+            <Tooltip label={copy.settings} placement="bottom">
+              <button className="icon-btn" aria-label={copy.settings} onClick={() => setSettingsOpen(true)}><Settings size={15} /></button>
+            </Tooltip>
+          </div>
         </div>
       </TitleBar>
       <div className="shell">
@@ -186,6 +239,21 @@ function MainApp() {
           })}
         />
         <section className="list-wrap">
+          <div className="workspace-head">
+            <div className="workspace-head-copy">
+              <p className="workspace-kicker">{copy.workspace}</p>
+              <h1 className="workspace-title">{groupId ? groups.find((group) => group.id === groupId)?.name ?? copy.workspace : filterLabels[filter]}</h1>
+              <p className="workspace-meta">{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</p>
+            </div>
+            <span className="seg" role="group" aria-label={`${copy.viewList} / ${copy.viewCalendar}`}>
+              <Tooltip label={copy.viewList} placement="bottom">
+                <button type="button" aria-label={copy.viewList} className={view === 'list' ? 'on' : ''} onClick={() => switchView('list')}><List size={14} /></button>
+              </Tooltip>
+              <Tooltip label={copy.viewCalendar} placement="bottom">
+                <button type="button" aria-label={copy.viewCalendar} className={view === 'calendar' ? 'on' : ''} onClick={() => switchView('calendar')}><CalendarDays size={14} /></button>
+              </Tooltip>
+            </span>
+          </div>
           {filter !== 'trash' && (
             <QuickAdd
               copy={copy}
@@ -238,10 +306,12 @@ function MainApp() {
       <footer className="statusbar">
         <span>{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</span>
         <span className="grow" />
-        <span className="streak" title={`${stats.doneWeek} ${copy.streakWeek}`}>
-          <Flame size={12} />
-          {stats.streak > 0 ? `${copy.streak}: ${stats.streak}` : copy.streakNone}
-        </span>
+        <Tooltip label={`${stats.doneWeek} ${copy.streakWeek}`} placement="top">
+          <span className="streak">
+            <Flame size={12} />
+            {stats.streak > 0 ? `${copy.streak}: ${stats.streak}` : copy.streakNone}
+          </span>
+        </Tooltip>
       </footer>
       {editing && (
         <ItemModal
@@ -290,6 +360,8 @@ function MainApp() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+      <TextContextMenu copy={copy} />
+    </>
   );
 }

@@ -35,12 +35,42 @@ export function formatTimeRange(item: Item, lang: Lang, copy: Copy): string {
   return `${start} - ${formatClock(item.endAt, lang)}`;
 }
 
-export function daysLeft(item: Item, copy: Copy): string {
-  const diff = dayDiff(item.occurrenceAt || item.startAt);
+export function formatDuration(totalMinutes: number, lang: Lang): string {
+  const minutes = Math.max(1, Math.round(totalMinutes));
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const remainder = minutes % 60;
+  const parts: string[] = [];
+  if (days) parts.push(`${days} ${lang === 'es' ? (days === 1 ? 'día' : 'días') : (days === 1 ? 'day' : 'days')}`);
+  if (hours) parts.push(`${hours} h`);
+  if (remainder && parts.length < 2) parts.push(`${remainder} min`);
+  return parts.join(' ');
+}
+
+export function overduePhrase(iso: string | null, lang: Lang): string {
+  if (!iso) return '';
+  const at = new Date(iso).getTime();
+  if (Number.isNaN(at) || at >= Date.now()) return '';
+  const duration = formatDuration((Date.now() - at) / 60_000, lang);
+  return lang === 'es' ? `Vencido hace ${duration}` : `Overdue by ${duration}`;
+}
+
+export function dueState(iso: string | null): 'overdue' | 'today' | 'future' | null {
+  if (!iso) return null;
+  const at = new Date(iso).getTime();
+  if (Number.isNaN(at)) return null;
+  if (at < Date.now()) return 'overdue';
+  return dayDiff(iso) === 0 ? 'today' : 'future';
+}
+
+export function daysLeft(item: Item, copy: Copy, lang: Lang): string {
+  const iso = item.occurrenceAt || item.startAt;
+  const diff = dayDiff(iso);
   if (diff == null) return '';
+  const overdue = overduePhrase(iso, lang);
+  if (overdue) return overdue;
   if (diff === 0) return copy.todayWord;
   if (diff === 1) return copy.tomorrowWord;
-  if (diff < 0) return copy.overdueWord;
   return String(diff);
 }
 
@@ -51,16 +81,11 @@ export function duePhrase(iso: string | null, lang: Lang): string {
   const past = ms < 0;
   const abs = Math.abs(ms);
   const minutes = Math.max(1, Math.round(abs / 60_000));
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
+  const duration = formatDuration(minutes, lang);
   if (lang === 'es') {
     if (minutes < 2 && !past) return 'Ahora';
-    if (days >= 1) return past ? `Vencido hace ${days} ${days === 1 ? 'día' : 'días'}` : `En ${days} ${days === 1 ? 'día' : 'días'}`;
-    if (hours >= 1) return past ? `Vencido hace ${hours} h` : `En ${hours} h`;
-    return past ? `Vencido hace ${minutes} min` : `En ${minutes} min`;
+    return past ? `Vencido hace ${duration}` : `En ${duration}`;
   }
   if (minutes < 2 && !past) return 'Now';
-  if (days >= 1) return past ? `Overdue ${days} ${days === 1 ? 'day' : 'days'}` : `In ${days} ${days === 1 ? 'day' : 'days'}`;
-  if (hours >= 1) return past ? `Overdue ${hours} h` : `In ${hours} h`;
-  return past ? `Overdue ${minutes} min` : `In ${minutes} min`;
+  return past ? `Overdue by ${duration}` : `In ${duration}`;
 }

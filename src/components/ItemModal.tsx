@@ -4,6 +4,7 @@ import { parseLocal, toDateInput, toDateTimeInput } from '@shared/schedule';
 import type { Copy } from '../i18n';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import DateTimeField from './DateTimeField';
+import Tooltip from './Tooltip';
 
 function fromItem(item: Item): ItemDraft {
   return {
@@ -152,7 +153,9 @@ export default function ItemModal({
         <div className="field">
           <span>{copy.color}</span>
           <div className="swatches">
-            <button type="button" className={`swatch ${draft.color === '' ? 'on' : ''}`} onClick={() => set({ color: '' })} title={copy.none} />
+            <Tooltip label={copy.none} placement="top">
+              <button type="button" className={`swatch ${draft.color === '' ? 'on' : ''}`} onClick={() => set({ color: '' })} />
+            </Tooltip>
             {SWATCHES.map((swatch) => (
               <button type="button" key={swatch} className={`swatch ${draft.color === swatch ? 'on' : ''}`} style={{ background: swatch }} onClick={() => set({ color: swatch })} />
             ))}

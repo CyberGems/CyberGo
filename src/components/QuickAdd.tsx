@@ -5,6 +5,8 @@ import { parseQuick, presetStart, type QuickPreset } from '@shared/quick';
 import type { Copy } from '../i18n';
 import { duePhrase, formatClock } from '../lib/format';
 import { EnterGlyph } from './ModalKeys';
+import Tooltip from './Tooltip';
+import { ChevronDown, ChevronUp, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 const PRESETS: QuickPreset[] = ['10m', '1h', 'tonight', 'tomorrow9'];
 
@@ -23,9 +25,22 @@ function draftFrom(text: string, armed: QuickPreset | null, groupId: string | nu
     importance: parsed.importance,
     color: '',
     groupId,
-    recurrence: null,
+    recurrence: parsed.recurrence,
     remindMinutes: 0,
   };
+}
+
+function recurrenceSummary(copy: Copy, recurrence: NonNullable<ReturnType<typeof parseQuick>['recurrence']>) {
+  if (recurrence.dayOfMonth) return `${copy.repeat}: ${copy.recurOnDay} ${recurrence.dayOfMonth}`;
+  const unit = recurrence.freq === 'daily'
+    ? copy.daily
+    : recurrence.freq === 'weekly'
+      ? copy.weekly
+      : recurrence.freq === 'monthly'
+        ? copy.monthly
+        : copy.yearly;
+  const cadence = recurrence.interval === 1 ? unit : `${recurrence.interval} ${unit}`;
+  return `${copy.repeat}: ${copy.recurEvery} ${cadence}`;
 }
 
 export default function QuickAdd({
@@ -46,6 +61,7 @@ export default function QuickAdd({
   const [exampleOn, setExampleOn] = useState(true);
   const [armed, setArmed] = useState<QuickPreset | null>(null);
   const [busy, setBusy] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('cybergo-quick-collapsed') === '1');
   const inputRef = useRef<HTMLInputElement>(null);
   const parsed = parseQuick(text);
   const previewDraft = draftFrom(text, armed, groupId, null);
@@ -54,7 +70,14 @@ export default function QuickAdd({
   const examples = copy.quickExamples;
 
   useEffect(() => {
-    const focus = () => inputRef.current?.focus();
+    localStorage.setItem('cybergo-quick-collapsed', collapsed ? '1' : '0');
+  }, [collapsed]);
+
+  useEffect(() => {
+    const focus = () => {
+      setCollapsed(false);
+      window.setTimeout(() => inputRef.current?.focus(), 0);
+    };
     window.addEventListener('cybergo:focus-quick', focus);
     return () => window.removeEventListener('cybergo:focus-quick', focus);
   }, []);
@@ -82,6 +105,7 @@ export default function QuickAdd({
     start ? duePhrase(start.toISOString(), lang) : copy.quickNone,
     start && !previewDraft.allDay ? formatClock(start.toISOString(), lang) : '',
     parsed.importance === 'high' ? copy.highImp : '',
+    parsed.recurrence ? recurrenceSummary(copy, parsed.recurrence) : '',
   ].filter(Boolean).join(' · ');
 
   async function commit(force: Date | null) {
@@ -105,51 +129,86 @@ export default function QuickAdd({
   }
 
   return (
-    <div className="quick">
-      <div className="quick-row">
-        <div className="quick-field">
-        <input
-          ref={inputRef}
-          value={text}
-          aria-label={copy.quickHint}
-          placeholder=""
-          onChange={(event) => {
-            const next = event.target.value;
-            setText(next);
-            if (!next.trim() || parseQuick(next).start) setArmed(null);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              event.stopPropagation();
-              void commit(null);
-            }
-          }}
-        />
-        {!text && <span className={`quick-ghost ${exampleOn ? 'show' : ''}`}>{examples[example]}</span>}
-        </div>
-        <button type="button" className="btn btn-primary" disabled={!canSave} onClick={() => void commit(null)}>
-          {copy.create}<EnterGlyph />
+    <div className={`quick ${collapsed ? 'collapsed' : ''}`}>
+      <div className="quick-heading">
+        <button
+          type="button"
+          className="quick-heading-toggle"
+          aria-expanded={!collapsed}
+          aria-controls="quick-add-content"
+          onClick={() => setCollapsed((current) => !current)}
+        >
+          <span className="quick-title-mark"><Sparkles size={15} /></span>
+          <span className="quick-title-copy">
+            <strong>{copy.quickAddLabel}</strong>
+            <span>{copy.quickHint}</span>
+          </span>
         </button>
-        <button type="button" className="btn" onClick={() => onMore(draftFrom(text, armed, groupId, null))}>{copy.more}</button>
+        <div className="quick-heading-actions">
+          <kbd className="quick-shortcut">{copy.quickShortcut}</kbd>
+          <Tooltip label={collapsed ? copy.quickExpand : copy.quickCollapse} placement="top">
+            <button
+              type="button"
+              className="icon-btn quick-collapse"
+              aria-label={collapsed ? copy.quickExpand : copy.quickCollapse}
+              aria-expanded={!collapsed}
+              aria-controls="quick-add-content"
+              onClick={() => setCollapsed((current) => !current)}
+            >
+              {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </button>
+          </Tooltip>
+        </div>
       </div>
-      <div className="quick-presets">
-        <span className={`quick-when ${text.trim() ? 'on' : ''}`}>{copy.quickWhen}</span>
-        {PRESETS.map((preset) => (
-          <button
-            type="button"
-            key={preset}
-            className={`chip ${armed === preset ? 'on' : ''}`}
-            disabled={!text.trim()}
-            onClick={() => usePreset(preset)}
-          >
-            {preset === '10m' ? copy.preset10 : preset === '1h' ? copy.preset1h : preset === 'tonight' ? copy.presetTonight : copy.presetTomorrow9}
-          </button>
-        ))}
-      </div>
-      <div className={`quick-preview ${text.trim() || armed ? '' : 'muted'}`}>
-        {text.trim() || armed ? preview : copy.quickHint}
-      </div>
+      {!collapsed && (
+        <div className="quick-content" id="quick-add-content">
+          <div className="quick-row">
+            <div className="quick-field">
+              <input
+                ref={inputRef}
+                value={text}
+                aria-label={copy.quickHint}
+                placeholder=""
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setText(next);
+                  if (!next.trim() || parseQuick(next).start) setArmed(null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void commit(null);
+                  }
+                }}
+              />
+              {!text && <span className={`quick-ghost ${exampleOn ? 'show' : ''}`} aria-hidden="true">{examples[example]}</span>}
+            </div>
+            <button type="button" className="btn btn-primary" disabled={!canSave} onClick={() => void commit(null)}>
+              {copy.create}<EnterGlyph />
+            </button>
+            <button type="button" className="btn" onClick={() => onMore(draftFrom(text, armed, groupId, null))}><SlidersHorizontal size={14} />{copy.more}</button>
+          </div>
+          <div className="quick-presets">
+            <span className={`quick-when ${text.trim() ? 'on' : ''}`}>{copy.quickWhen}</span>
+            {PRESETS.map((preset) => (
+              <button
+                type="button"
+                key={preset}
+                className={`chip ${armed === preset ? 'on' : ''}`}
+                disabled={!text.trim()}
+                onClick={() => usePreset(preset)}
+              >
+                {preset === '10m' ? copy.preset10 : preset === '1h' ? copy.preset1h : preset === 'tonight' ? copy.presetTonight : copy.presetTomorrow9}
+              </button>
+            ))}
+          </div>
+          <div className={`quick-preview ${text.trim() || armed ? '' : 'muted'}`}>
+            <Sparkles size={13} />
+            {text.trim() || armed ? preview : copy.quickHint}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

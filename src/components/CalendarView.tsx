@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Group, Item, Lang } from '@shared/types';
 import type { Copy } from '../i18n';
+import Tooltip from './Tooltip';
 
 function dayKey(date: Date): string {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -96,34 +97,44 @@ export default function CalendarView({
           const list = byDay.get(dayKey(day)) ?? [];
           const shown = list.slice(0, 3);
           return (
-            <div
-              key={day.toISOString()}
-              className={`cal-cell ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}`}
-              onDoubleClick={() => onNewDay(day)}
-              title={copy.calNewHint}
-            >
-              <span className="cal-daynum">{day.getDate()}</span>
+            <Tooltip key={day.toISOString()} label={copy.calNewHint} placement="top" delay={500}>
+              <div
+                className={`cal-cell ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}`}
+                onDoubleClick={() => onNewDay(day)}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onNewDay(day);
+                  }
+                }}
+                tabIndex={0}
+                aria-label={`${day.toLocaleDateString(locale, { dateStyle: 'full' })}. ${copy.calNewHint}`}
+              >
+              <span className="cal-daynum"><span>{day.getDate()}</span>{isToday && <span className="cal-today-label">{copy.todayWord}</span>}</span>
               {shown.map((item) => {
                 const group = groups.find((g) => g.id === item.groupId);
                 const tint = item.color || group?.color || 'var(--accent)';
                 return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`cal-chip ${selectedId === item.id ? 'selected' : ''} ${item.completedAt ? 'done' : ''}`}
-                    onClick={(e) => { e.stopPropagation(); onSelect(item.id); }}
-                    onDoubleClick={(e) => { e.stopPropagation(); onOpen(item); }}
-                    title={item.title}
-                  >
-                    <i className="dot" style={{ background: tint }} />
-                    <span className="subject">{item.title}</span>
-                  </button>
+                  <Tooltip key={item.id} label={item.title} placement="top">
+                    <button
+                      type="button"
+                      className={`cal-chip ${selectedId === item.id ? 'selected' : ''} ${item.completedAt ? 'done' : ''} kind-${item.kind}`}
+                      onClick={(e) => { e.stopPropagation(); onSelect(item.id); }}
+                      onDoubleClick={(e) => { e.stopPropagation(); onOpen(item); }}
+                      aria-label={`${item.title}, ${item.kind === 'task' ? copy.task : copy.event}`}
+                    >
+                      <i className="dot" style={{ background: tint }} />
+                      <span className="subject">{item.title}</span>
+                    </button>
+                  </Tooltip>
                 );
               })}
               {list.length > shown.length && (
                 <span className="cal-more">+{list.length - shown.length} {copy.calMore}</span>
               )}
-            </div>
+              </div>
+            </Tooltip>
           );
         })}
       </div>
