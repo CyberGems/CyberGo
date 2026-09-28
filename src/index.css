@@ -204,6 +204,11 @@ button { cursor: pointer; }
 .text-context-menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
 .text-context-menu-item:disabled { opacity: 0.36; cursor: default; }
 .text-context-menu-item:disabled:hover { background: transparent; color: var(--text-secondary); }
+.text-context-menu-separator {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--border);
+}
 
 .backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.45);
@@ -1312,15 +1317,41 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .reminder-row-due { color: var(--text-muted); font-size: 11px; }
 .reminder-row-chevron { color: var(--text-muted); }
 .reminder-selection {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   margin: 4px 14px 0;
-  padding: 12px;
+  min-width: 0;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-surface);
 }
-.reminder-selection-kicker { margin: 0 0 3px; color: var(--accent-light); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.reminder-selection-title { margin: 0; font-size: 14px; }
-.reminder-selection-due { margin: 3px 0 0; color: var(--text-muted); font-size: 11px; }
+.reminder-selection-kicker {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--accent-light);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reminder-selection-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  margin: 0;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reminder-selection-due {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.reminder-context-menu { min-width: 190px; }
 .reminder-foot {
   padding: 12px 14px 14px;
   gap: 8px;
