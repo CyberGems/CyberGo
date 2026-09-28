@@ -17,6 +17,7 @@ import SettingsModal from './components/SettingsModal';
 import LockScreen from './components/LockScreen';
 import RemindersWindow from './components/RemindersWindow';
 import TextContextMenu from './components/TextContextMenu';
+import Tooltip from './components/Tooltip';
 import { EnterGlyph, EscHint, useModalKeys } from './components/ModalKeys';
 
 export default function App() {
@@ -203,11 +204,21 @@ function MainApp() {
             <div className="search-wrap">
               <Search size={14} />
               <input className="search" aria-label={copy.search} placeholder={copy.search} value={query} onChange={(e) => setQuery(e.target.value)} />
-              {query && <button type="button" className="search-clear" aria-label={copy.clearSearch} title={copy.clearSearch} onClick={() => setQuery('')}><X size={13} /></button>}
+              {query && (
+                <Tooltip label={copy.clearSearch} placement="bottom">
+                  <button type="button" className="search-clear" aria-label={copy.clearSearch} onClick={() => setQuery('')}><X size={13} /></button>
+                </Tooltip>
+              )}
             </div>
-            <button className="icon-btn" title={copy.commandShortcut} aria-label={copy.commandShortcut} onClick={() => setPaletteOpen(true)}><Command size={15} /></button>
-            <button className="icon-btn" title={copy.lock} aria-label={copy.lock} onClick={() => void api.lock()}><Lock size={15} /></button>
-            <button className="icon-btn" title={copy.settings} aria-label={copy.settings} onClick={() => setSettingsOpen(true)}><Settings size={15} /></button>
+            <Tooltip label={copy.commandShortcut} placement="bottom">
+              <button className="icon-btn" aria-label={copy.commandShortcut} onClick={() => setPaletteOpen(true)}><Command size={15} /></button>
+            </Tooltip>
+            <Tooltip label={copy.lock} placement="bottom">
+              <button className="icon-btn" aria-label={copy.lock} onClick={() => void api.lock()}><Lock size={15} /></button>
+            </Tooltip>
+            <Tooltip label={copy.settings} placement="bottom">
+              <button className="icon-btn" aria-label={copy.settings} onClick={() => setSettingsOpen(true)}><Settings size={15} /></button>
+            </Tooltip>
           </div>
         </div>
       </TitleBar>
@@ -235,8 +246,12 @@ function MainApp() {
               <p className="workspace-meta">{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</p>
             </div>
             <span className="seg" role="group" aria-label={`${copy.viewList} / ${copy.viewCalendar}`}>
-              <button type="button" title={copy.viewList} aria-label={copy.viewList} className={view === 'list' ? 'on' : ''} onClick={() => switchView('list')}><List size={14} /></button>
-              <button type="button" title={copy.viewCalendar} aria-label={copy.viewCalendar} className={view === 'calendar' ? 'on' : ''} onClick={() => switchView('calendar')}><CalendarDays size={14} /></button>
+              <Tooltip label={copy.viewList} placement="bottom">
+                <button type="button" aria-label={copy.viewList} className={view === 'list' ? 'on' : ''} onClick={() => switchView('list')}><List size={14} /></button>
+              </Tooltip>
+              <Tooltip label={copy.viewCalendar} placement="bottom">
+                <button type="button" aria-label={copy.viewCalendar} className={view === 'calendar' ? 'on' : ''} onClick={() => switchView('calendar')}><CalendarDays size={14} /></button>
+              </Tooltip>
             </span>
           </div>
           {filter !== 'trash' && (
@@ -291,10 +306,12 @@ function MainApp() {
       <footer className="statusbar">
         <span>{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</span>
         <span className="grow" />
-        <span className="streak" title={`${stats.doneWeek} ${copy.streakWeek}`}>
-          <Flame size={12} />
-          {stats.streak > 0 ? `${copy.streak}: ${stats.streak}` : copy.streakNone}
-        </span>
+        <Tooltip label={`${stats.doneWeek} ${copy.streakWeek}`} placement="top">
+          <span className="streak">
+            <Flame size={12} />
+            {stats.streak > 0 ? `${copy.streak}: ${stats.streak}` : copy.streakNone}
+          </span>
+        </Tooltip>
       </footer>
       {editing && (
         <ItemModal

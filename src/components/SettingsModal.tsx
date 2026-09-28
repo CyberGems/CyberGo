@@ -31,6 +31,7 @@ import type {
 import { applyTheme } from '../themes';
 import { playAlert } from '../lib/sound';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
+import Tooltip from './Tooltip';
 
 type Tab = 'general' | 'notifications' | 'security' | 'data';
 
@@ -389,20 +390,20 @@ export default function SettingsModal({
                       }
                       const active = settings.reminderPosition === cell.id;
                       return (
-                        <button
-                          type="button"
-                          key={cell.id}
-                          className={`position-cell${active ? ' is-active' : ''}`}
-                          aria-label={copy.positions[cell.id]}
-                          aria-pressed={active}
-                          title={copy.positions[cell.id]}
-                          onClick={() => {
-                            void patch({ reminderPosition: cell.id! });
-                            void previewReminderPlacement({ reminderPosition: cell.id! });
-                          }}
-                        >
-                          <span className={`position-dot ${cell.dot}`} />
-                        </button>
+                        <Tooltip key={cell.id} label={copy.positions[cell.id]} placement="top">
+                          <button
+                            type="button"
+                            className={`position-cell${active ? ' is-active' : ''}`}
+                            aria-label={copy.positions[cell.id]}
+                            aria-pressed={active}
+                            onClick={() => {
+                              void patch({ reminderPosition: cell.id! });
+                              void previewReminderPlacement({ reminderPosition: cell.id! });
+                            }}
+                          >
+                            <span className={`position-dot ${cell.dot}`} />
+                          </button>
+                        </Tooltip>
                       );
                     })}
                   </div>

@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactElement, ReactNode } from 'react';
+import type { CSSProperties, FocusEvent as ReactFocusEvent, MouseEvent as ReactMouseEvent, ReactElement, ReactNode } from 'react';
 
 type Placement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -85,15 +85,17 @@ export default function Tooltip({
 
   if (!isValidElement(children)) return children;
   const child = children as ReactElement<any>;
-  const show = (event: ReactMouseEvent<HTMLElement>) => {
+  const show = (event: ReactMouseEvent<HTMLElement> | ReactFocusEvent<HTMLElement>) => {
     child.props.onMouseEnter?.(event);
+    child.props.onFocus?.(event);
     clearTimer();
     if (!label) return;
     const rect = event.currentTarget.getBoundingClientRect();
     timerRef.current = setTimeout(() => setAnchor(rect), delay);
   };
-  const hide = (event: ReactMouseEvent<HTMLElement>) => {
+  const hide = (event: ReactMouseEvent<HTMLElement> | ReactFocusEvent<HTMLElement>) => {
     child.props.onMouseLeave?.(event);
+    child.props.onBlur?.(event);
     clearTimer();
     setAnchor(null);
   };
@@ -102,7 +104,13 @@ export default function Tooltip({
     clearTimer();
     setAnchor(null);
   };
-  const cloned = cloneElement(child, { onMouseEnter: show, onMouseLeave: hide, onClick: clickHide });
+  const cloned = cloneElement(child, {
+    onMouseEnter: show,
+    onMouseLeave: hide,
+    onFocus: show,
+    onBlur: hide,
+    onClick: clickHide,
+  });
 
   return (
     <>

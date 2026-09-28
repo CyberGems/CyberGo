@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock, ShieldCheck } from 'lucide-react';
 import type { AuthMethod } from '@shared/types';
 import type { Copy } from '../i18n';
 import TitleBar from './TitleBar';
+import Tooltip from './Tooltip';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 
 function digits(value: string) {
@@ -115,16 +116,17 @@ export default function LockScreen({ copy, hint, method, hasPassword }: { copy: 
                       placeholder={pin ? 'PIN' : copy.password}
                       onChange={(e) => setPassword(pin ? digits(e.target.value) : e.target.value)}
                     />
-                    <button
-                      type="button"
-                      className="login-input-action"
-                      tabIndex={-1}
-                      aria-label={showPassword ? copy.hidePassword : copy.showPassword}
-                      title={showPassword ? copy.hidePassword : copy.showPassword}
-                      onClick={() => setShowPassword((value) => !value)}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                    <Tooltip label={showPassword ? copy.hidePassword : copy.showPassword} placement="top">
+                      <button
+                        type="button"
+                        className="login-input-action"
+                        tabIndex={-1}
+                        aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                        onClick={() => setShowPassword((value) => !value)}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               ) : (

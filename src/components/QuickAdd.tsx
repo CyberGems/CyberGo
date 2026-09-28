@@ -5,6 +5,7 @@ import { parseQuick, presetStart, type QuickPreset } from '@shared/quick';
 import type { Copy } from '../i18n';
 import { duePhrase, formatClock } from '../lib/format';
 import { EnterGlyph } from './ModalKeys';
+import Tooltip from './Tooltip';
 import { ChevronDown, ChevronUp, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 const PRESETS: QuickPreset[] = ['10m', '1h', 'tonight', 'tomorrow9'];
@@ -145,17 +146,18 @@ export default function QuickAdd({
         </button>
         <div className="quick-heading-actions">
           <kbd className="quick-shortcut">{copy.quickShortcut}</kbd>
-          <button
-            type="button"
-            className="icon-btn quick-collapse"
-            aria-label={collapsed ? copy.quickExpand : copy.quickCollapse}
-            title={collapsed ? copy.quickExpand : copy.quickCollapse}
-            aria-expanded={!collapsed}
-            aria-controls="quick-add-content"
-            onClick={() => setCollapsed((current) => !current)}
-          >
-            {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-          </button>
+          <Tooltip label={collapsed ? copy.quickExpand : copy.quickCollapse} placement="top">
+            <button
+              type="button"
+              className="icon-btn quick-collapse"
+              aria-label={collapsed ? copy.quickExpand : copy.quickCollapse}
+              aria-expanded={!collapsed}
+              aria-controls="quick-add-content"
+              onClick={() => setCollapsed((current) => !current)}
+            >
+              {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </button>
+          </Tooltip>
         </div>
       </div>
       {!collapsed && (

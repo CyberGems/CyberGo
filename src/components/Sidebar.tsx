@@ -6,6 +6,7 @@ import { SWATCHES } from '@shared/types';
 import { useState } from 'react';
 import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, Clock3, Flag, FolderPlus, Inbox, ListFilter, Plus, Trash2 } from 'lucide-react';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
+import Tooltip from './Tooltip';
 
 const FILTERS: Exclude<FilterId, 'trash'>[] = ['all', 'today', 'next7', 'next30', 'upcoming', 'overdue', 'high', 'completed'];
 const FILTER_ICONS = {
@@ -83,7 +84,9 @@ export default function Sidebar({
               <span className="subject">{group.name}</span>
               <span className="badge">{count('all', group.id)}</span>
             </button>
-            <button type="button" className="icon-btn" onClick={() => onDeleteGroup(group)} aria-label={`${copy.delete}: ${group.name}`} title={copy.delete}><Trash2 size={13} /></button>
+            <Tooltip label={copy.delete} placement="right">
+              <button type="button" className="icon-btn" onClick={() => onDeleteGroup(group)} aria-label={`${copy.delete}: ${group.name}`}><Trash2 size={13} /></button>
+            </Tooltip>
           </div>
         ))}
         {adding ? (
