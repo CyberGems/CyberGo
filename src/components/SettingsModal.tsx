@@ -12,9 +12,13 @@ import {
   Info,
   KeyRound,
   LoaderCircle,
+  Database,
+  Settings2,
+  SlidersHorizontal,
   ShieldCheck,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import type { Copy } from '../i18n';
 import type {
@@ -146,6 +150,12 @@ export default function SettingsModal({
   const [previewing, setPreviewing] = useState(false);
   const [dataBusy, setDataBusy] = useState<DataBusy | null>(null);
   const [dataNotice, setDataNotice] = useState<DataNotice | null>(null);
+  const navItems = [
+    { id: 'general' as const, label: copy.general, icon: <SlidersHorizontal size={15} /> },
+    { id: 'notifications' as const, label: copy.notifications, icon: <BellRing size={15} /> },
+    { id: 'security' as const, label: copy.security, icon: <ShieldCheck size={15} /> },
+    { id: 'data' as const, label: copy.data, icon: <Database size={15} /> },
+  ];
 
   useModalKeys(true, {
     esc: () => {
@@ -299,17 +309,62 @@ export default function SettingsModal({
   }
 
   return (
-    <div className="backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <h2>{copy.settings}</h2>
-        <div className="tabs">
-          {(['general', 'notifications', 'security', 'data'] as Tab[]).map((id) => (
-            <button key={id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); setMessage(''); setClearAccessConfirm(false); }}>{copy[id === 'data' ? 'data' : id]}</button>
-          ))}
-        </div>
+    <div className="panel-overlay" onMouseDown={onClose}>
+      <div className="panel settings-panel" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={copy.settings}>
+        <header className="settings-header">
+          <div className="settings-header-title">
+            <span className="settings-header-icon"><Settings2 size={17} /></span>
+            <div>
+              <strong>{copy.settings}</strong>
+              <span>{copy.settingsSubtitle}</span>
+            </div>
+          </div>
+          <Tooltip label={copy.close} placement="left">
+            <button type="button" className="settings-header-close" aria-label={copy.close} onClick={onClose}>
+              <X size={16} />
+            </button>
+          </Tooltip>
+        </header>
+        <div className="settings-layout">
+          <aside className="settings-nav">
+            <nav className="settings-nav-items" aria-label={copy.settings}>
+              {navItems.map((item) => (
+                <button
+                  type="button"
+                  key={item.id}
+                  className={`settings-nav-btn${tab === item.id ? ' active' : ''}`}
+                  aria-current={tab === item.id ? 'page' : undefined}
+                  onClick={() => { setTab(item.id); setMessage(''); setClearAccessConfirm(false); }}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="settings-nav-footer">
+              {message && (
+                <div className="settings-saved" role="status" aria-live="polite">
+                  <span className="settings-saved-dot" aria-hidden="true" />
+                  <span>{message}</span>
+                </div>
+              )}
+              <button type="button" className="settings-nav-close" onClick={onClose}>
+                <span>{copy.close}</span>
+                <EscHint />
+              </button>
+            </div>
+          </aside>
+          <div className="settings-content">
 
         {tab === 'general' && (
-          <>
+          <div className="settings-tab-content">
+            <div className="settings-tab-heading">
+              <span className="settings-tab-heading-icon"><SlidersHorizontal size={18} /></span>
+              <div>
+                <h2>{copy.general}</h2>
+                <p>{copy.settingsGeneralHelp}</p>
+              </div>
+            </div>
             <label className="field">
               <span>{copy.language}</span>
               <select value={settings.language} onChange={(e) => void patch({ language: e.target.value as 'es' | 'en' })}>
@@ -332,11 +387,18 @@ export default function SettingsModal({
               {copy.startWithWindows}
             </label>
             <p className="hint">{copy.trayHint}</p>
-          </>
+          </div>
         )}
 
         {tab === 'notifications' && (
-          <>
+          <div className="settings-tab-content">
+            <div className="settings-tab-heading">
+              <span className="settings-tab-heading-icon"><BellRing size={18} /></span>
+              <div>
+                <h2>{copy.notifications}</h2>
+                <p>{copy.settingsNotificationsHelp}</p>
+              </div>
+            </div>
             <label className="check">
               <input type="checkbox" checked={settings.soundEnabled} onChange={(e) => void patch({ soundEnabled: e.target.checked })} />
               {copy.sound}: {copy.soundOn}
@@ -414,11 +476,18 @@ export default function SettingsModal({
                 </button>
               </div>
             </section>
-          </>
+          </div>
         )}
 
         {tab === 'security' && (
-          <>
+          <div className="settings-tab-content">
+            <div className="settings-tab-heading">
+              <span className="settings-tab-heading-icon"><ShieldCheck size={18} /></span>
+              <div>
+                <h2>{copy.security}</h2>
+                <p>{copy.settingsSecurityHelp}</p>
+              </div>
+            </div>
             <div className="themes">
               <button className={`theme-card ${settings.lockLevel === 'soft' ? 'on' : ''}`} onClick={() => void patch({ lockLevel: 'soft' })}>
                 <strong>{copy.lockSoft}</strong>
@@ -536,11 +605,11 @@ export default function SettingsModal({
                 )}
               </div>
             </section>
-          </>
+          </div>
         )}
 
         {tab === 'data' && (
-          <div className="data-tab">
+          <div className="settings-tab-content data-tab">
             <div className="data-intro">
               <div className="data-intro-icon"><HardDrive size={21} /></div>
               <div>
@@ -687,9 +756,7 @@ export default function SettingsModal({
           </div>
         )}
 
-        <div className="hint">{message}</div>
-        <div className="row-actions">
-          <button className="btn" onClick={onClose}>{copy.close}{!restoreName && <EscHint />}</button>
+          </div>
         </div>
       </div>
     </div>

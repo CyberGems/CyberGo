@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Improved
+
+- Reworked the settings panel into a CyberNotes-inspired drawer with icon navigation, section headings, saved-state feedback, responsive layout, and a dedicated close action.
+
 ## 0.1.0-alpha.1 - 2026-09-28
 
 First public pre-release of CyberGo.
