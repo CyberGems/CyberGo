@@ -38,6 +38,7 @@ const REMINDER_DEFAULT_WIDTH = 380;
 const REMINDER_DEFAULT_HEIGHT = 460;
 const REMINDER_MIN_WIDTH = 340;
 const REMINDER_MIN_HEIGHT = 380;
+const REMINDER_PREVIEW_DURATION = 4_000;
 const locale = () => (app.getLocale().toLowerCase().startsWith('es') ? 'es' : 'en') as 'es' | 'en';
 
 function fromPublic(rel: string): string {
@@ -333,7 +334,7 @@ async function showReminderWindow(
     reminderPreviewTimer = setTimeout(() => {
       reminderPreviewTimer = null;
       if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.hide();
-    }, 8_000);
+    }, REMINDER_PREVIEW_DURATION);
   }
   const send = () => {
     if (!reminderWindow || reminderWindow.isDestroyed()) return;

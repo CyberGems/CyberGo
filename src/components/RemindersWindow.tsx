@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Item, PublicSettings } from '@shared/types';
 import { copyOf } from '../i18n';
 import { duePhrase } from '../lib/format';
@@ -15,13 +15,17 @@ export default function RemindersWindow() {
   const [selected, setSelected] = useState<string | null>(null);
   const [pulse, setPulse] = useState<string[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
+  const previewModeRef = useRef(false);
   const [amount, setAmount] = useState(8);
   const [unit, setUnit] = useState<'minutes' | 'hours' | 'days'>('hours');
   const copy = copyOf(settings?.language || 'es');
 
   async function reload(pulseIds: string[] = []) {
-    setPreviewMode(false);
     const [due, boot] = await Promise.all([api.dueReminders(), api.getBootstrap()]);
+    // A preview can arrive while this initial reload is in flight. Do not let
+    // the empty real-data response overwrite the demo items.
+    if (previewModeRef.current) return;
+    setPreviewMode(false);
     setItems(due);
     if (!due.length) stopAlert();
     setSettings(boot.settings);
@@ -37,10 +41,12 @@ export default function RemindersWindow() {
   useEffect(() => {
     const offData = api.onDataChanged(() => void reload());
     const off = api.onReminderUpdate((payload) => {
+      previewModeRef.current = false;
       void reload(payload.pulseIds);
       if (payload.sound) void playAlert();
     });
     const offPreview = api.onReminderPreview((payload) => {
+      previewModeRef.current = true;
       setItems(payload.items);
       setSettings(payload.settings);
       setPreviewMode(true);
