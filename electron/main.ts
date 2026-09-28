@@ -521,7 +521,13 @@ function createTray() {
     { type: 'separator' },
     { label: es ? 'Salir' : 'Quit', click: () => { quitting = true; app.quit(); } },
   ]);
-  tray.setContextMenu(menu);
+  // Open explicitly on right-click so Windows can anchor the menu to the
+  // duplicated tray icon on a secondary monitor.
+  tray.on('right-click', (_event, bounds) => {
+    const x = Math.round(bounds.x + bounds.width / 2);
+    const y = Math.round(bounds.y + bounds.height / 2);
+    tray?.popUpContextMenu(menu, { x, y });
+  });
   tray.on('click', () => toggleMainFromTray());
   tray.on('double-click', () => toggleMainFromTray());
 }
