@@ -82,17 +82,34 @@ button { cursor: pointer; }
 .dot { width: 8px; height: 8px; border-radius: 99px; flex-shrink: 0; }
 .side-foot { padding: 8px; border-top: 1px solid var(--border); }
 
-.list-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-list); }
+.list-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-list); overflow: hidden; }
 .list-head, .row {
   display: grid;
-  grid-template-columns: 14px 132px minmax(120px, 160px) 126px minmax(0, 1fr) 72px;
+  grid-template-columns: var(--table-columns);
   gap: 8px; align-items: center; padding: 0 16px;
+  min-width: var(--table-width);
 }
 .list-head {
   height: 34px; color: var(--text-muted); font-size: 12px;
   border-bottom: 1px solid var(--border); flex-shrink: 0;
 }
-.rows { flex: 1; overflow: auto; }
+.table-scroll { flex: 1; min-height: 0; overflow: auto; }
+.table-head-cell {
+  position: relative; min-width: 0; height: 100%;
+  display: flex; align-items: center; padding-right: 8px;
+}
+.column-resizer {
+  position: absolute; z-index: 2; top: 6px; right: -5px; bottom: 6px;
+  width: 10px; padding: 0; border: 0; border-left: 1px solid transparent;
+  background: transparent; cursor: col-resize;
+}
+.column-resizer:hover, .column-resizer:focus-visible {
+  border-left-color: var(--accent);
+  background: var(--accent-dim);
+  outline: none;
+}
+.is-resizing-column, .is-resizing-column * { cursor: col-resize !important; user-select: none !important; }
+.rows { overflow: visible; }
 .row { min-height: 40px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text-primary); }
 .row:hover { background: var(--bg-hover); }
 .row.selected { background: var(--bg-active); }
@@ -813,7 +830,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 
 .list-wrap {
   background: var(--bg-list);
-  overflow: auto;
+  overflow: hidden;
 }
 .workspace-head {
   display: flex;
@@ -930,7 +947,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .quick-preview svg { color: var(--accent-light); }
 
 .list-head, .row {
-  grid-template-columns: 14px minmax(132px, 1.1fr) minmax(118px, 0.9fr) 126px minmax(180px, 1fr) 76px;
+  grid-template-columns: var(--table-columns);
 }
 .list-head {
   height: 38px;
@@ -951,6 +968,14 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   border-top: 0;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   background: color-mix(in srgb, var(--bg-app) 18%, transparent);
+}
+.table-scroll {
+  margin: 0;
+}
+.table-scroll > .list-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
 }
 .row {
   min-height: 56px;
@@ -998,6 +1023,39 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   height: 32px;
   padding-inline: 18px;
   background: var(--bg-sidebar);
+}
+
+.tooltip-layer {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+}
+.tooltip-card {
+  position: relative;
+  max-width: min(420px, calc(100vw - 16px));
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(15, 15, 20, 0.97);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 10px var(--accent-glow);
+  backdrop-filter: blur(10px);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  animation: tooltipPop 140ms ease-out;
+}
+.tooltip-arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: rgba(15, 15, 20, 0.97);
+}
+@keyframes tooltipPop {
+  from { opacity: 0; transform: translateY(2px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal {
@@ -1178,9 +1236,6 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   .toolbar .toolbar-label { display: none; }
   .toolbar .btn-primary { padding-inline: 9px; }
   .search-wrap .search { width: 132px; min-width: 110px; }
-  .list-head, .row {
-    grid-template-columns: 14px minmax(112px, 1fr) minmax(92px, 0.8fr) 112px minmax(120px, 1fr) 64px;
-  }
   .date-relative, .kind-tag { display: none; }
 }
 
@@ -1198,6 +1253,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   .rows { margin-top: 16px; border-top: 1px solid var(--border); border-radius: var(--radius-md); }
   .row {
     grid-template-columns: 12px minmax(100px, 1fr) 110px minmax(100px, 1fr);
+    min-width: 0;
     gap: 7px;
   }
   .row > .time-cell { display: none; }
