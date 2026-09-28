@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AccessLogEntry, AuthMethod, Bootstrap, CsvResult, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
+import type { AccessLogEntry, AuthMethod, Bootstrap, CsvResult, DisplayInfo, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
 
 export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
@@ -42,9 +42,12 @@ export interface CyberGoAPI {
   exportCsv: () => Promise<boolean>;
   importCsv: () => Promise<CsvResult | null>;
   importIcs: () => Promise<CsvResult | null>;
+  listDisplays: () => Promise<DisplayInfo[]>;
+  previewReminders: (placement?: Partial<Pick<PublicSettings, 'reminderDisplayId' | 'reminderDisplayBounds' | 'reminderPosition'>>) => Promise<boolean>;
   onDataChanged: (cb: () => void) => () => void;
   onQuickAddFocus: (cb: () => void) => () => void;
   onReminderUpdate: (cb: (payload: { sound: boolean; pulseIds: string[] }) => void) => () => void;
+  onReminderPreview: (cb: (payload: { items: Item[]; settings: PublicSettings }) => void) => () => void;
   onOpenItem: (cb: (id: string) => void) => () => void;
   onMaximized: (cb: (value: boolean) => void) => () => void;
 }
@@ -90,6 +93,8 @@ const api: CyberGoAPI = {
   exportCsv: () => ipcRenderer.invoke('csv:export'),
   importCsv: () => ipcRenderer.invoke('csv:import'),
   importIcs: () => ipcRenderer.invoke('ics:import'),
+  listDisplays: () => ipcRenderer.invoke('displays:list'),
+  previewReminders: (placement) => ipcRenderer.invoke('reminders:preview', placement),
   onDataChanged: (cb) => {
     const listener = () => cb();
     ipcRenderer.on('data:changed', listener);
@@ -99,6 +104,11 @@ const api: CyberGoAPI = {
     const listener = (_e: unknown, payload: { sound: boolean; pulseIds: string[] }) => cb(payload);
     ipcRenderer.on('reminder:update', listener);
     return () => ipcRenderer.removeListener('reminder:update', listener);
+  },
+  onReminderPreview: (cb) => {
+    const listener = (_e: unknown, payload: { items: Item[]; settings: PublicSettings }) => cb(payload);
+    ipcRenderer.on('reminder:preview', listener);
+    return () => ipcRenderer.removeListener('reminder:preview', listener);
   },
   onOpenItem: (cb) => {
     const listener = (_e: unknown, id: string) => cb(id);

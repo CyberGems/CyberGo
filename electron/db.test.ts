@@ -14,6 +14,16 @@ test('access log can be disabled, cleared, and is retained to 100 entries', asyn
   try {
     await db.initDatabase(database, wasm, 'en');
     assert.equal(db.readSettings('en').accessLogEnabled, true);
+    assert.equal(db.readSettings('en').reminderDisplayId, -1);
+    assert.equal(db.readSettings('en').reminderPosition, 'bottom-right');
+    db.applySettingsPatch({
+      reminderDisplayId: 2,
+      reminderDisplayBounds: { x: 1536, y: 0, width: 1280, height: 720 },
+      reminderPosition: 'top-left',
+    });
+    assert.equal(db.readSettings('en').reminderDisplayId, 2);
+    assert.deepEqual(db.readSettings('en').reminderDisplayBounds, { x: 1536, y: 0, width: 1280, height: 720 });
+    assert.equal(db.readSettings('en').reminderPosition, 'top-left');
 
     db.recordAccessEvent('failure', 'password');
     db.recordAccessEvent('success', 'password');

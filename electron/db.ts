@@ -7,6 +7,7 @@ import type {
   AccessLogEvent,
   AccessLogMethod,
   AuthMethod,
+  DisplayBounds,
   Group,
   Importance,
   Item,
@@ -128,10 +129,38 @@ function boolSetting(key: string, fallback: boolean): boolean {
   return v === '1' || v === 'true';
 }
 
+function displayBoundsSetting(value: string | null): DisplayBounds | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<DisplayBounds>;
+    if (
+      Number.isFinite(parsed.x) &&
+      Number.isFinite(parsed.y) &&
+      Number.isFinite(parsed.width) &&
+      Number.isFinite(parsed.height) &&
+      Number(parsed.width) > 0 &&
+      Number(parsed.height) > 0
+    ) {
+      return {
+        x: Number(parsed.x),
+        y: Number(parsed.y),
+        width: Number(parsed.width),
+        height: Number(parsed.height),
+      };
+    }
+  } catch {
+    // Ignore malformed display data and fall back to the active monitor.
+  }
+  return null;
+}
+
 export function readSettings(locale: 'es' | 'en'): PublicSettings {
   const theme = getSetting('theme');
   const language = getSetting('language');
   const lockLevel = getSetting('lock_level');
+  const reminderDisplayRaw = getSetting('reminder_display_id');
+  const reminderDisplayId = reminderDisplayRaw == null ? NaN : Number(reminderDisplayRaw);
+  const reminderPosition = getSetting('reminder_position');
   return {
     theme: theme === 'gray' || theme === 'light' || theme === 'cybergo' ? theme : 'cybergo',
     language: language === 'en' || language === 'es' ? language : locale,
@@ -143,6 +172,16 @@ export function readSettings(locale: 'es' | 'en'): PublicSettings {
     autobackupKeep: Math.max(1, Number(getSetting('autobackup_keep') || '7') || 7),
     openAtLogin: boolSetting('open_at_login', false),
     reminderAlwaysOnTop: boolSetting('reminder_always_on_top', true),
+    reminderDisplayId: Number.isFinite(reminderDisplayId) ? Math.trunc(reminderDisplayId) : -1,
+    reminderDisplayBounds: displayBoundsSetting(getSetting('reminder_display_bounds')),
+    reminderPosition: reminderPosition === 'top-left'
+      || reminderPosition === 'top-center'
+      || reminderPosition === 'top-right'
+      || reminderPosition === 'bottom-left'
+      || reminderPosition === 'bottom-center'
+      || reminderPosition === 'bottom-right'
+      ? reminderPosition
+      : 'bottom-right',
     passwordHint: getSetting('password_hint') ?? '',
     authMethod: getSetting('auth_method') === 'pin' ? 'pin' : 'password',
     accessLogEnabled: boolSetting('access_log_enabled', true),
@@ -396,6 +435,13 @@ export function applySettingsPatch(patch: Partial<PublicSettings>) {
     autobackup_keep: patch.autobackupKeep == null ? undefined : String(Math.max(1, Math.floor(patch.autobackupKeep))),
     open_at_login: patch.openAtLogin == null ? undefined : patch.openAtLogin ? '1' : '0',
     reminder_always_on_top: patch.reminderAlwaysOnTop == null ? undefined : patch.reminderAlwaysOnTop ? '1' : '0',
+    reminder_display_id: patch.reminderDisplayId == null ? undefined : String(Math.trunc(patch.reminderDisplayId)),
+    reminder_display_bounds: patch.reminderDisplayBounds === undefined
+      ? undefined
+      : patch.reminderDisplayBounds
+        ? JSON.stringify(patch.reminderDisplayBounds)
+        : '',
+    reminder_position: patch.reminderPosition,
     password_hint: patch.passwordHint,
     access_log_enabled: patch.accessLogEnabled == null ? undefined : patch.accessLogEnabled ? '1' : '0',
   };

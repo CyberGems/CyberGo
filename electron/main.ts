@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, shell, Tray } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, shell, Tray } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -9,8 +9,9 @@ import { detectCsvFormat, itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../s
 import { parseIcs } from '../shared/ics';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { normalizeAuthSecret } from '../shared/auth';
-import type { AuthMethod, Item, ItemDraft, PublicSettings } from '../shared/types';
+import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition } from '../shared/types';
 import * as db from './db';
+import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verify = process.env.CYBERGO_VERIFY === '1';
@@ -26,6 +27,7 @@ if (verify) {
 
 let mainWindow: BrowserWindow | null = null;
 let reminderWindow: BrowserWindow | null = null;
+let reminderPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 let tray: Tray | null = null;
 let sessionLocked = false;
 let quitting = false;
@@ -121,6 +123,93 @@ function backupsDir() {
   return dir;
 }
 
+function readMainWindowState(): SavedWindowBounds {
+  const raw = db.getSetting('main_window_state');
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as SavedWindowBounds;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistMainWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible() || mainWindow.isMinimized()) return;
+  try {
+    const live = mainWindow.getBounds();
+    const matching = screen.getDisplayMatching(live);
+    const normal = mainWindow.isMaximized() ? mainWindow.getNormalBounds() : live;
+    const resolved = resolveWindowBounds(
+      { ...normal, displayId: matching.id, maximized: mainWindow.isMaximized() },
+      screen.getAllDisplays(),
+      screen.getPrimaryDisplay(),
+    );
+    db.setSetting('main_window_state', JSON.stringify({
+      x: resolved.x,
+      y: resolved.y,
+      width: resolved.width,
+      height: resolved.height,
+      displayId: matching.id,
+      maximized: mainWindow.isMaximized(),
+    }));
+  } catch (error) {
+    console.error('CyberGo: could not save main window state.', error);
+  }
+}
+
+function displayInfoList(): DisplayInfo[] {
+  const primary = screen.getPrimaryDisplay();
+  const displays = screen.getAllDisplays();
+  const es = locale() === 'es';
+  return [
+    ...displays.filter((display) => display.id === primary.id),
+    ...displays.filter((display) => display.id !== primary.id),
+  ].map((display, index) => ({
+    id: display.id,
+    label: `${es ? 'Pantalla' : 'Display'} ${index + 1} · ${display.bounds.width}×${display.bounds.height}${display.id === primary.id ? ` (${es ? 'Principal' : 'Primary'})` : ''}`,
+    isPrimary: display.id === primary.id,
+    ...display.bounds,
+    workArea: display.workArea,
+  }));
+}
+
+function sameDisplayBounds(a: DisplayBounds | null, b: DisplayBounds): boolean {
+  return !!a && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
+function resolveReminderDisplay(settings: PublicSettings) {
+  const displays = screen.getAllDisplays();
+  const primary = screen.getPrimaryDisplay();
+  if (settings.reminderDisplayId === -1) {
+    return screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  }
+  const byBounds = displays.find((display) => sameDisplayBounds(settings.reminderDisplayBounds, display.bounds));
+  if (byBounds) return byBounds;
+  return displays.find((display) => display.id === settings.reminderDisplayId) ?? primary;
+}
+
+function positionReminderWindow(win: BrowserWindow, settings: PublicSettings) {
+  const display = resolveReminderDisplay(settings);
+  const area = display.workArea || display.bounds;
+  const bounds = win.getBounds();
+  const marginX = 16;
+  const marginY = 16;
+  const positions: Record<ReminderPosition, { x: number; y: number }> = {
+    'top-left': { x: area.x + marginX, y: area.y + marginY },
+    'top-center': { x: area.x + Math.round((area.width - bounds.width) / 2), y: area.y + marginY },
+    'top-right': { x: area.x + area.width - bounds.width - marginX, y: area.y + marginY },
+    'bottom-left': { x: area.x + marginX, y: area.y + area.height - bounds.height - marginY },
+    'bottom-center': { x: area.x + Math.round((area.width - bounds.width) / 2), y: area.y + area.height - bounds.height - marginY },
+    'bottom-right': { x: area.x + area.width - bounds.width - marginX, y: area.y + area.height - bounds.height - marginY },
+  };
+  const target = positions[settings.reminderPosition] ?? positions['bottom-right'];
+  const x = Math.min(area.x + Math.max(0, area.width - bounds.width), Math.max(area.x, target.x));
+  const y = Math.min(area.y + Math.max(0, area.height - bounds.height), Math.max(area.y, target.y));
+  win.setBounds({ ...bounds, x, y }, false);
+  if (process.platform === 'win32') win.setPosition(x, y, false);
+}
+
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
@@ -163,8 +252,47 @@ function listBackups() {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-async function showReminderWindow(opts: { sound: boolean; pulseIds: string[]; focus?: boolean }) {
-  const always = db.readSettings(locale()).reminderAlwaysOnTop;
+function previewReminderItems(): Item[] {
+  const now = new Date();
+  const make = (id: string, title: string, offsetMinutes: number, kind: Item['kind']): Item => {
+    const at = new Date(now.getTime() + offsetMinutes * 60_000).toISOString();
+    return {
+      id,
+      kind,
+      title,
+      notes: '',
+      allDay: false,
+      startAt: at,
+      endAt: null,
+      importance: 'normal',
+      color: '',
+      groupId: null,
+      recurrence: null,
+      remindMinutes: 0,
+      occurrenceAt: at,
+      nextFireAt: at,
+      snoozeUntil: null,
+      alertKey: null,
+      completedAt: null,
+      deletedAt: null,
+      remoteId: null,
+      syncRev: 0,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+  };
+  return [
+    make('preview-reminder-1', locale() === 'es' ? 'Revisar el informe semanal' : 'Review the weekly report', 20, 'task'),
+    make('preview-reminder-2', locale() === 'es' ? 'Llamar a Laura' : 'Call Laura', 90, 'event'),
+  ];
+}
+
+async function showReminderWindow(
+  opts: { sound: boolean; pulseIds: string[]; focus?: boolean },
+  preview?: { items: Item[]; settings: PublicSettings },
+) {
+  const activeSettings = preview?.settings ?? db.readSettings(locale());
+  const always = activeSettings.reminderAlwaysOnTop;
   if (!reminderWindow || reminderWindow.isDestroyed()) {
     reminderWindow = new BrowserWindow({
       width: 440,
@@ -182,7 +310,6 @@ async function showReminderWindow(opts: { sound: boolean; pulseIds: string[]; fo
         nodeIntegration: false,
       },
     });
-    reminderWindow.setAlwaysOnTop(always, 'floating');
     reminderWindow.on('close', (event) => {
       if (quitting) return;
       event.preventDefault();
@@ -192,17 +319,37 @@ async function showReminderWindow(opts: { sound: boolean; pulseIds: string[]; fo
     if (dev) await reminderWindow.loadURL(dev + '#/reminders');
     else await reminderWindow.loadFile(path.join(here, '../dist/index.html'), { hash: '/reminders' });
   }
+  reminderWindow.setAlwaysOnTop(always, 'floating');
+  positionReminderWindow(reminderWindow, activeSettings);
+  if (reminderPreviewTimer) {
+    clearTimeout(reminderPreviewTimer);
+    reminderPreviewTimer = null;
+  }
+  if (preview) {
+    reminderPreviewTimer = setTimeout(() => {
+      reminderPreviewTimer = null;
+      if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.hide();
+    }, 8_000);
+  }
   const send = () => {
     if (!reminderWindow || reminderWindow.isDestroyed()) return;
-    reminderWindow.webContents.send('reminder:update', opts);
+    if (preview) reminderWindow.webContents.send('reminder:preview', preview);
+    else reminderWindow.webContents.send('reminder:update', opts);
   };
-  if (reminderWindow.webContents.isLoading()) reminderWindow.webContents.once('did-finish-load', send);
+  if (reminderWindow.webContents.isLoading()) {
+    reminderWindow.webContents.once('did-finish-load', () => setTimeout(send, 80));
+  }
   else send();
   if (opts.focus) reminderWindow.show();
   else reminderWindow.showInactive();
+  positionReminderWindow(reminderWindow, activeSettings);
 }
 
 function hideReminders() {
+  if (reminderPreviewTimer) {
+    clearTimeout(reminderPreviewTimer);
+    reminderPreviewTimer = null;
+  }
   if (reminderWindow && !reminderWindow.isDestroyed() && reminderWindow.isVisible()) reminderWindow.hide();
 }
 
@@ -305,11 +452,18 @@ function noteSuccess() {
 }
 
 function createMain() {
+  const startup = resolveWindowBounds(
+    readMainWindowState(),
+    screen.getAllDisplays(),
+    screen.getPrimaryDisplay(),
+  );
   mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 760,
-    minWidth: 900,
-    minHeight: 600,
+    x: startup.x,
+    y: startup.y,
+    width: startup.width,
+    height: startup.height,
+    minWidth: MAIN_MIN_WIDTH,
+    minHeight: MAIN_MIN_HEIGHT,
     show: false,
     frame: false,
     backgroundColor: '#0c0c12',
@@ -320,14 +474,33 @@ function createMain() {
       nodeIntegration: false,
     },
   });
+  let persistTimer: ReturnType<typeof setTimeout> | null = null;
+  const schedulePersist = () => {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      persistTimer = null;
+      persistMainWindowState();
+    }, 350);
+  };
   mainWindow.on('close', (event) => {
+    if (persistTimer) clearTimeout(persistTimer);
+    persistMainWindowState();
     if (quitting) return;
     event.preventDefault();
     mainWindow?.hide();
   });
-  mainWindow.on('maximize', () => mainWindow?.webContents.send('window:maximized', true));
-  mainWindow.on('unmaximize', () => mainWindow?.webContents.send('window:maximized', false));
+  mainWindow.on('move', schedulePersist);
+  mainWindow.on('resize', schedulePersist);
+  mainWindow.on('maximize', () => {
+    persistMainWindowState();
+    mainWindow?.webContents.send('window:maximized', true);
+  });
+  mainWindow.on('unmaximize', () => {
+    persistMainWindowState();
+    mainWindow?.webContents.send('window:maximized', false);
+  });
   mainWindow.once('ready-to-show', () => {
+    if (startup.maximized && !mainWindow?.isMaximized()) mainWindow?.maximize();
     mainWindow?.show();
   });
   const dev = process.env.VITE_DEV_SERVER_URL;
@@ -389,6 +562,13 @@ function registerIpc() {
     if (patch.openAtLogin != null) applyLogin(patch.openAtLogin);
     if (patch.reminderAlwaysOnTop != null && reminderWindow && !reminderWindow.isDestroyed()) {
       reminderWindow.setAlwaysOnTop(patch.reminderAlwaysOnTop, 'floating');
+    }
+    if (
+      (patch.reminderDisplayId != null || patch.reminderDisplayBounds !== undefined || patch.reminderPosition != null)
+      && reminderWindow
+      && !reminderWindow.isDestroyed()
+    ) {
+      positionReminderWindow(reminderWindow, db.readSettings(locale()));
     }
     if (patch.lockLevel === 'hard' && sessionLocked) hideReminders();
     if (patch.lockLevel === 'soft' && sessionLocked) void evaluateReminders('tick');
@@ -508,6 +688,28 @@ function registerIpc() {
     db.clearAccessLog();
     changed();
   });
+
+  ipcMain.handle('displays:list', () => displayInfoList());
+  ipcMain.handle(
+    'reminders:preview',
+    async (
+      _e,
+      placement: Partial<Pick<PublicSettings, 'reminderDisplayId' | 'reminderDisplayBounds' | 'reminderPosition'>> = {},
+    ) => {
+      const settings = db.readSettings(locale());
+      const previewSettings: PublicSettings = {
+        ...settings,
+        reminderDisplayId: Number.isFinite(placement.reminderDisplayId) ? Math.trunc(placement.reminderDisplayId as number) : settings.reminderDisplayId,
+        reminderDisplayBounds: placement.reminderDisplayBounds ?? settings.reminderDisplayBounds,
+        reminderPosition: placement.reminderPosition ?? settings.reminderPosition,
+      };
+      await showReminderWindow(
+        { sound: false, pulseIds: [], focus: true },
+        { items: previewReminderItems(), settings: previewSettings },
+      );
+      return true;
+    },
+  );
 
   ipcMain.handle('reminders:due', () => db.listItems().filter((item) => isDue(item, Date.now())));
   ipcMain.handle('reminders:show', () => evaluateReminders('show'));
@@ -735,6 +937,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  persistMainWindowState();
   quitting = true;
 });
 

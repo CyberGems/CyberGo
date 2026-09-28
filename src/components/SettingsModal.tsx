@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   Archive,
+  BellRing,
   CheckCircle2,
   CircleAlert,
   Download,
@@ -16,7 +17,17 @@ import {
   Upload,
 } from 'lucide-react';
 import type { Copy } from '../i18n';
-import type { AccessLogEntry, AccessLogEvent, AccessLogMethod, AuthMethod, BackupInfo, CsvResult, PublicSettings } from '@shared/types';
+import type {
+  AccessLogEntry,
+  AccessLogEvent,
+  AccessLogMethod,
+  AuthMethod,
+  BackupInfo,
+  CsvResult,
+  DisplayInfo,
+  PublicSettings,
+  ReminderPosition,
+} from '@shared/types';
 import { applyTheme } from '../themes';
 import { playAlert } from '../lib/sound';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
@@ -92,6 +103,17 @@ function importErrorLabel(copy: Copy, error: string) {
 
 type DataBusy = 'backup' | 'export' | 'csv' | 'ics';
 type DataNotice = { tone: 'success' | 'info' | 'error'; title: string; body?: string; details?: string[] };
+const positionCells: Array<{ id: ReminderPosition | null; dot: 'tl' | 'tc' | 'tr' | 'bl' | 'bc' | 'br' | 'center' | null }> = [
+  { id: 'top-left', dot: 'tl' },
+  { id: 'top-center', dot: 'tc' },
+  { id: 'top-right', dot: 'tr' },
+  { id: null, dot: null },
+  { id: null, dot: 'center' },
+  { id: null, dot: null },
+  { id: 'bottom-left', dot: 'bl' },
+  { id: 'bottom-center', dot: 'bc' },
+  { id: 'bottom-right', dot: 'br' },
+];
 
 export default function SettingsModal({
   copy,
@@ -119,6 +141,8 @@ export default function SettingsModal({
   const [restoreName, setRestoreName] = useState<string | null>(null);
   const [accessLog, setAccessLog] = useState<AccessLogEntry[]>([]);
   const [clearAccessConfirm, setClearAccessConfirm] = useState(false);
+  const [displays, setDisplays] = useState<DisplayInfo[]>([]);
+  const [previewing, setPreviewing] = useState(false);
   const [dataBusy, setDataBusy] = useState<DataBusy | null>(null);
   const [dataNotice, setDataNotice] = useState<DataNotice | null>(null);
 
@@ -141,12 +165,32 @@ export default function SettingsModal({
     }
   }, [tab]);
   useEffect(() => { if (tab === 'security') void refreshAccessLog(); }, [tab]);
+  useEffect(() => {
+    if (tab === 'notifications') {
+      void api.listDisplays().then(setDisplays).catch(() => setDisplays([]));
+    }
+  }, [tab]);
 
   async function patch(partial: Partial<PublicSettings>) {
     const saved = await api.patchSettings(partial);
     if (partial.theme) applyTheme(saved.theme);
     if (partial.accessLogEnabled != null) void refreshAccessLog();
     setMessage(copy.saved);
+  }
+
+  async function previewReminderPlacement(
+    override: Partial<Pick<PublicSettings, 'reminderDisplayId' | 'reminderDisplayBounds' | 'reminderPosition'>> = {},
+  ) {
+    setPreviewing(true);
+    try {
+      await api.previewReminders({
+        reminderDisplayId: override.reminderDisplayId ?? settings.reminderDisplayId,
+        reminderDisplayBounds: override.reminderDisplayBounds ?? settings.reminderDisplayBounds,
+        reminderPosition: override.reminderPosition ?? settings.reminderPosition,
+      });
+    } finally {
+      window.setTimeout(() => setPreviewing(false), 700);
+    }
   }
 
   async function createBackup() {
@@ -303,6 +347,72 @@ export default function SettingsModal({
               <button className="btn" onClick={() => void api.clearSound()}>{copy.defaultSound}</button>
               <button className="btn btn-primary" onClick={() => void playAlert()}>{copy.testSound}</button>
             </div>
+            <section className="settings-section notification-display-section">
+              <div className="settings-section-heading">
+                <div>
+                  <h3>{copy.displayAndPosition}</h3>
+                  <p className="hint">{copy.displayAndPositionHelp}</p>
+                </div>
+              </div>
+              <label className="field">
+                <span>{copy.displayMonitor}</span>
+                <select
+                  value={settings.reminderDisplayId}
+                  onChange={(e) => {
+                    const displayId = Number(e.target.value);
+                    const selectedDisplay = displays.find((display) => display.id === displayId);
+                    void patch({
+                      reminderDisplayId: displayId,
+                      reminderDisplayBounds: selectedDisplay
+                        ? { x: selectedDisplay.x, y: selectedDisplay.y, width: selectedDisplay.width, height: selectedDisplay.height }
+                        : null,
+                    });
+                  }}
+                >
+                  <option value={-1}>{copy.activeMonitor}</option>
+                  {displays.map((display) => (
+                    <option key={display.id} value={display.id}>{display.label}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="notification-placement-row">
+                <div>
+                  <span className="label">{copy.notificationPosition}</span>
+                  <div className="position-monitor" role="group" aria-label={copy.notificationPosition}>
+                    {positionCells.map((cell, index) => {
+                      if (!cell.id) {
+                        return (
+                          <div key={`space-${index}`} className="position-cell is-spacer">
+                            {cell.dot === 'center' && <span className="position-center-mark" />}
+                          </div>
+                        );
+                      }
+                      const active = settings.reminderPosition === cell.id;
+                      return (
+                        <button
+                          type="button"
+                          key={cell.id}
+                          className={`position-cell${active ? ' is-active' : ''}`}
+                          aria-label={copy.positions[cell.id]}
+                          aria-pressed={active}
+                          title={copy.positions[cell.id]}
+                          onClick={() => {
+                            void patch({ reminderPosition: cell.id! });
+                            void previewReminderPlacement({ reminderPosition: cell.id! });
+                          }}
+                        >
+                          <span className={`position-dot ${cell.dot}`} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <button className="btn btn-primary notification-preview-btn" disabled={previewing} onClick={() => void previewReminderPlacement()}>
+                  {previewing ? <LoaderCircle className="spin" size={15} /> : <BellRing size={15} />}
+                  {previewing ? copy.previewingNotification : copy.previewNotification}
+                </button>
+              </div>
+            </section>
           </>
         )}
 

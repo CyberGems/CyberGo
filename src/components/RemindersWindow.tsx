@@ -14,11 +14,13 @@ export default function RemindersWindow() {
   const [settings, setSettings] = useState<PublicSettings | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [pulse, setPulse] = useState<string[]>([]);
+  const [previewMode, setPreviewMode] = useState(false);
   const [amount, setAmount] = useState(8);
   const [unit, setUnit] = useState<'minutes' | 'hours' | 'days'>('hours');
   const copy = copyOf(settings?.language || 'es');
 
   async function reload(pulseIds: string[] = []) {
+    setPreviewMode(false);
     const [due, boot] = await Promise.all([api.dueReminders(), api.getBootstrap()]);
     setItems(due);
     if (!due.length) stopAlert();
@@ -33,13 +35,22 @@ export default function RemindersWindow() {
   }
 
   useEffect(() => {
-    void reload();
     const offData = api.onDataChanged(() => void reload());
     const off = api.onReminderUpdate((payload) => {
       void reload(payload.pulseIds);
       if (payload.sound) void playAlert();
     });
-    return () => { offData(); off(); };
+    const offPreview = api.onReminderPreview((payload) => {
+      setItems(payload.items);
+      setSettings(payload.settings);
+      setPreviewMode(true);
+      setSelected(payload.items[0]?.id ?? null);
+      setPulse([]);
+      stopAlert();
+      applyTheme(payload.settings.theme);
+    });
+    void reload();
+    return () => { offData(); off(); offPreview(); };
   }, []);
 
   const current = items.find((item) => item.id === selected) ?? null;
@@ -66,7 +77,7 @@ export default function RemindersWindow() {
               <div className="reminder-heading">
                 <span className="reminder-mark"><BellRing size={18} /></span>
                 <div className="reminder-heading-copy">
-                  <p>{current ? duePhrase(current.occurrenceAt || current.nextFireAt, settings?.language || 'es') : copy.remindersTitle}</p>
+                  <p>{previewMode ? copy.notificationPreviewDemo : current ? duePhrase(current.occurrenceAt || current.nextFireAt, settings?.language || 'es') : copy.remindersTitle}</p>
                   <h1>{copy.remindersTitle}</h1>
                 </div>
               </div>
@@ -98,15 +109,15 @@ export default function RemindersWindow() {
             <footer className="reminder-foot">
               <div className="reminder-actions">
                 <button type="button" className="btn" onClick={stopAlert}><VolumeX size={14} />{copy.stopSound}</button>
-                <button type="button" className="btn" disabled={!current} onClick={() => current && void api.openItem(current.id)}><ExternalLink size={14} />{copy.openItem}</button>
-                <button type="button" className="btn" disabled={!current} onClick={() => current && void api.dismiss(current.id)}><X size={14} />{copy.dismiss}</button>
-                <button type="button" className="btn btn-danger" disabled={!items.length} onClick={() => void api.dismissAll()}><XCircle size={14} />{copy.dismissAll}</button>
+                <button type="button" className="btn" disabled={previewMode || !current} onClick={() => current && void api.openItem(current.id)}><ExternalLink size={14} />{copy.openItem}</button>
+                <button type="button" className="btn" disabled={previewMode || !current} onClick={() => current && void api.dismiss(current.id)}><X size={14} />{copy.dismiss}</button>
+                <button type="button" className="btn btn-danger" disabled={previewMode || !items.length} onClick={() => void api.dismissAll()}><XCircle size={14} />{copy.dismissAll}</button>
               </div>
               <div className="reminder-snooze">
                 <span className="reminder-snooze-label">{copy.snoozeFor}</span>
-                <button type="button" className="btn" disabled={!current} onClick={() => current && void api.snooze(current.id, 10)}><Clock3 size={13} />{copy.min10}</button>
-                <button type="button" className="btn" disabled={!current} onClick={() => current && void api.snooze(current.id, 60)}>{copy.hour1}</button>
-                <button type="button" className="btn" disabled={!current} onClick={() => current && void api.snoozeTomorrow(current.id)}>{copy.tomorrow9}</button>
+                <button type="button" className="btn" disabled={previewMode || !current} onClick={() => current && void api.snooze(current.id, 10)}><Clock3 size={13} />{copy.min10}</button>
+                <button type="button" className="btn" disabled={previewMode || !current} onClick={() => current && void api.snooze(current.id, 60)}>{copy.hour1}</button>
+                <button type="button" className="btn" disabled={previewMode || !current} onClick={() => current && void api.snoozeTomorrow(current.id)}>{copy.tomorrow9}</button>
               </div>
               <div className="reminder-custom">
                 <input type="number" min={1} value={amount} aria-label={copy.snoozeFor} onChange={(e) => setAmount(Number(e.target.value))} />
@@ -115,7 +126,7 @@ export default function RemindersWindow() {
                   <option value="hours">{copy.hours}</option>
                   <option value="days">{copy.days}</option>
                 </select>
-                <button type="button" className="btn btn-primary" disabled={!current} onClick={() => current && void api.snooze(current.id, minutes)}><Timer size={14} />{copy.snooze}</button>
+                <button type="button" className="btn btn-primary" disabled={previewMode || !current} onClick={() => current && void api.snooze(current.id, minutes)}><Timer size={14} />{copy.snooze}</button>
                 <label className="check">
                   <input
                     type="checkbox"

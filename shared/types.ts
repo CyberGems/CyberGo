@@ -7,6 +7,21 @@ export type LockLevel = 'soft' | 'hard';
 export type AuthMethod = 'password' | 'pin';
 export type AccessLogEvent = 'success' | 'failure' | 'recovery-success' | 'recovery-failure' | 'blocked';
 export type AccessLogMethod = AuthMethod | 'recovery';
+export type ReminderPosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
+export interface DisplayBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface DisplayInfo extends DisplayBounds {
+  id: number;
+  label: string;
+  isPrimary: boolean;
+  workArea: DisplayBounds;
+}
 
 export interface Recurrence {
   freq: Freq;
@@ -78,6 +93,9 @@ export interface PublicSettings {
   autobackupKeep: number;
   openAtLogin: boolean;
   reminderAlwaysOnTop: boolean;
+  reminderDisplayId: number;
+  reminderDisplayBounds: DisplayBounds | null;
+  reminderPosition: ReminderPosition;
   passwordHint: string;
   /** How the lock secret is entered. The hash itself stays out of this object. */
   authMethod: AuthMethod;
