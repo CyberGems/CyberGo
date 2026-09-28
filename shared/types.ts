@@ -23,6 +23,16 @@ export interface DisplayInfo extends DisplayBounds {
   workArea: DisplayBounds;
 }
 
+export interface AppInfo {
+  version: string;
+  electron: string;
+  chrome: string;
+  node: string;
+  platform: string;
+  arch: string;
+  osRelease: string;
+}
+
 export interface Recurrence {
   freq: Freq;
   interval: number;

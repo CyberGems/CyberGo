@@ -1,8 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AccessLogEntry, AuthMethod, Bootstrap, CsvResult, DisplayInfo, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
+import type { AccessLogEntry, AppInfo, AuthMethod, Bootstrap, CsvResult, DisplayInfo, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
 
 export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
+  getAppInfo: () => Promise<AppInfo>;
+  openExternal: (url: string) => Promise<boolean>;
   minimize: () => Promise<void>;
   toggleMaximize: () => Promise<boolean>;
   close: () => Promise<void>;
@@ -54,6 +56,8 @@ export interface CyberGoAPI {
 
 const api: CyberGoAPI = {
   getBootstrap: () => ipcRenderer.invoke('bootstrap:get'),
+  getAppInfo: () => ipcRenderer.invoke('app:info'),
+  openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   minimize: () => ipcRenderer.invoke('window:minimize'),
   toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),
   close: () => ipcRenderer.invoke('window:close'),

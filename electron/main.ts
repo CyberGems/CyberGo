@@ -534,6 +534,26 @@ function createTray() {
 
 function registerIpc() {
   ipcMain.handle('bootstrap:get', () => snapshot());
+  ipcMain.handle('app:info', () => ({
+    version: app.getVersion(),
+    electron: process.versions.electron || '',
+    chrome: process.versions.chrome || '',
+    node: process.versions.node || '',
+    platform: process.platform,
+    arch: process.arch,
+    osRelease: os.release(),
+  }));
+  ipcMain.handle('shell:open-external', async (_event, value: unknown) => {
+    if (typeof value !== 'string') return false;
+    try {
+      const url = new URL(value);
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
+      await shell.openExternal(url.toString());
+      return true;
+    } catch {
+      return false;
+    }
+  });
   ipcMain.handle('window:minimize', (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
   ipcMain.handle('window:toggle-maximize', (e) => {
     const win = BrowserWindow.fromWebContents(e.sender);

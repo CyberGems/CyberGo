@@ -99,7 +99,7 @@ fs.writeFileSync(path.join(pub, 'icon.png'), pngIcon(256));
 fs.writeFileSync(path.join(pub, 'tray.png'), pngIcon(32));
 
 const rate = 44100;
-const seconds = 0.72;
+const seconds = 1.02;
 const n = Math.floor(rate * seconds);
 const samples = Buffer.alloc(44 + n * 2);
 samples.write('RIFF', 0);
@@ -116,23 +116,28 @@ samples.writeUInt16LE(16, 34);
 samples.write('data', 36);
 samples.writeUInt32LE(n * 2, 40);
 
-function env(t, attack, dur) {
-  if (t < 0 || t > dur) return 0;
-  if (t < attack) return t / attack;
-  return Math.exp(-4.2 * ((t - attack) / (dur - attack)));
+const notes = [
+  { at: 0, frequency: 523.25, gain: 0.17, duration: 0.82 },
+  { at: 0.09, frequency: 659.25, gain: 0.13, duration: 0.86 },
+  { at: 0.18, frequency: 783.99, gain: 0.09, duration: 0.92 },
+];
+
+function bell(t, note) {
+  const local = t - note.at;
+  if (local < 0 || local > note.duration) return 0;
+  const attack = Math.min(1, local / 0.035);
+  const release = Math.exp(-3.5 * (local / note.duration));
+  const fade = Math.min(1, (seconds - t) / 0.05);
+  const fundamental = Math.sin(2 * Math.PI * note.frequency * local);
+  const harmonic = Math.sin(2 * Math.PI * note.frequency * 2 * local) * 0.1;
+  return (fundamental + harmonic) * attack * release * fade * note.gain;
 }
 
 for (let i = 0; i < n; i++) {
   const t = i / rate;
-  const a = Math.sin(2 * Math.PI * 880 * t) * env(t, 0.012, 0.34) * 0.32;
-  const t2 = t - 0.15;
-  const b = Math.sin(2 * Math.PI * 1318.51 * t2) * env(t2, 0.01, 0.52) * 0.26;
-  const h = Math.sin(2 * Math.PI * 1760 * t2) * env(t2, 0.01, 0.4) * 0.06;
-  let s = a + b + h;
-  const fade = Math.min(1, (seconds - t) / 0.03);
-  s *= fade;
-  const v = Math.max(-1, Math.min(1, s));
-  samples.writeInt16LE(Math.round(v * 32767), 44 + i * 2);
+  const sample = notes.reduce((value, note) => value + bell(t, note), 0);
+  const value = Math.max(-1, Math.min(1, sample));
+  samples.writeInt16LE(Math.round(value * 32767), 44 + i * 2);
 }
 
 fs.writeFileSync(path.join(pub, 'sounds', 'chime.wav'), samples);

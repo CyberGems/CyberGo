@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bell, CalendarDays, Command, Flame, List, Lock, Pencil, Plus, Search, Settings, Trash2, X } from 'lucide-react';
-import type { Bootstrap, Item, ItemDraft } from '@shared/types';
+import type { AppInfo, Bootstrap, Item, ItemDraft } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf } from './i18n';
 import { matchesFilter, sortItems, type FilterId } from './lib/view';
@@ -14,6 +14,7 @@ import ItemModal from './components/ItemModal';
 import CommandPalette from './components/CommandPalette';
 import QuickAdd from './components/QuickAdd';
 import SettingsModal from './components/SettingsModal';
+import AboutModal from './components/AboutModal';
 import LockScreen from './components/LockScreen';
 import RemindersWindow from './components/RemindersWindow';
 import TextContextMenu from './components/TextContextMenu';
@@ -39,6 +40,8 @@ function MainApp() {
   const [editing, setEditing] = useState<Item | null | 'new'>(null);
   const [seed, setSeed] = useState<ItemDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [view, setView] = useState<'list' | 'calendar'>(() => (
     localStorage.getItem('cybergo-view') === 'calendar' ? 'calendar' : 'list'
@@ -53,6 +56,7 @@ function MainApp() {
 
   useEffect(() => {
     void reload();
+    void api.getAppInfo().then(setAppInfo).catch(() => setAppInfo(null));
     const off = api.onDataChanged(() => void reload());
     const open = api.onOpenItem((id) => {
       setSelectedId(id);
@@ -332,8 +336,11 @@ function MainApp() {
           hasPassword={boot.hasPassword}
           onClose={() => setSettingsOpen(false)}
           onLock={() => { setSettingsOpen(false); void api.lock(); }}
+          appInfo={appInfo}
+          onOpenAbout={() => { setSettingsOpen(false); setAboutOpen(true); }}
         />
       )}
+      {aboutOpen && <AboutModal copy={copy} info={appInfo} onClose={() => setAboutOpen(false)} />}
       {paletteOpen && (
         <CommandPalette
           copy={copy}

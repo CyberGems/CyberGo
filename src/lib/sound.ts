@@ -6,8 +6,12 @@ export function fileUrl(filePath: string): string {
   return encodeURI(normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`);
 }
 
-export async function playAlert() {
-  const file = await window.cyberGoAPI.soundPath();
+export function builtInSoundUrl() {
+  return new URL('sounds/chime.wav', window.location.href).toString();
+}
+
+export async function playAlert(filePath?: string) {
+  const file = filePath ?? await window.cyberGoAPI.soundPath();
   if (!audio) audio = new Audio();
   audio.src = fileUrl(file);
   audio.currentTime = 0;

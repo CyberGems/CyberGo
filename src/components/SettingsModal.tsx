@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { Copy } from '../i18n';
 import type {
+  AppInfo,
   AccessLogEntry,
   AccessLogEvent,
   AccessLogMethod,
@@ -33,7 +34,7 @@ import type {
   ReminderPosition,
 } from '@shared/types';
 import { applyTheme } from '../themes';
-import { playAlert } from '../lib/sound';
+import { builtInSoundUrl, playAlert } from '../lib/sound';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import Tooltip from './Tooltip';
 
@@ -126,12 +127,16 @@ export default function SettingsModal({
   hasPassword,
   onClose,
   onLock,
+  appInfo,
+  onOpenAbout,
 }: {
   copy: Copy;
   settings: PublicSettings;
   hasPassword: boolean;
   onClose: () => void;
   onLock: () => void;
+  appInfo: AppInfo | null;
+  onOpenAbout: () => void;
 }) {
   const api = window.cyberGoAPI;
   const [tab, setTab] = useState<Tab>('general');
@@ -352,6 +357,20 @@ export default function SettingsModal({
                 <span>{copy.close}</span>
                 <EscHint />
               </button>
+              <Tooltip label={copy.about.title} placement="top">
+                <button
+                  type="button"
+                  className="config-brand-footer"
+                  onClick={() => { onClose(); onOpenAbout(); }}
+                  aria-label={copy.about.title}
+                >
+                  <span className="config-brand-line">
+                    <img className="config-brand-icon" src="icon.png" alt="" aria-hidden="true" draggable={false} />
+                    <span>CyberGo <span className="config-brand-version">v{appInfo?.version || '…'}</span></span>
+                  </span>
+                  <span className="config-brand-copyright">{copy.about.footer}</span>
+                </button>
+              </Tooltip>
             </div>
           </aside>
           <div className="settings-content">
@@ -408,7 +427,12 @@ export default function SettingsModal({
             <div className="row-actions" style={{ justifyContent: 'flex-start' }}>
               <button className="btn" onClick={() => void api.pickSound()}>{copy.chooseSound}</button>
               <button className="btn" onClick={() => void api.clearSound()}>{copy.defaultSound}</button>
-              <button className="btn btn-primary" onClick={() => void playAlert()}>{copy.testSound}</button>
+              <button
+                className="btn btn-primary"
+                onClick={() => void playAlert(settings.soundPath || builtInSoundUrl())}
+              >
+                {copy.testSound}
+              </button>
             </div>
             <section className="settings-section notification-display-section">
               <div className="settings-section-heading">
