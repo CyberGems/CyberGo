@@ -7,7 +7,7 @@ import { applyTheme } from '../themes';
 import TitleBar from './TitleBar';
 import TextContextMenu from './TextContextMenu';
 import Tooltip from './Tooltip';
-import { BellRing, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Clock3, ExternalLink, Info, ListTodo, SlidersHorizontal, Timer, Trash2, VolumeX, X, XCircle } from 'lucide-react';
+import { BellRing, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Clock3, ExternalLink, Info, ListTodo, Pin, SlidersHorizontal, Timer, Trash2, VolumeX, X, XCircle } from 'lucide-react';
 
 function dueTime(item: Item): number {
   const t = new Date(item.occurrenceAt || item.nextFireAt || '').getTime();
@@ -189,13 +189,29 @@ export default function RemindersWindow() {
           <>
             <header className="reminder-head">
               <div className="reminder-heading">
-                <span className="reminder-mark"><BellRing size={18} /></span>
-                <div className="reminder-heading-copy">
-                  <p>{previewMode ? copy.notificationPreviewDemo : current ? duePhrase(current.occurrenceAt || current.nextFireAt, settings?.language || 'es') : copy.remindersTitle}</p>
-                  <h1>{copy.remindersTitle}</h1>
-                </div>
+                <span className="reminder-mark"><BellRing size={15} /></span>
+                <h1>{copy.remindersTitle}</h1>
+                <span className="reminder-count">{items.length}</span>
               </div>
-              <span className="reminder-count">{items.length}</span>
+              <div className="reminder-head-actions">
+                <Tooltip label={copy.stopSound} placement="bottom">
+                  <button type="button" className="head-action" onClick={stopAlert} aria-label={copy.stopSound}><VolumeX size={15} /></button>
+                </Tooltip>
+                <Tooltip label={copy.dismissAll} placement="bottom">
+                  <button type="button" className="head-action" disabled={previewMode || !items.length} onClick={() => void api.dismissAll()} aria-label={copy.dismissAll}><XCircle size={15} /></button>
+                </Tooltip>
+                <Tooltip label={copy.alwaysOnTop} placement="bottom">
+                  <button
+                    type="button"
+                    className={`head-action ${settings?.reminderAlwaysOnTop ? 'active' : ''}`}
+                    aria-pressed={settings?.reminderAlwaysOnTop ?? true}
+                    aria-label={copy.alwaysOnTop}
+                    onClick={() => void api.setAlwaysOnTop(!(settings?.reminderAlwaysOnTop ?? true))}
+                  >
+                    <Pin size={15} />
+                  </button>
+                </Tooltip>
+              </div>
             </header>
             <div className="reminder-list" role="listbox" aria-multiselectable aria-label={copy.remindersTitle}>
               {orderedItems.map((item) => {
@@ -222,15 +238,10 @@ export default function RemindersWindow() {
                     onContextMenu={(event) => showContextMenu(event, item.id)}
                   >
                     <span className="reminder-row-icon">
-                      {item.kind === 'event' ? <CalendarDays size={15} /> : <ListTodo size={15} />}
+                      {item.kind === 'event' ? <CalendarDays size={14} /> : <ListTodo size={14} />}
                     </span>
-                    <span className="reminder-row-content">
-                      <span className="reminder-row-top"><strong className="subject">{item.title}</strong></span>
-                      <span className="reminder-row-meta">
-                        <span className="reminder-row-due">{duePhrase(item.occurrenceAt || item.nextFireAt, settings?.language || 'es')}</span>
-                        <span className="reminder-row-kind">{item.kind === 'event' ? copy.event : copy.task}</span>
-                      </span>
-                    </span>
+                    <span className="reminder-row-title subject">{item.title}</span>
+                    <span className="reminder-row-due">{duePhrase(item.occurrenceAt || item.nextFireAt, settings?.language || 'es')}</span>
                     <span className="reminder-row-actions" onClick={(event) => event.stopPropagation()}>
                       <Tooltip label={copy.min10} placement="top">
                         <button type="button" className="row-action" disabled={previewMode} aria-label={`${copy.snoozeFor}: ${copy.min10}`} onClick={() => void api.snooze(item.id, 10)}>
@@ -255,46 +266,39 @@ export default function RemindersWindow() {
                 );
               })}
             </div>
-            <div className="reminder-selection">
-              <p className="reminder-selection-kicker">
-                {selectedItems.length > 1
-                  ? `${selectedItems.length} ${copy.selectedItems}`
-                  : current?.kind === 'event'
-                    ? copy.selectedEvent
-                    : current
-                      ? copy.selectedTask
-                      : copy.selectedReminder}
-              </p>
-              <h2 className="reminder-selection-title">
-                {selectedItems.length > 1 ? `${selectedItems.length} ${copy.itemMany}` : current ? current.title : copy.pickReminder}
-              </h2>
-              {selectedItems.length === 1 && current && (
-                <p className="reminder-selection-due">{duePhrase(current.occurrenceAt || current.nextFireAt, settings?.language || 'es')}</p>
-              )}
-            </div>
             <p className="reminder-hint">{copy.multiSelectHint} · {copy.keyboardHint}</p>
-            <footer className="reminder-foot">
-              <div className="reminder-actions">
-                <button type="button" className="btn" onClick={stopAlert}><VolumeX size={14} />{copy.stopSound}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.openItem(current.id)}><ExternalLink size={14} />{copy.openItem}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.dismiss(current.id)}><X size={14} />{copy.dismiss}</button>
-                <button type="button" className="btn btn-danger" disabled={previewMode || !items.length} onClick={() => void api.dismissAll()}><XCircle size={14} />{copy.dismissAll}</button>
-                <label className="check reminder-aot">
-                  <input
-                    type="checkbox"
-                    checked={settings?.reminderAlwaysOnTop ?? true}
-                    onChange={(e) => void api.setAlwaysOnTop(e.target.checked)}
-                  />
-                  {copy.alwaysOnTop}
-                </label>
-              </div>
-              <div className="reminder-snooze">
+            <div className="reminder-inspector">
+              {current ? (
+                <div className="reminder-inspector-info">
+                  <span className={`reminder-inspector-icon urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
+                    {current.kind === 'event' ? <CalendarDays size={16} /> : <ListTodo size={16} />}
+                  </span>
+                  <div className="reminder-inspector-copy">
+                    <p className="reminder-inspector-kicker">
+                      {selectedItems.length > 1
+                        ? `${selectedItems.length} ${copy.selectedItems}`
+                        : `${copy.selectedWord} · ${current.kind === 'event' ? copy.event : copy.task}`}
+                    </p>
+                    <h2 className="reminder-inspector-title">{selectedItems.length > 1 ? `${selectedItems.length} ${copy.itemMany}` : current.title}</h2>
+                    {selectedItems.length === 1 && (
+                      <p className={`reminder-inspector-due urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
+                        {duePhrase(current.occurrenceAt || current.nextFireAt, settings?.language || 'es')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="reminder-inspector-empty">{copy.pickReminder}</p>
+              )}
+              <div className="reminder-inspector-actions">
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.openItem(current.id)}><ExternalLink size={13} />{copy.openItem}</button>
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.dismiss(current.id)}><X size={13} />{copy.dismiss}</button>
                 <span className="reminder-snooze-label">{copy.snoozeFor}</span>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, 10)}><Clock3 size={13} />{copy.min10}</button>
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, 10)}>{copy.min10}</button>
                 <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, 60)}>{copy.hour1}</button>
                 <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snoozeTomorrow(current.id)}>{copy.tomorrow9}</button>
                 <button type="button" className="btn reminder-custom-toggle" aria-expanded={customOpen} onClick={() => setCustomOpen((v) => !v)}>
-                  <SlidersHorizontal size={14} />{copy.custom}{customOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  <SlidersHorizontal size={13} />{copy.custom}{customOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                 </button>
               </div>
               {customOpen && (
@@ -305,10 +309,10 @@ export default function RemindersWindow() {
                     <option value="hours">{copy.hours}</option>
                     <option value="days">{copy.days}</option>
                   </select>
-                  <button type="button" className="btn btn-primary" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, minutes)}><Timer size={14} />{copy.snooze}</button>
+                  <button type="button" className="btn btn-primary" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, minutes)}><Timer size={13} />{copy.snooze}</button>
                 </div>
               )}
-            </footer>
+            </div>
           </>
         )}
       </div>
