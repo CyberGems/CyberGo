@@ -314,6 +314,12 @@ export function flush() {
     data = db.export();
   } catch (error) {
     console.error('CyberGo: could not serialize the database.', error);
+    // The change stays pending, so the write is tried again later. Without
+    // this the change would wait for the next mutation, and it would be
+    // lost for good when the app closed.
+    flushRetries += 1;
+    dirtySince = Date.now();
+    if (flushRetries < MAX_FLUSH_RETRIES) scheduleFlush(FLUSH_RETRY_DELAY_MS);
     return;
   }
 
@@ -798,6 +804,29 @@ export function reloadFromDisk(): boolean {
 
 export function databasePath() {
   return dbPath;
+}
+
+/**
+ * Whether a database file can be opened.
+ *
+ * A backup is checked with this before it replaces the live file, so a
+ * damaged copy never leaves the app without a usable database.
+ */
+export function canOpenFile(file: string): boolean {
+  if (!SQL) return false;
+  let handle: any;
+  try {
+    handle = openDatabaseFile(fs.readFileSync(file));
+  } catch (error) {
+    console.error('CyberGo: the database file could not be opened.', error);
+    return false;
+  }
+  try {
+    handle.close();
+  } catch {
+    // The handle is already unusable.
+  }
+  return true;
 }
 
 /* -------------------------------------------------------------------------- */

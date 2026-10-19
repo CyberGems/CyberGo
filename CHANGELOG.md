@@ -13,6 +13,9 @@
 - The lock is now enforced by the local process, not only by the window. A locked app can no longer export the agenda, change the items, or restore a backup behind the lock screen.
 - A reminder window that fails to open no longer swallows the reminder. The broken window is discarded, so the alert can fire again.
 - The soft lock lets the reminders through again. The alert was consumed and the window stayed empty, so the reminder never came back.
+- Restoring a backup now checks that the copy can be opened before it replaces the database. A damaged copy used to leave the app without a usable file.
+- A failed automatic backup no longer stops the app from starting.
+- A write that could not be serialized is tried again, instead of waiting for the next change and being lost when the app closed.
 
 ## 0.1.0-alpha.3 - 2026-10-19
 

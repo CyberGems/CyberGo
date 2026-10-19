@@ -28,6 +28,8 @@ if (verify) {
 let mainWindow: BrowserWindow | null = null;
 let reminderWindow: BrowserWindow | null = null;
 let reminderPreviewTimer: ReturnType<typeof setTimeout> | null = null;
+let reminderTimer: ReturnType<typeof setInterval> | null = null;
+let backupTimer: ReturnType<typeof setInterval> | null = null;
 let tray: Tray | null = null;
 let sessionLocked = false;
 let quitting = false;
@@ -264,9 +266,14 @@ function maybeAutoBackup() {
   if (!settings.autobackup) return;
   const last = db.autobackupLast();
   if (last && Date.now() - new Date(last).getTime() < 24 * 60 * 60 * 1000) return;
-  createBackup('auto');
-  db.touchAutobackup(new Date().toISOString());
-  pruneBackups(settings.autobackupKeep);
+  try {
+    createBackup('auto');
+    db.touchAutobackup(new Date().toISOString());
+    pruneBackups(settings.autobackupKeep);
+  } catch (error) {
+    // A backup is worth having, but not worth refusing to start over.
+    console.error('CyberGo: the automatic backup could not be made.', error);
+  }
 }
 
 function listBackups() {
@@ -1109,6 +1116,22 @@ function registerIpc() {
     // database behind.
     try {
       fs.copyFileSync(source, staged);
+    } catch (error) {
+      console.error('CyberGo: could not stage the backup.', error);
+      return false;
+    }
+    // The copy is opened before it replaces anything. A damaged backup used
+    // to replace the live file, and the app was left without a database.
+    if (!db.canOpenFile(staged)) {
+      console.error('CyberGo: the backup could not be opened, the current database is kept.');
+      try {
+        fs.unlinkSync(staged);
+      } catch {
+        // Nothing else to clean up.
+      }
+      return false;
+    }
+    try {
       fs.renameSync(staged, target);
     } catch (error) {
       console.error('CyberGo: could not restore the backup.', error);
@@ -1273,8 +1296,8 @@ if (!gotLock) {
       console.error('CyberGo: could not register the Alt+Shift+G quick-capture hotkey.');
     }
     setTimeout(() => void evaluateReminders('tick'), 800);
-    setInterval(() => void evaluateReminders('tick'), 15_000);
-    setInterval(() => maybeAutoBackup(), 60 * 60 * 1000);
+    reminderTimer = setInterval(() => void evaluateReminders('tick'), 15_000);
+    backupTimer = setInterval(() => maybeAutoBackup(), 60 * 60 * 1000);
     if (verify && mainWindow) {
       bootLog('verify hook');
       // The screenshots go to the temporary folder, never into whatever
@@ -1313,6 +1336,11 @@ app.on('before-quit', () => {
 });
 
 app.on('will-quit', () => {
+  // The timers would keep running against a closed database.
+  if (reminderTimer) clearInterval(reminderTimer);
+  if (backupTimer) clearInterval(backupTimer);
+  reminderTimer = null;
+  backupTimer = null;
   globalShortcut.unregisterAll();
   db.close();
 });
@@ -1326,6 +1354,12 @@ process.on('uncaughtException', (error) => {
   } catch {
     // Nothing else can be done at this point.
   }
+});
+
+// A rejected promise that nobody waits for would otherwise disappear
+// without a word, and the app would keep running in a half-done state.
+process.on('unhandledRejection', (reason) => {
+  console.error('CyberGo: a request that nobody waited for failed.', reason);
 });
 
 process.on('SIGINT', () => {

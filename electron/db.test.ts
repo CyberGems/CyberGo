@@ -602,3 +602,39 @@ test('changing only the reminder keeps the occurrence the series had reached', a
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('a database file is checked before it replaces the live one', async () => {
+  const dir = tempDir();
+  const database = path.join(dir, 'cybergo.db');
+  const broken = path.join(dir, 'broken.db');
+
+  try {
+    await db.initDatabase(database, wasm, 'en');
+    db.saveItem({
+      kind: 'task',
+      title: 'Tarea',
+      notes: '',
+      allDay: false,
+      startLocal: null,
+      endLocal: null,
+      importance: 'normal',
+      color: '',
+      groupId: null,
+      recurrence: null,
+      remindMinutes: 0,
+    });
+    db.flush();
+
+    // A copy that can be opened is a usable backup.
+    assert.equal(db.canOpenFile(database), true);
+
+    // A file that is not a database is refused, so it never replaces the
+    // live one.
+    fs.writeFileSync(broken, Buffer.from('broken bytes'));
+    assert.equal(db.canOpenFile(broken), false);
+    assert.equal(db.canOpenFile(path.join(dir, 'missing.db')), false);
+  } finally {
+    db.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
