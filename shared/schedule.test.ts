@@ -194,3 +194,29 @@ test('dismissing a recurring item recomputes the fire time with the reminder off
   assert.equal(occurrence.getDate(), 6);
   assert.equal(occurrence.getTime() - fire.getTime(), 15 * 60_000);
 });
+
+test('a time that is not a time is refused', () => {
+  // The minute is not a number, so it cannot be read as midnight.
+  assert.throws(() => parseLocal('2026-11-06T09:xx', false), /time/);
+  assert.throws(() => parseLocal('2026-11-06T09:70', false), /time/);
+  assert.throws(() => parseLocal('2026-11-06T25:00', false), /time/);
+  assert.throws(() => parseLocal('2026-11-06T09:00:00', false), /time/);
+  // A plain hour is still a time.
+  assert.equal(parseLocal('2026-11-06T09', false).getHours(), 9);
+});
+
+test('an end date that does not exist is dropped', () => {
+  const malformed = normalizeRecurrence({ freq: 'monthly', interval: 1, until: '2026-13-45', dayOfMonth: 5 }, '2026-01-05T10:00');
+  assert.equal(malformed?.until, null);
+  // The 29th of February only exists on a leap year.
+  const leap = normalizeRecurrence({ freq: 'yearly', interval: 1, until: '2026-02-29', dayOfMonth: 29 }, '2028-02-29T10:00');
+  assert.equal(leap?.until, null);
+  const real = normalizeRecurrence({ freq: 'yearly', interval: 1, until: '2028-02-29', dayOfMonth: 29 }, '2028-02-29T10:00');
+  assert.equal(real?.until, '2028-02-29');
+});
+
+test('a frequency nobody knows about is not guessed', () => {
+  const unknown = normalizeRecurrence({ freq: 'hourly' as never, interval: 1, until: null }, '2026-01-05T10:00');
+  assert.equal(unknown, null);
+  assert.equal(nextDate(new Date(2026, 0, 5), { freq: 'hourly' as never, interval: 1, until: null }), null);
+});

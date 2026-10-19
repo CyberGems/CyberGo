@@ -30,6 +30,16 @@
 - An item in the trash no longer shows an overdue badge.
 - The reminder window reports a failed request instead of losing it.
 
+### Fixed
+
+- A time that is not a time is refused. A minute that was not a number used to be read as midnight.
+- An end date that does not exist, such as the 45th of the 13th month, no longer turns a repetition into one that never ends.
+- A repetition whose frequency is not one of the four is refused, instead of being read as a yearly one.
+- The color of a group is only a plain color, like the color of an item. Anything else could reach out to the network when it was drawn.
+- An identifier that is refused is reported, instead of creating a second copy of the item.
+- The errors of a calendar import now point at the same event as the errors of the reader.
+- The About dialog no longer links to a page that does not exist yet.
+
 ## 0.1.0-alpha.3 - 2026-10-19
 
 Third public pre-release of CyberGo. This round is about trust in the local data: the database records its own version, writes once per burst of changes instead of once per change, and survives a damaged file. Dates, repetitions and imports were reworked, and every dialog now behaves like a real dialog, with the focus and the keyboard under control.

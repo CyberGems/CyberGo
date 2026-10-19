@@ -6,7 +6,9 @@ import { useFocusTrap } from './Dialog';
 import Tooltip from './Tooltip';
 
 const REPO_URL = 'https://github.com/CyberGems/CyberGo';
-const SITE_URL = 'https://cybergems.org/apps/cybergo/';
+// The app page of the site is not published yet, so the link goes to the
+// home of the suite, which is always there.
+const SITE_URL = 'https://cybergems.org';
 const WIKI_URL = `${REPO_URL}/wiki`;
 const ISSUES_URL = `${REPO_URL}/issues`;
 const RELEASES_URL = `${REPO_URL}/releases`;

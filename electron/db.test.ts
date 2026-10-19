@@ -638,3 +638,21 @@ test('a database file is checked before it replaces the live one', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('a group color is only a plain color', async () => {
+  const dir = tempDir();
+  const database = path.join(dir, 'cybergo.db');
+
+  try {
+    await db.initDatabase(database, wasm, 'en');
+    // A color that is not one is refused, so it cannot reach the network
+    // when it is drawn as a background.
+    const group = db.saveGroup({ name: 'Trabajo', color: 'url(http://example.com/x)' });
+    assert.equal(group.color, '#6c63e6');
+    const real = db.saveGroup({ name: 'Personal', color: '#10b981' });
+    assert.equal(real.color, '#10b981');
+  } finally {
+    db.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

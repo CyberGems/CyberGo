@@ -10,9 +10,34 @@ export function parseLocal(value: string, allDay: boolean): Date {
     return localDate(y, m - 1, d, allDay ? 9 : 0, 0);
   }
   const time = trimmed.slice(11);
-  const [hh, mm] = time.split(':').map(Number);
-  if (hh > 23 || mm > 59) throw new Error('invalid time');
-  return localDate(y, m - 1, d, hh || 0, mm || 0);
+  const [hourText, minuteText, ...rest] = time.split(':');
+  if (rest.length > 0) throw new Error('invalid time');
+  // A part that is not a number has to be refused. The old check only
+  // compared the value, and anything that was not a number slipped
+  // through and was read as midnight.
+  if (!/^\d{1,2}$/.test(hourText) || Number(hourText) > 23) throw new Error('invalid time');
+  const hh = Number(hourText);
+  if (minuteText != null && (!/^\d{1,2}$/.test(minuteText) || Number(minuteText) > 59)) {
+    throw new Error('invalid time');
+  }
+  const mm = minuteText == null ? 0 : Number(minuteText);
+  return localDate(y, m - 1, d, hh, mm);
+}
+
+/**
+ * The end of a repetition, when it is a real date.
+ *
+ * The shape is not enough: the 45th of the 13th month has to be refused,
+ * because the date constructor would roll it over to a far away day and
+ * the repetition would never end.
+ */
+function validUntil(value: string | null | undefined): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d || m > 12 || d > 31) return null;
+  const probe = new Date(y, m - 1, d);
+  if (probe.getFullYear() !== y || probe.getMonth() !== m - 1 || probe.getDate() !== d) return null;
+  return value;
 }
 
 /**
@@ -71,7 +96,7 @@ export function nextDate(from: Date, rec: Recurrence): Date | null {
     // moves the series to the 28th for good.
     d.setFullYear(year, month, Math.min(anchor ?? d.getDate(), lastDay));
   }
-  else {
+  else if (rec.freq === 'yearly') {
     // Yearly keeps the calendar month. setFullYear alone would roll February 29
     // forward to March 1 and freeze the series there.
     const year = d.getFullYear() + n;
@@ -79,9 +104,13 @@ export function nextDate(from: Date, rec: Recurrence): Date | null {
     const lastDay = new Date(year, month + 1, 0).getDate();
     d.setFullYear(year, month, Math.min(anchor ?? d.getDate(), lastDay));
   }
-  if (rec.until) {
-    const [y, m, day] = rec.until.split('-').map(Number);
-    if (!y || !m || !day) return d;
+  else {
+    // A frequency nobody knows about cannot be guessed.
+    return null;
+  }
+  const until = validUntil(rec.until);
+  if (until) {
+    const [y, m, day] = until.split('-').map(Number);
     const end = new Date(y, m - 1, day, 23, 59, 59, 999);
     if (d.getTime() > end.getTime()) return null;
   }
@@ -100,8 +129,9 @@ function anchorDay(rec: Recurrence): number | null {
 export function normalizeRecurrence(rec: Recurrence | null, startLocal: string | null): Recurrence | null {
   if (!rec) return null;
   const freq = rec.freq;
+  if (freq !== 'daily' && freq !== 'weekly' && freq !== 'monthly' && freq !== 'yearly') return null;
   const interval = Math.max(1, Math.floor(Number(rec.interval) || 1));
-  const until = /^\d{4}-\d{2}-\d{2}$/.test(rec.until ?? '') ? rec.until : null;
+  const until = validUntil(rec.until);
   let dayOfMonth = anchorDay(rec);
   if ((freq === 'monthly' || freq === 'yearly') && dayOfMonth == null && startLocal) {
     const day = Number(startLocal.slice(8, 10));

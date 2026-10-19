@@ -548,8 +548,16 @@ function asDraft(value: unknown): ItemDraft | null {
     if (typeof recurrence !== 'object') return null;
     if (!['daily', 'weekly', 'monthly', 'yearly'].includes(recurrence.freq)) return null;
   }
+  // An id that is refused is an error, not a new item. Turning it into
+  // undefined used to duplicate the record instead of reporting it.
+  let id: string | undefined;
+  if (raw.id != null) {
+    const parsed = asId(raw.id);
+    if (!parsed) return null;
+    id = parsed;
+  }
   return {
-    id: raw.id == null ? undefined : asId(raw.id) ?? undefined,
+    id,
     kind: raw.kind === 'event' ? 'event' : 'task',
     title,
     notes,
@@ -844,8 +852,14 @@ function registerIpc() {
     const raw = input as Record<string, unknown>;
     const name = asText(raw.name, 120);
     if (name == null) throw new Error('invalid group');
+    let groupId: string | undefined;
+    if (raw.id != null) {
+      const parsed = asId(raw.id);
+      if (!parsed) throw new Error('invalid group');
+      groupId = parsed;
+    }
     const group = db.saveGroup({
-      id: raw.id == null ? undefined : asId(raw.id) ?? undefined,
+      id: groupId,
       name,
       color: asText(raw.color, 32) ?? '',
     });
@@ -1258,17 +1272,21 @@ function registerIpc() {
     }
     const errors: string[] = [...parsed.errors];
     let added = 0;
-    parsed.events.forEach(({ draft }, index) => {
+    parsed.events.forEach(({ draft, number }) => {
       try {
         db.saveItem(draft);
         added += 1;
       } catch (error) {
-        errors.push(`${index + 1}: ${error instanceof Error ? error.message : 'invalid'}`);
+        // The number is the one of the event in the file, so the two series
+        // of messages point at the same place.
+        errors.push(`event ${number}: ${error instanceof Error ? error.message : 'invalid'}`);
       }
     });
-    changed();
-    void evaluateReminders('tick');
-    db.flush();
+    if (added) {
+      changed();
+      void evaluateReminders('tick');
+      db.flush();
+    }
     return { added, total: parsed.events.length, fileName, format: 'ics' as const, errors };
   });
 }

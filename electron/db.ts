@@ -548,6 +548,11 @@ function parseRecurrence(
     return null;
   }
   if (!parsed || !parsed.freq) return null;
+  // A frequency that is not one of the four cannot be guessed. Reading it
+  // as yearly used to turn a row into a series that never came back.
+  if (parsed.freq !== 'daily' && parsed.freq !== 'weekly' && parsed.freq !== 'monthly' && parsed.freq !== 'yearly') {
+    return null;
+  }
   const base: Recurrence = {
     freq: parsed.freq as Freq,
     interval: Math.max(1, Number(parsed.interval) || 1),
@@ -836,9 +841,14 @@ export function canOpenFile(file: string): boolean {
 export function saveGroup(input: { id?: string; name: string; color: string }): Group {
   const name = input.name.trim();
   if (!name) throw new Error('name');
+  // The color is drawn as a background, so only a plain color is accepted.
+  // Anything else would be able to reach out to the network.
+  const color = /^#[0-9a-fA-F]{6}$/.test((input.color || '').trim())
+    ? input.color.trim()
+    : '#6c63e6';
   const now = new Date().toISOString();
   if (input.id) {
-    db.run('UPDATE groups SET name = ?, color = ? WHERE id = ?', [name, input.color || '#6c63e6', input.id]);
+    db.run('UPDATE groups SET name = ?, color = ? WHERE id = ?', [name, color, input.id]);
     const row = queryGet('SELECT * FROM groups WHERE id = ?', [input.id]);
     if (!row) throw new Error('group');
     markDirty();
@@ -848,7 +858,7 @@ export function saveGroup(input: { id?: string; name: string; color: string }): 
   const sort = queryAll('SELECT COUNT(*) AS n FROM groups')[0]?.n ?? 0;
   db.run(
     'INSERT INTO groups (id, name, color, sort_order, created_at) VALUES (?, ?, ?, ?, ?)',
-    [id, name, input.color || '#6c63e6', Number(sort), now],
+    [id, name, color, Number(sort), now],
   );
   const row = queryGet('SELECT * FROM groups WHERE id = ?', [id]);
   if (!row) throw new Error('group');
@@ -1006,7 +1016,7 @@ export function markAlerted(ids: string[]) {
     const item = mapItem(row);
     const key = fireKey(item);
     if (!key) continue;
-    db.run('UPDATE items SET alert_key = ?, updated_at = ? WHERE id = ?', [key, now, id]);
+    db.run('UPDATE items SET alert_key = ?, updated_at = ?, sync_rev = sync_rev + 1 WHERE id = ?', [key, now, id]);
   }
   markDirty();
 }
@@ -1019,7 +1029,7 @@ export function restoreAlertKeys(entries: { id: string; alertKey: string | null 
   if (!entries.length) return;
   const now = new Date().toISOString();
   for (const entry of entries) {
-    db.run('UPDATE items SET alert_key = ?, updated_at = ? WHERE id = ?', [entry.alertKey, now, entry.id]);
+    db.run('UPDATE items SET alert_key = ?, updated_at = ?, sync_rev = sync_rev + 1 WHERE id = ?', [entry.alertKey, now, entry.id]);
   }
   markDirty();
 }

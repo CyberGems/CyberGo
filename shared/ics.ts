@@ -3,6 +3,8 @@ import type { Freq, ItemDraft, Recurrence } from './types';
 
 export interface IcsEvent {
   draft: ItemDraft;
+  /** The position of the event in the file, so an error points at it. */
+  number: number;
 }
 
 /**
@@ -401,7 +403,7 @@ export function parseIcs(text: string): IcsParseResult {
   }
   blocks.forEach((props, index) => {
     try {
-      events.push({ draft: buildDraft(props, index + 1, errors) });
+      events.push({ draft: buildDraft(props, index + 1, errors), number: index + 1 });
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'invalid event';
       errors.push(`event ${index + 1}: ${reason}`);
