@@ -11,6 +11,8 @@
 - Quick Add keeps the day a monthly or yearly series was created on. "Cada mes" on the 31st used to settle on the 28th of a shorter month, and "cada año" lost the leap day.
 - "Esta mañana" is read as this morning instead of tomorrow, and the word no longer stays in the title.
 - The lock is now enforced by the local process, not only by the window. A locked app can no longer export the agenda, change the items, or restore a backup behind the lock screen.
+- A reminder window that fails to open no longer swallows the reminder. The broken window is discarded, so the alert can fire again.
+- The soft lock lets the reminders through again. The alert was consumed and the window stayed empty, so the reminder never came back.
 
 ## 0.1.0-alpha.3 - 2026-10-19
 

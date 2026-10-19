@@ -342,8 +342,17 @@ async function createReminderWindow(alwaysOnTop: boolean) {
     win.hide();
   });
   const dev = process.env.VITE_DEV_SERVER_URL;
-  if (dev) await win.loadURL(dev + '#/reminders');
-  else await win.loadFile(path.join(here, '../dist/index.html'), { hash: '/reminders' });
+  try {
+    if (dev) await win.loadURL(dev + '#/reminders');
+    else await win.loadFile(path.join(here, '../dist/index.html'), { hash: '/reminders' });
+  } catch (error) {
+    // The window could not be loaded, so it must not be kept. A broken
+    // window would swallow the next reminder without a word, and the alert
+    // would be lost for good.
+    reminderWindow = null;
+    if (!win.isDestroyed()) win.destroy();
+    throw error;
+  }
 }
 
 async function showReminderWindow(
@@ -999,9 +1008,16 @@ function registerIpc() {
     },
   );
 
-  // While the session is locked the item list must not cross the bridge.
-  ipcMain.handle('reminders:due', () => {
-    if (sessionLocked) return [];
+  // While the session is locked the item list must not cross the bridge to
+  // the main window. The reminder window keeps it in soft mode, which is
+  // the whole point of the soft lock.
+  ipcMain.handle('reminders:due', (e) => {
+    if (sessionLocked) {
+      // In hard mode nothing shows at all. In soft mode only the reminder
+      // window may read the list, the main one stays behind the lock.
+      if (db.readSettings(locale()).lockLevel === 'hard') return [];
+      if (refusedByLock(e)) return [];
+    }
     return db.listItems().filter((item) => isDue(item, Date.now()));
   });
   ipcMain.handle('reminders:show', () => evaluateReminders('show'));
