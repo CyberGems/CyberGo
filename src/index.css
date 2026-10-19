@@ -682,7 +682,6 @@ button { cursor: pointer; }
   grid-template-columns: 1fr auto;
   align-items: center;
   margin-bottom: 8px;
-  text-transform: capitalize;
 }
 .picker-head strong { font-size: 13px; font-weight: 600; }
 .picker-head span { display: flex; gap: 2px; }
@@ -792,7 +791,7 @@ button { cursor: pointer; }
 .palette-empty { padding: 16px; text-align: center; color: var(--text-muted); }
 
 .cal { flex: 1; overflow: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-.cal-head { display: flex; align-items: center; justify-content: space-between; text-transform: capitalize; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; }
 .cal-head strong { font-size: 14px; font-weight: 600; }
 .cal-head span { display: flex; gap: 2px; align-items: center; }
 .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
@@ -2048,6 +2047,8 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .config-brand-version {
   color: var(--text-muted);
   font-weight: 500;
+  /* The version must not break in the middle of the number. */
+  white-space: nowrap;
 }
 .config-brand-copyright {
   color: var(--text-muted);

@@ -192,7 +192,9 @@ export default function ItemTable({
                   <span className="date-value">{formatDate(item.occurrenceAt || item.startAt, lang) || copy.quickNone}</span>
                 </span>
                 <span className="time-cell">
-                  <span>{formatTimeRange(item, lang, copy) || copy.quickNone}</span>
+                  {/* The date column already says that there is no date, so
+                      the time column stays empty instead of repeating it. */}
+                  <span>{formatTimeRange(item, lang, copy)}</span>
                 </span>
                 <span className="row-status">
                   {relative && <span className={`status-pill ${statusClass}`}>{relative}</span>}

@@ -117,6 +117,9 @@ export default function DateTimeField({
     next.setHours(base.getHours(), base.getMinutes(), 0, 0);
     onChange(stamp(next, allDay));
     setCursor(next);
+    // The calendar closes once the choice is complete: either the item is a
+    // whole day, or it already carried a time that is now kept.
+    if (allDay || selected) closePicker();
   }
 
   function chooseTime(hours: number, minutes: number) {
@@ -127,6 +130,9 @@ export default function DateTimeField({
   }
 
   const shown = selected ?? new Date();
+  // Only the first letter is raised, so "octubre de 2026" reads correctly.
+  const monthTitle = cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+  const monthLabel = monthTitle.charAt(0).toLocaleUpperCase(locale) + monthTitle.slice(1);
   const minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
   if (selected && !minutes.includes(selected.getMinutes())) minutes.push(selected.getMinutes());
   minutes.sort((a, b) => a - b);
@@ -148,7 +154,7 @@ export default function DateTimeField({
     >
       <div className="picker-cal">
         <div className="picker-head">
-          <strong>{cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</strong>
+          <strong>{monthLabel}</strong>
           <span>
             <button type="button" aria-label={copy.previousMonth} onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}><ChevronLeft size={14} /></button>
             <button type="button" aria-label={copy.nextMonth} onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}><ChevronRight size={14} /></button>

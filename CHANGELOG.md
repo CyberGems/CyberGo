@@ -31,6 +31,11 @@
 
 ### Improved
 
+- The quick capture no longer repeats its own hint in two places.
+- A task without a date no longer says "Sin fecha" twice in the list.
+- The calendar closes once you pick a day, and it keeps the time you had chosen.
+- The month reads "Octubre de 2026" instead of "Octubre De 2026".
+- The version in the settings panel no longer breaks in the middle of the number.
 - The database is written once per burst of changes instead of once per change. Importing a large file and dragging the window are noticeably faster.
 - The database now records its own version, so a future update can add columns without breaking existing installations.
 - Passwords and PINs are hashed with a native function instead of a slow JavaScript one, so unlocking no longer freezes the interface. Existing codes keep working.

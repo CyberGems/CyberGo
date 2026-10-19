@@ -210,9 +210,15 @@ export default function QuickAdd({
               </button>
             ))}
           </div>
+          {/* The hint already sits in the heading, so this line only shows
+              what the phrase is going to become. */}
           <div className={`quick-preview ${text.trim() || armed ? '' : 'muted'}`}>
-            <Sparkles size={13} />
-            {text.trim() || armed ? preview : copy.quickHint}
+            {text.trim() || armed ? (
+              <>
+                <Sparkles size={13} />
+                {preview}
+              </>
+            ) : null}
           </div>
           {error && <div className="quick-error" role="alert">{error}</div>}
         </div>

@@ -76,11 +76,14 @@ export default function CalendarView({
 
   const undated = useMemo(() => items.filter((item) => !whenOf(item)), [items]);
   const cells = monthCells(cursor.getFullYear(), cursor.getMonth(), weekStart);
+  // Only the first letter is raised, so "octubre de 2026" reads correctly.
+  const monthTitle = cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+  const monthLabel = monthTitle.charAt(0).toLocaleUpperCase(locale) + monthTitle.slice(1);
 
   return (
     <div className="cal">
       <div className="cal-head">
-        <strong>{cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</strong>
+        <strong>{monthLabel}</strong>
         <span>
           <button type="button" className="btn" onClick={() => setCursor(new Date(today.getFullYear(), today.getMonth(), 1))}>{copy.pickerToday}</button>
           <Tooltip label={copy.previousMonth} placement="top">
