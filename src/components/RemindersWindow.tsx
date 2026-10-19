@@ -1,13 +1,36 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import type { Item, PublicSettings } from '@shared/types';
 import { copyOf } from '../i18n';
-import { duePhrase, dueState } from '../lib/format';
+import { duePhrase, dueState, shortDuePhrase } from '../lib/format';
 import { playAlert, stopAlert } from '../lib/sound';
 import { applyTheme } from '../themes';
 import TitleBar from './TitleBar';
 import TextContextMenu from './TextContextMenu';
 import Tooltip from './Tooltip';
-import { BellRing, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Clock3, ExternalLink, Info, ListTodo, Pin, SlidersHorizontal, Timer, Trash2, VolumeX, X, XCircle } from 'lucide-react';
+import {
+  BellRing, CalendarDays, CheckCircle2, CheckCheck, ChevronDown, Clock3, ExternalLink,
+  Info, ListChecks, ListTodo, ListX, Pin, SlidersHorizontal, Timer, Trash2, VolumeX, X, XCircle,
+} from 'lucide-react';
+
+/** The rectangle of a drag that selects the rows it touches. */
+interface MarqueeRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** What a drag is doing, kept outside the state so the move is cheap. */
+interface DragState {
+  startX: number;
+  startY: number;
+  moved: boolean;
+  additive: boolean;
+  base: string[];
+}
+
+/** How far the pointer has to travel before a click turns into a drag. */
+const DRAG_THRESHOLD = 4;
 
 function dueTime(item: Item): number {
   const t = new Date(item.occurrenceAt || item.nextFireAt || '').getTime();
@@ -35,10 +58,16 @@ export default function RemindersWindow() {
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [amount, setAmount] = useState(8);
   const [unit, setUnit] = useState<'minutes' | 'hours' | 'days'>('hours');
-  const [customOpen, setCustomOpen] = useState(false);
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [, setNow] = useState(() => Date.now());
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const pulseTimer = useRef<number | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [marquee, setMarquee] = useState<MarqueeRect | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const dragHitsRef = useRef<string[]>([]);
+  const skipClickRef = useRef(false);
+  const lastDragRef = useRef(0);
   const copy = copyOf(settings?.language || 'es');
 
   async function reload(pulseIds: string[] = []) {
@@ -120,6 +149,86 @@ export default function RemindersWindow() {
     return () => window.clearInterval(id);
   }, [items.length, previewMode]);
 
+  /**
+   * The rows a rectangle of the list touches.
+   *
+   * The rectangle lives in the coordinates of the list content, so a drag
+   * keeps working while the list is scrolled.
+   */
+  function rowsInRect(rect: MarqueeRect): string[] {
+    const list = listRef.current;
+    if (!list) return [];
+    const listRect = list.getBoundingClientRect();
+    const hits: string[] = [];
+    for (const row of Array.from(list.querySelectorAll<HTMLElement>('.reminder-row'))) {
+      const rowRect = row.getBoundingClientRect();
+      const top = rowRect.top - listRect.top + list.scrollTop;
+      const left = rowRect.left - listRect.left + list.scrollLeft;
+      const inside = top + rowRect.height > rect.top
+        && top < rect.top + rect.height
+        && left + rowRect.width > rect.left
+        && left < rect.left + rect.width;
+      if (!inside) continue;
+      const id = row.getAttribute('data-id');
+      if (id) hits.push(id);
+    }
+    return hits;
+  }
+
+  // The drag is followed on the document, because the pointer usually ends
+  // outside the row it started on.
+  useEffect(() => {
+    function move(event: MouseEvent) {
+      const drag = dragRef.current;
+      const list = listRef.current;
+      if (!drag || !list) return;
+      if (!drag.moved) {
+        const travelled = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
+        if (travelled < DRAG_THRESHOLD) return;
+        drag.moved = true;
+      }
+      const listRect = list.getBoundingClientRect();
+      const startLeft = drag.startX - listRect.left + list.scrollLeft;
+      const startTop = drag.startY - listRect.top + list.scrollTop;
+      const left = event.clientX - listRect.left + list.scrollLeft;
+      const top = event.clientY - listRect.top + list.scrollTop;
+      const rect: MarqueeRect = {
+        left: Math.min(startLeft, left),
+        top: Math.min(startTop, top),
+        width: Math.abs(left - startLeft),
+        height: Math.abs(top - startTop),
+      };
+      dragHitsRef.current = rowsInRect(rect);
+      setMarquee(rect);
+    }
+
+    function up() {
+      const drag = dragRef.current;
+      dragRef.current = null;
+      setMarquee(null);
+      if (!drag || !drag.moved) return;
+      // The click that ends the drag must not select the row under the pointer.
+      skipClickRef.current = true;
+      lastDragRef.current = Date.now();
+      const hits = dragHitsRef.current;
+      dragHitsRef.current = [];
+      setSelectedIds((previous) => {
+        if (!drag.additive) return hits;
+        const merged = new Set([...drag.base, ...hits]);
+        return previous.filter((id) => merged.has(id)).length === merged.size
+          ? previous.filter((id) => !hits.includes(id))
+          : [...merged];
+      });
+    }
+
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    return () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    };
+  }, []);
+
   // Most urgent first: overdue items lead (oldest overdue at the top), then the
   // nearest upcoming ones. Items without a resolvable date sink to the bottom.
   const orderedItems = useMemo(
@@ -130,7 +239,23 @@ export default function RemindersWindow() {
   const selectedItems = orderedItems.filter((item) => selectedIds.includes(item.id));
   const current = selectedItems[0] ?? null;
   const hasSingleSelection = selectedItems.length === 1;
+  const allSelected = items.length > 0 && selectedIds.length === items.length;
   const minutes = amount * (unit === 'hours' ? 60 : unit === 'days' ? 1440 : 1);
+  const allTasks = selectedItems.length > 0 && selectedItems.every((item) => item.kind === 'task');
+
+  function toggleSelectAll() {
+    setSelectedIds(allSelected ? [] : items.map((item) => item.id));
+  }
+
+  function selectOnly(id: string) {
+    setSelectedIds([id]);
+  }
+
+  function toggleOne(id: string) {
+    setSelectedIds((previous) => (previous.includes(id)
+      ? previous.filter((value) => value !== id)
+      : [...previous, id]));
+  }
 
   // Keyboard navigation: arrows move the selection, Enter opens, Delete/Backspace
   // dismisses, Ctrl+A selects everything. Ignored while typing in a field.
@@ -155,17 +280,17 @@ export default function RemindersWindow() {
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
         if (previewMode || !current) return;
         event.preventDefault();
-        detach(api.dismiss(current.id), 'dismiss the reminder');
+        for (const item of selectedItems) detach(api.dismiss(item.id), 'dismiss the reminder');
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
         event.preventDefault();
-        setSelectedIds(ids);
+        toggleSelectAll();
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [orderedItems, selectedIds, current, previewMode]);
+  }, [orderedItems, selectedIds, current, previewMode, selectedItems, allSelected, items]);
 
-  function showContextMenu(event: MouseEvent<HTMLElement>, id: string) {
+  function showContextMenu(event: ReactMouseEvent<HTMLElement>, id: string) {
     event.preventDefault();
     event.stopPropagation();
     const width = 190;
@@ -185,6 +310,21 @@ export default function RemindersWindow() {
     if (action === 'dismiss') detach(api.dismiss(menu.id), 'dismiss the reminder');
     if (action === 'delete') detach(api.deleteItem(menu.id), 'delete the item');
     if (action === 'dismiss-all') detach(api.dismissAll(), 'dismiss every reminder');
+  }
+
+  /** The actions of the footer always work on the whole selection. */
+  function actOnSelection(what: 'open' | 'dismiss' | 'complete' | 'snooze') {
+    if (previewMode || !selectedItems.length) return;
+    if (what === 'open') {
+      if (!hasSingleSelection) return;
+      detach(api.openItem(current!.id), 'open the item');
+      return;
+    }
+    for (const item of selectedItems) {
+      if (what === 'dismiss') detach(api.dismiss(item.id), 'dismiss the reminder');
+      if (what === 'complete') detach(api.completeItem(item.id), 'complete the item');
+      if (what === 'snooze') detach(api.snooze(item.id, minutes), 'snooze the reminder');
+    }
   }
 
   return (
@@ -217,6 +357,17 @@ export default function RemindersWindow() {
                 <span className="reminder-count">{items.length}</span>
               </div>
               <div className="reminder-head-actions">
+                <Tooltip label={allSelected ? copy.clearSelection : copy.selectAll} placement="bottom">
+                  <button
+                    type="button"
+                    className={`head-action ${allSelected ? 'active' : ''}`}
+                    aria-pressed={allSelected}
+                    aria-label={allSelected ? copy.clearSelection : copy.selectAll}
+                    onClick={toggleSelectAll}
+                  >
+                    {allSelected ? <ListX size={15} /> : <ListChecks size={15} />}
+                  </button>
+                </Tooltip>
                 <Tooltip label={copy.stopSound} placement="bottom">
                   <button type="button" className="head-action" onClick={stopAlert} aria-label={copy.stopSound}><VolumeX size={15} /></button>
                 </Tooltip>
@@ -234,37 +385,64 @@ export default function RemindersWindow() {
                     <Pin size={15} />
                   </button>
                 </Tooltip>
+                <Tooltip label={`${copy.multiSelectHint} · ${copy.dragSelectHint} · ${copy.keyboardHint}`} placement="bottom">
+                  <button type="button" className="head-action" aria-label={copy.keyboardHint}><Info size={15} /></button>
+                </Tooltip>
               </div>
             </header>
-            <div className="reminder-list" role="list" aria-label={copy.remindersTitle}>
+
+            <div
+              className="reminder-list"
+              role="list"
+              aria-label={copy.remindersTitle}
+              ref={listRef}
+              onMouseDown={(event) => {
+                if (event.button !== 0) return;
+                skipClickRef.current = false;
+                dragRef.current = {
+                  startX: event.clientX,
+                  startY: event.clientY,
+                  moved: false,
+                  additive: event.ctrlKey || event.metaKey || event.shiftKey,
+                  base: selectedIds,
+                };
+              }}
+            >
               {orderedItems.map((item) => {
                 const state = dueState(item.occurrenceAt || item.nextFireAt) ?? 'future';
                 const selected = selectedIds.includes(item.id);
+                const inDrag = dragHitsRef.current.includes(item.id);
                 return (
                   <div
                     key={item.id}
+                    data-id={item.id}
                     ref={(el) => { rowRefs.current[item.id] = el; }}
                     role="listitem"
                     aria-current={selected ? 'true' : undefined}
+                    aria-selected={selected}
                     tabIndex={0}
-                    className={`reminder-row urgency-${state} ${selected ? 'selected' : ''} ${pulse.includes(item.id) ? 'pulse' : ''}`}
+                    className={`reminder-row urgency-${state} ${selected ? 'selected' : ''} ${inDrag ? 'in-drag' : ''} ${pulse.includes(item.id) ? 'pulse' : ''}`}
                     onClick={(event) => {
-                      if (event.ctrlKey || event.metaKey) {
-                        setSelectedIds((previous) => previous.includes(item.id)
-                          ? previous.filter((id) => id !== item.id)
-                          : [...previous, item.id]);
-                      } else {
-                        setSelectedIds([item.id]);
+                      if (skipClickRef.current) {
+                        skipClickRef.current = false;
+                        return;
                       }
+                      if (event.ctrlKey || event.metaKey) toggleOne(item.id);
+                      else selectOnly(item.id);
                     }}
-                    onDoubleClick={() => { if (!previewMode) detach(api.openItem(item.id), 'open the item'); }}
+                    onDoubleClick={() => {
+                      // A drag that ends on a row would otherwise count as the
+                      // first click of a double click, and the item would open.
+                      if (Date.now() - lastDragRef.current < 300) return;
+                      if (!previewMode) detach(api.openItem(item.id), 'open the item');
+                    }}
                     onContextMenu={(event) => showContextMenu(event, item.id)}
                   >
                     <span className="reminder-row-icon">
                       {item.kind === 'event' ? <CalendarDays size={14} /> : <ListTodo size={14} />}
                     </span>
                     <span className="reminder-row-title subject">{item.title}</span>
-                    <span className="reminder-row-due">{duePhrase(item.occurrenceAt || item.nextFireAt, copy)}</span>
+                    <span className="reminder-row-due">{shortDuePhrase(item.occurrenceAt || item.nextFireAt, copy)}</span>
                     <span className="reminder-row-actions" onClick={(event) => event.stopPropagation()}>
                       <Tooltip label={copy.min10} placement="top">
                         <button type="button" className="row-action" disabled={previewMode} aria-label={`${copy.snoozeFor}: ${copy.min10}`} onClick={() => detach(api.snooze(item.id, 10), 'snooze the reminder')}>
@@ -284,57 +462,129 @@ export default function RemindersWindow() {
                         </button>
                       </Tooltip>
                     </span>
-                    <ChevronRight className="reminder-row-chevron" size={15} />
                   </div>
                 );
               })}
+              {marquee && (
+                <div
+                  className="reminder-marquee"
+                  aria-hidden="true"
+                  style={{ left: marquee.left, top: marquee.top, width: marquee.width, height: marquee.height }}
+                />
+              )}
             </div>
-            <p className="reminder-hint">{copy.multiSelectHint} · {copy.keyboardHint}</p>
+
             <div className="reminder-inspector">
-              {current ? (
-                <div className="reminder-inspector-info">
-                  <span className={`reminder-inspector-icon urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
-                    {current.kind === 'event' ? <CalendarDays size={16} /> : <ListTodo size={16} />}
+              <div className="reminder-inspector-info">
+                <span className={`reminder-inspector-icon ${current ? `urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}` : 'is-empty'}`}>
+                  {current
+                    ? (current.kind === 'event' ? <CalendarDays size={15} /> : <ListTodo size={15} />)
+                    : <BellRing size={15} />}
+                </span>
+                <span className="reminder-inspector-title">
+                  {selectedItems.length > 1
+                    ? `${selectedItems.length} ${copy.selectedItems}`
+                    : current
+                      ? current.title
+                      : copy.pickReminder}
+                </span>
+                {selectedItems.length === 1 && current && (
+                  <span className={`reminder-inspector-due urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
+                    {duePhrase(current.occurrenceAt || current.nextFireAt, copy)}
                   </span>
-                  <div className="reminder-inspector-copy">
-                    <p className="reminder-inspector-kicker">
-                      {selectedItems.length > 1
-                        ? `${selectedItems.length} ${copy.selectedItems}`
-                        : `${copy.selectedWord} · ${current.kind === 'event' ? copy.event : copy.task}`}
-                    </p>
-                    <h2 className="reminder-inspector-title">{selectedItems.length > 1 ? `${selectedItems.length} ${copy.itemMany}` : current.title}</h2>
-                    {selectedItems.length === 1 && (
-                      <p className={`reminder-inspector-due urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
-                        {duePhrase(current.occurrenceAt || current.nextFireAt, copy)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <p className="reminder-inspector-empty">{copy.pickReminder}</p>
-              )}
-              <div className="reminder-inspector-actions">
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.openItem(current.id), 'open the item')}><ExternalLink size={13} />{copy.openItem}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.dismiss(current.id), 'dismiss the reminder')}><X size={13} />{copy.dismiss}</button>
-                <span className="reminder-snooze-label">{copy.snoozeFor}</span>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snooze(current.id, 10), 'snooze the reminder')}>{copy.min10}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snooze(current.id, 60), 'snooze the reminder')}>{copy.hour1}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snoozeTomorrow(current.id), 'snooze the reminder')}>{copy.tomorrow9}</button>
-                <button type="button" className="btn reminder-custom-toggle" aria-expanded={customOpen} onClick={() => setCustomOpen((v) => !v)}>
-                  <SlidersHorizontal size={13} />{copy.custom}{customOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                </button>
+                )}
               </div>
-              {customOpen && (
-                <div className="reminder-custom">
-                  <input type="number" min={1} value={amount} aria-label={copy.snoozeAmount} onChange={(e) => setAmount(Number(e.target.value))} />
-                  <select value={unit} aria-label={copy.snoozeUnit} onChange={(e) => setUnit(e.target.value as 'minutes' | 'hours' | 'days')}>
-                    <option value="minutes">{copy.minutes}</option>
-                    <option value="hours">{copy.hours}</option>
-                    <option value="days">{copy.days}</option>
-                  </select>
-                  <button type="button" className="btn btn-primary" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snooze(current.id, minutes), 'snooze the reminder')}><Timer size={13} />{copy.snooze}</button>
+              <div className="reminder-inspector-actions">
+                <Tooltip label={copy.openItem} placement="top">
+                  <button
+                    type="button"
+                    className="inspector-action"
+                    disabled={previewMode || !hasSingleSelection}
+                    aria-label={copy.openItem}
+                    onClick={() => actOnSelection('open')}
+                  >
+                    <ExternalLink size={14} />
+                  </button>
+                </Tooltip>
+                <div className="snooze-holder">
+                  <Tooltip label={copy.snoozeFor} placement="top">
+                    <button
+                      type="button"
+                      className={`inspector-action ${snoozeOpen ? 'active' : ''}`}
+                      disabled={previewMode || !selectedItems.length}
+                      aria-label={copy.snooze}
+                      aria-expanded={snoozeOpen}
+                      onClick={() => setSnoozeOpen((value) => !value)}
+                    >
+                      <Timer size={14} />
+                      <ChevronDown size={11} />
+                    </button>
+                  </Tooltip>
+                  {snoozeOpen && (
+                    <div className="snooze-menu" role="menu" aria-label={copy.snoozeFor}>
+                      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snooze(item.id, 10), 'snooze the reminder'); }}>
+                        {copy.min10}
+                      </button>
+                      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snooze(item.id, 60), 'snooze the reminder'); }}>
+                        {copy.hour1}
+                      </button>
+                      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snoozeTomorrow(item.id), 'snooze the reminder'); }}>
+                        {copy.tomorrow9}
+                      </button>
+                      <div className="text-context-menu-separator" />
+                      <div className="snooze-menu-custom">
+                        <input type="number" min={1} value={amount} aria-label={copy.snoozeAmount} onChange={(e) => setAmount(Number(e.target.value))} />
+                        <select value={unit} aria-label={copy.snoozeUnit} onChange={(e) => setUnit(e.target.value as 'minutes' | 'hours' | 'days')}>
+                          <option value="minutes">{copy.minutes}</option>
+                          <option value="hours">{copy.hours}</option>
+                          <option value="days">{copy.days}</option>
+                        </select>
+                        <Tooltip label={copy.snooze} placement="top">
+                          <button
+                            type="button"
+                            className="btn btn-primary snooze-menu-apply"
+                            disabled={previewMode || !selectedItems.length}
+                            aria-label={copy.applySnooze}
+                            onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snooze(item.id, minutes), 'snooze the reminder'); }}
+                          >
+                            <SlidersHorizontal size={13} />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+                {allTasks && (
+                  <Tooltip label={copy.markComplete} placement="top">
+                    <button
+                      type="button"
+                      className="inspector-action"
+                      disabled={previewMode || !selectedItems.length}
+                      aria-label={copy.markComplete}
+                      onClick={() => actOnSelection('complete')}
+                    >
+                      <CheckCircle2 size={14} />
+                    </button>
+                  </Tooltip>
+                )}
+                <Tooltip label={copy.dismiss} placement="top">
+                  <button
+                    type="button"
+                    className="inspector-action"
+                    disabled={previewMode || !selectedItems.length}
+                    aria-label={copy.dismiss}
+                    onClick={() => actOnSelection('dismiss')}
+                  >
+                    <X size={14} />
+                </button>
+                </Tooltip>
+                {selectedItems.length > 1 && (
+                  <span className="reminder-selection-count">
+                    <CheckCheck size={13} />
+                    {selectedItems.length}
+                  </span>
+                )}
+              </div>
             </div>
           </>
         )}

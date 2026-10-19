@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { copyOf } from '../i18n';
-import { duePhrase, formatDuration, itemStatus, overduePhrase } from './format';
+import { duePhrase, formatDuration, formatDurationShort, itemStatus, overduePhrase, shortDuePhrase } from './format';
 import type { Item } from '@shared/types';
 
 const es = copyOf('es');
@@ -76,4 +76,26 @@ test('an item without a date, or in the trash, has no state', () => {
   assert.equal(itemStatus(item({ occurrenceAt: null }), es).label, '');
   const deleted = item({ occurrenceAt: new Date().toISOString(), deletedAt: new Date().toISOString() });
   assert.equal(itemStatus(deleted, es).label, '');
+});
+
+test('the short wording of a row keeps the room for the name', () => {
+  const past = new Date(Date.now() - (26 * 60 + 30) * 60_000).toISOString();
+  // A day replaces the hours, and the leftover minutes are dropped, so the
+  // wording never takes more than two pieces.
+  assert.equal(shortDuePhrase(past, es), 'hace 1 d 2 h');
+  assert.equal(shortDuePhrase(past, en), '1 d 2 h ago');
+
+  const ahead = new Date(Date.now() + (3 * 24 * 60 + 20 * 60) * 60_000).toISOString();
+  assert.equal(shortDuePhrase(ahead, es), 'en 3 d 20 h');
+  assert.equal(shortDuePhrase(ahead, en), 'in 3 d 20 h');
+
+  // A moment that is now says so, and an empty value says nothing.
+  assert.equal(shortDuePhrase(new Date().toISOString(), es), 'Ahora');
+  assert.equal(shortDuePhrase(null, es), '');
+});
+
+test('the short duration drops the parts that do not fit', () => {
+  assert.equal(formatDurationShort(90, es), '1 h 30 min');
+  assert.equal(formatDurationShort(60 * 30, es), '1 d 6 h');
+  assert.equal(formatDurationShort(5, es), '5 min');
 });

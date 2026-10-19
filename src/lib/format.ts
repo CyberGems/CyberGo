@@ -59,6 +59,41 @@ export function overduePhrase(iso: string | null, copy: Copy): string {
   return fill(copy.overdueBy, duration);
 }
 
+/**
+ * A duration with short units, for a narrow row.
+ *
+ * The full wording takes more room than the window has, and the row needs
+ * that room for the name of the item.
+ */
+export function formatDurationShort(totalMinutes: number, copy: Copy): string {
+  const minutes = Math.max(1, Math.round(totalMinutes));
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const remainder = minutes % 60;
+  const parts: string[] = [];
+  if (days) parts.push(`${days} ${copy.dayShort}`);
+  if (hours) parts.push(`${hours} h`);
+  if (remainder && parts.length < 2) parts.push(`${remainder} min`);
+  return parts.join(' ');
+}
+
+/**
+ * The moment an item is due, in the short wording of a row.
+ *
+ * The color of the row says whether the moment has passed, so the wording
+ * only has to say how far away it is.
+ */
+export function shortDuePhrase(iso: string | null, copy: Copy): string {
+  if (!iso) return '';
+  const ms = new Date(iso).getTime() - Date.now();
+  if (Number.isNaN(ms)) return '';
+  const past = ms < 0;
+  const minutes = Math.max(1, Math.round(Math.abs(ms) / 60_000));
+  if (minutes < 2 && !past) return copy.dueNow;
+  const duration = formatDurationShort(minutes, copy);
+  return fill(past ? copy.overdueShort : copy.dueInShort, duration);
+}
+
 export function dueState(iso: string | null): 'overdue' | 'today' | 'future' | null {
   if (!iso) return null;
   const at = new Date(iso).getTime();
