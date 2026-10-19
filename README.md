@@ -17,6 +17,7 @@
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-2563EB?style=flat-square" alt="Windows 10 and 11" />
   <img src="https://img.shields.io/badge/Electron-35-334155?style=flat-square&logo=electron&logoColor=white" alt="Electron 35" />
   <img src="https://img.shields.io/badge/Status-alpha-F59E0B?style=flat-square" alt="Alpha status" />
+  <img src="https://img.shields.io/badge/License-GPL--3.0-334155?style=flat-square" alt="License: GPL-3.0" />
 </p>
 
 CyberGo is a desktop agenda for people who want a focused daily planner without an account, cloud sync, or a web dashboard. Create tasks and events, parse natural quick-add text, receive local reminders, and keep the data on your own Windows device.
@@ -151,7 +152,9 @@ CyberGo uses **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js**
 
 ## License
 
-No license file has been declared for this first alpha yet. Licensing terms will be documented before the stable release.
+CyberGo is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full license text.
+
+Copyright (C) 2026 CyberGems
 
 ## About CyberGems
 
