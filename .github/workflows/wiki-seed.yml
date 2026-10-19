@@ -10,18 +10,23 @@ jobs:
   seed:
     runs-on: ubuntu-latest
     steps:
-      - name: Push the first wiki page with a user token
+      - name: Probe the wiki API from GitHub infrastructure
         env:
           GH_TOKEN: ${{ secrets.WIKI_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          set -e
-          mkdir -p /tmp/wikiseed
-          cd /tmp/wikiseed
-          git init -q -b master
-          git config user.name "CyberGems"
-          git config user.email "282432203+CyberGems@users.noreply.github.com"
-          printf 'Welcome to the CyberGo wiki!\n' > Home.md
-          git add Home.md
-          git commit -qm "Initial Home page"
-          git push "https://${GH_TOKEN}@github.com/${REPO}.wiki.git" master 2>&1 | tail -5
+          echo "--- GET wiki pages on a repo that HAS pages (CyberNotes) ---"
+          curl -s -o /tmp/a.json -w "http=%{http_code}\n" \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/CyberGems/CyberNotes/wiki/pages"
+          head -c 200 /tmp/a.json
+          echo
+          echo "--- PUT create the first page on CyberGo ---"
+          curl -s -o /tmp/b.json -w "http=%{http_code}\n" -X PUT \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -d '{"title":"Home","body":"Welcome to the CyberGo wiki!"}' \
+            "https://api.github.com/repos/$REPO/wiki/pages"
+          head -c 300 /tmp/b.json
+          echo
