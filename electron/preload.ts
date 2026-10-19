@@ -5,6 +5,7 @@ export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
   getAppInfo: () => Promise<AppInfo>;
   openExternal: (url: string) => Promise<boolean>;
+  readClipboardText: () => Promise<string>;
   minimize: () => Promise<void>;
   toggleMaximize: () => Promise<boolean>;
   close: () => Promise<void>;
@@ -58,6 +59,7 @@ const api: CyberGoAPI = {
   getBootstrap: () => ipcRenderer.invoke('bootstrap:get'),
   getAppInfo: () => ipcRenderer.invoke('app:info'),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  readClipboardText: () => ipcRenderer.invoke('clipboard:read-text'),
   minimize: () => ipcRenderer.invoke('window:minimize'),
   toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),
   close: () => ipcRenderer.invoke('window:close'),

@@ -112,12 +112,21 @@ export interface PublicSettings {
   accessLogEnabled: boolean;
 }
 
+export interface RecoveryNotice {
+  /** What the recovery had to do. */
+  kind: 'backup' | 'set-aside' | 'empty' | 'unreadable';
+  /** Name of the file involved, when there is one. */
+  file?: string;
+}
+
 export interface Bootstrap {
   items: Item[];
   groups: Group[];
   settings: PublicSettings;
   locked: boolean;
   hasPassword: boolean;
+  /** Set when the database had to be recovered from a backup or set aside. */
+  recovery: RecoveryNotice | null;
 }
 
 export interface BackupInfo {

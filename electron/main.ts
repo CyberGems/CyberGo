@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, shell, Tray } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, session, shell, Tray } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import { detectCsvFormat, itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../shared/csv';
 import { parseIcs } from '../shared/ics';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
-import { normalizeAuthSecret } from '../shared/auth';
+import { hashSecret, normalizeAuthSecret, verifySecret as verifyStoredSecret } from '../shared/auth';
 import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition } from '../shared/types';
 import * as db from './db';
 import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
@@ -32,8 +32,6 @@ let tray: Tray | null = null;
 let sessionLocked = false;
 let quitting = false;
 let pendingNavigate: string | null = null;
-let failCount = 0;
-let failUntil = 0;
 const REMINDER_DEFAULT_WIDTH = 380;
 const REMINDER_DEFAULT_HEIGHT = 460;
 const REMINDER_MIN_WIDTH = 340;
@@ -75,6 +73,7 @@ function snapshot() {
     settings: db.readSettings(locale()),
     locked,
     hasPassword: db.hasPassword(),
+    recovery: db.recoveryNote(),
   };
 }
 
@@ -221,6 +220,8 @@ function stamp() {
 
 function createBackup(kind: 'auto' | 'manual' | 'pre-restore'): string {
   const name = `cybergo-${kind}-${stamp()}.db`;
+  // The write is deferred, so the file has to be flushed before it is copied.
+  db.flush();
   fs.copyFileSync(db.databasePath(), path.join(backupsDir(), name));
   return name;
 }
@@ -292,6 +293,37 @@ function previewReminderItems(): Item[] {
   ];
 }
 
+let creatingReminderWindow: Promise<void> | null = null;
+
+async function createReminderWindow(alwaysOnTop: boolean) {
+  const win = new BrowserWindow({
+    width: REMINDER_DEFAULT_WIDTH,
+    height: REMINDER_DEFAULT_HEIGHT,
+    minWidth: REMINDER_MIN_WIDTH,
+    minHeight: REMINDER_MIN_HEIGHT,
+    show: false,
+    frame: false,
+    alwaysOnTop,
+    backgroundColor: '#0c0c12',
+    icon: fromPublic('icon.png'),
+    webPreferences: {
+      preload: path.join(here, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  reminderWindow = win;
+  lockNavigation(win);
+  win.on('close', (event) => {
+    if (quitting) return;
+    event.preventDefault();
+    win.hide();
+  });
+  const dev = process.env.VITE_DEV_SERVER_URL;
+  if (dev) await win.loadURL(dev + '#/reminders');
+  else await win.loadFile(path.join(here, '../dist/index.html'), { hash: '/reminders' });
+}
+
 async function showReminderWindow(
   opts: { sound: boolean; pulseIds: string[]; focus?: boolean },
   preview?: { items: Item[]; settings: PublicSettings },
@@ -299,31 +331,15 @@ async function showReminderWindow(
   const activeSettings = preview?.settings ?? db.readSettings(locale());
   const always = activeSettings.reminderAlwaysOnTop;
   if (!reminderWindow || reminderWindow.isDestroyed()) {
-    reminderWindow = new BrowserWindow({
-      width: REMINDER_DEFAULT_WIDTH,
-      height: REMINDER_DEFAULT_HEIGHT,
-      minWidth: REMINDER_MIN_WIDTH,
-      minHeight: REMINDER_MIN_HEIGHT,
-      show: false,
-      frame: false,
-      alwaysOnTop: always,
-      backgroundColor: '#0c0c12',
-      icon: fromPublic('icon.png'),
-      webPreferences: {
-        preload: path.join(here, fs.existsSync(path.join(here, 'preload.js')) ? 'preload.js' : 'preload.mjs'),
-        contextIsolation: true,
-        nodeIntegration: false,
-      },
-    });
-    reminderWindow.on('close', (event) => {
-      if (quitting) return;
-      event.preventDefault();
-      reminderWindow?.hide();
-    });
-    const dev = process.env.VITE_DEV_SERVER_URL;
-    if (dev) await reminderWindow.loadURL(dev + '#/reminders');
-    else await reminderWindow.loadFile(path.join(here, '../dist/index.html'), { hash: '/reminders' });
+    // Two ticks that overlap must not build the window twice.
+    if (!creatingReminderWindow) creatingReminderWindow = createReminderWindow(always);
+    try {
+      await creatingReminderWindow;
+    } finally {
+      creatingReminderWindow = null;
+    }
   }
+  if (!reminderWindow || reminderWindow.isDestroyed()) return;
   reminderWindow.setAlwaysOnTop(always, 'floating');
   positionReminderWindow(reminderWindow, activeSettings);
   if (reminderPreviewTimer) {
@@ -402,12 +418,29 @@ async function evaluateReminders(reason: 'tick' | 'unlock' | 'show') {
     || (reason === 'unlock' && settings.lockLevel === 'hard' && due.length > 0)
     || (reason === 'unlock' && fresh.length > 0);
   if (!shouldShow) return;
-  await showReminderWindow({
-    sound: settings.soundEnabled && fresh.length > 0,
-    pulseIds: fresh.map((item) => item.id),
-    focus: reason === 'show',
-  });
+  // The alert key is stored before the window opens. Marking it afterwards
+  // left a window where a second tick saw the same items as fresh and fired
+  // the sound and the toast a second time.
+  const previous = fresh.map((item) => ({ id: item.id, alertKey: item.alertKey }));
   if (fresh.length) db.markAlerted(fresh.map((item) => item.id));
+  try {
+    await showReminderWindow({
+      sound: settings.soundEnabled && fresh.length > 0,
+      pulseIds: fresh.map((item) => item.id),
+      focus: reason === 'show',
+    });
+  } catch (error) {
+    // The reminder could not be shown, so it has to be allowed to fire again.
+    console.error('CyberGo: the reminder window could not be opened.', error);
+    db.restoreAlertKeys(previous);
+    return;
+  }
+  // The user may have locked the app while the window was loading.
+  if (sessionLocked && db.readSettings(locale()).lockLevel === 'hard') {
+    hideReminders();
+    db.restoreAlertKeys(previous);
+    return;
+  }
   if (reason === 'tick' && fresh.length) toastFor(fresh);
 }
 
@@ -426,6 +459,80 @@ function methodOf(value: unknown): AuthMethod {
   return value === 'pin' ? 'pin' : 'password';
 }
 
+/**
+ * Every value that crosses the IPC boundary is checked here. A malformed
+ * payload used to reach the scheduler and throw inside the handler, which
+ * surfaced to the user as a silent no-op.
+ */
+function asId(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 128) return null;
+  // Control characters are refused, everything else is accepted: the value
+  // travels to the database as a bound parameter, and narrowing it further
+  // used to drop a group or turn an edit into a duplicate.
+  if (/[\u0000-\u001f]/.test(trimmed)) return null;
+  return trimmed;
+}
+
+function asText(value: unknown, max = 4096): string | null {
+  if (typeof value !== 'string') return null;
+  if (value.length > max) return null;
+  return value;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function asIsoDate(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const stamp = new Date(value);
+  if (Number.isNaN(stamp.getTime())) return null;
+  return stamp.toISOString();
+}
+
+function asDraft(value: unknown): ItemDraft | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Record<string, unknown>;
+  const title = asText(raw.title, 2000);
+  if (title == null) return null;
+  // A field that is too long is refused, never shortened: shortening the
+  // notes used to erase them without telling anybody.
+  const notes = raw.notes == null ? '' : asText(raw.notes, 200000);
+  if (notes == null) return null;
+  const startLocal = raw.startLocal == null ? null : asText(raw.startLocal, 64);
+  const endLocal = raw.endLocal == null ? null : asText(raw.endLocal, 64);
+  if (raw.startLocal != null && startLocal == null) return null;
+  if (raw.endLocal != null && endLocal == null) return null;
+  const recurrence = raw.recurrence == null ? null : raw.recurrence as ItemDraft['recurrence'];
+  if (recurrence) {
+    if (typeof recurrence !== 'object') return null;
+    if (!['daily', 'weekly', 'monthly', 'yearly'].includes(recurrence.freq)) return null;
+  }
+  return {
+    id: raw.id == null ? undefined : asId(raw.id) ?? undefined,
+    kind: raw.kind === 'event' ? 'event' : 'task',
+    title,
+    notes,
+    allDay: raw.allDay === true,
+    startLocal,
+    endLocal,
+    importance: raw.importance === 'high' || raw.importance === 'low' ? raw.importance : 'normal',
+    color: asText(raw.color, 32) ?? '',
+    groupId: raw.groupId == null ? null : asId(raw.groupId),
+    recurrence: recurrence
+      ? {
+        freq: recurrence.freq,
+        interval: Math.max(1, Math.floor(Number(recurrence.interval) || 1)),
+        until: recurrence.until == null ? null : asText(recurrence.until, 10),
+        dayOfMonth: recurrence.dayOfMonth == null ? null : Number(recurrence.dayOfMonth),
+      }
+      : null,
+    remindMinutes: Math.max(0, Math.floor(Number(raw.remindMinutes) || 0)),
+  };
+}
+
 function presented(value: unknown, method: AuthMethod): string {
   const raw = typeof value === 'string' ? value : '';
   return method === 'pin' ? raw.trim() : raw;
@@ -439,21 +546,98 @@ function recoveryCode(): string {
   return `${raw.slice(0, 4)}-${raw.slice(4)}`;
 }
 
+/** Accepts both the scrypt hashes written today and the bcrypt hashes of the alpha builds. */
+async function verifySecret(secret: string, stored: string | null): Promise<boolean> {
+  return verifyStoredSecret(secret, stored, (value, hash) => bcrypt.compare(value, hash));
+}
+
+const AUTH_FAIL_LIMIT = 5;
+const AUTH_BLOCK_MS = 30_000;
+
+/** The lockout lives in the database, so restarting the app does not clear it. */
+function failState(): { count: number; until: number } {
+  return {
+    count: Number(db.getSetting('auth_fail_count') || '0') || 0,
+    until: Number(db.getSetting('auth_fail_until') || '0') || 0,
+  };
+}
+
 function tooManyAttempts(): boolean {
-  return Date.now() < failUntil;
+  return Date.now() < failState().until;
 }
 
 function noteFailure() {
-  failCount += 1;
-  if (failCount >= 5) {
-    failUntil = Date.now() + 30_000;
-    failCount = 0;
+  const state = failState();
+  const count = state.count + 1;
+  if (count >= AUTH_FAIL_LIMIT) {
+    db.setSetting('auth_fail_count', '0');
+    db.setSetting('auth_fail_until', String(Date.now() + AUTH_BLOCK_MS));
+    return;
   }
+  db.setSetting('auth_fail_count', String(count));
 }
 
 function noteSuccess() {
-  failCount = 0;
-  failUntil = 0;
+  db.setSetting('auth_fail_count', '0');
+  db.setSetting('auth_fail_until', '0');
+}
+
+/**
+ * The renderer never navigates and never opens a window. Both are blocked
+ * here so that a remote page can never end up running with the preload
+ * bridge attached, which would hand it the whole database API.
+ */
+function lockNavigation(win: BrowserWindow) {
+  win.webContents.on('will-navigate', (event, url) => {
+    const target = new URL(url);
+    const allowed = process.env.VITE_DEV_SERVER_URL
+      && target.origin === new URL(process.env.VITE_DEV_SERVER_URL).origin;
+    if (allowed) return;
+    event.preventDefault();
+    if (target.protocol === 'https:' || target.protocol === 'http:') {
+      void shell.openExternal(target.toString());
+    }
+  });
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const target = new URL(url);
+      if (target.protocol === 'https:' || target.protocol === 'http:') {
+        void shell.openExternal(target.toString());
+      }
+    } catch {
+      // Ignore anything that is not a URL we can hand to the system browser.
+    }
+    return { action: 'deny' };
+  });
+}
+
+/**
+ * The packaged app is served from a file, where response headers do not
+ * apply, so index.html also carries a matching meta policy. This header
+ * covers the development server.
+ */
+function applyContentSecurityPolicy() {
+  const dev = process.env.VITE_DEV_SERVER_URL;
+  const policy = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'" + (dev ? " 'unsafe-eval'" : ''),
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "media-src 'self' file: blob: data:",
+    "connect-src 'self' ws: data:" + (dev ? ' http: https:' : ''),
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+  ].join('; ');
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [policy],
+      },
+    });
+  });
 }
 
 function createMain() {
@@ -474,11 +658,12 @@ function createMain() {
     backgroundColor: '#0c0c12',
     icon: fromPublic('icon.png'),
     webPreferences: {
-      preload: path.join(here, fs.existsSync(path.join(here, 'preload.js')) ? 'preload.js' : 'preload.mjs'),
+      preload: path.join(here, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+  lockNavigation(mainWindow);
   let persistTimer: ReturnType<typeof setTimeout> | null = null;
   const schedulePersist = () => {
     if (persistTimer) clearTimeout(persistTimer);
@@ -559,6 +744,13 @@ function registerIpc() {
       return false;
     }
   });
+  ipcMain.handle('clipboard:read-text', () => {
+    try {
+      return clipboard.readText();
+    } catch {
+      return '';
+    }
+  });
   ipcMain.handle('window:minimize', (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());
   ipcMain.handle('window:toggle-maximize', (e) => {
     const win = BrowserWindow.fromWebContents(e.sender);
@@ -570,23 +762,58 @@ function registerIpc() {
   ipcMain.handle('window:close', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
   ipcMain.handle('window:is-maximized', (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false);
 
-  ipcMain.handle('items:save', (_e, draft: ItemDraft) => {
-    const item = db.saveItem(draft);
+  ipcMain.handle('items:save', (_e, draft: unknown) => {
+    const clean = asDraft(draft);
+    if (!clean) throw new Error('invalid draft');
+    const item = db.saveItem(clean);
     changed();
     void evaluateReminders('tick');
     return item;
   });
-  ipcMain.handle('items:delete', (_e, id: string) => { db.softDelete(id); changed(); });
-  ipcMain.handle('items:restore', (_e, id: string) => { db.restoreItem(id); changed(); });
-  ipcMain.handle('items:purge', (_e, id: string) => { db.purgeItem(id); changed(); });
+  ipcMain.handle('items:delete', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    db.softDelete(clean);
+    changed();
+  });
+  ipcMain.handle('items:restore', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    db.restoreItem(clean);
+    changed();
+  });
+  ipcMain.handle('items:purge', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    db.purgeItem(clean);
+    changed();
+  });
   ipcMain.handle('items:empty-trash', () => { db.emptyTrash(); changed(); });
-  ipcMain.handle('items:complete', (_e, id: string) => { db.completeItem(id); changed(); });
-  ipcMain.handle('groups:save', (_e, input: { id?: string; name: string; color: string }) => {
-    const group = db.saveGroup(input);
+  ipcMain.handle('items:complete', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    db.completeItem(clean);
+    changed();
+  });
+  ipcMain.handle('groups:save', (_e, input: unknown) => {
+    if (!input || typeof input !== 'object') throw new Error('invalid group');
+    const raw = input as Record<string, unknown>;
+    const name = asText(raw.name, 120);
+    if (name == null) throw new Error('invalid group');
+    const group = db.saveGroup({
+      id: raw.id == null ? undefined : asId(raw.id) ?? undefined,
+      name,
+      color: asText(raw.color, 32) ?? '',
+    });
     changed();
     return group;
   });
-  ipcMain.handle('groups:delete', (_e, id: string) => { db.deleteGroup(id); changed(); });
+  ipcMain.handle('groups:delete', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    db.deleteGroup(clean);
+    changed();
+  });
 
   ipcMain.handle('settings:patch', (_e, patch: Partial<PublicSettings>) => {
     db.applySettingsPatch(patch);
@@ -607,24 +834,23 @@ function registerIpc() {
     return db.readSettings(locale());
   });
 
-  ipcMain.handle('auth:set', async (_e, password: string, hint: string, method: unknown) => {
+  ipcMain.handle('auth:set', async (_e, password: unknown, hint: unknown, method: unknown) => {
     if (db.hasPassword()) return { ok: false as const, error: 'exists' };
     const mode = methodOf(method);
     const secret = normalizeAuthSecret(presented(password, mode), mode);
     if (!secret) return { ok: false as const, error: mode === 'pin' ? 'pin' : 'short' };
     const code = recoveryCode();
-    db.setPasswordHash(await bcrypt.hash(secret, 10));
-    db.setRecoveryHash(await bcrypt.hash(code.replace('-', ''), 10));
+    db.setPasswordHash(await hashSecret(secret));
+    db.setRecoveryHash(await hashSecret(code.replace('-', '')));
     db.setAuthMethod(mode);
-    db.applySettingsPatch({ passwordHint: hint || '', lockOnLaunch: true });
+    db.applySettingsPatch({ passwordHint: asText(hint, 200) ?? '', lockOnLaunch: true });
     changed();
     return { ok: true as const, recoveryCode: code };
   });
-  ipcMain.handle('auth:change', async (_e, current: string, next: string, hint: string, method: unknown) => {
+  ipcMain.handle('auth:change', async (_e, current: unknown, next: unknown, hint: unknown, method: unknown) => {
     if (tooManyAttempts()) return { ok: false as const, error: 'wait' };
-    const hash = db.passwordHash();
     const stored = db.authMethod();
-    if (!hash || !(await bcrypt.compare(presented(current, stored), hash))) {
+    if (!(await verifySecret(presented(current, stored), db.passwordHash()))) {
       noteFailure();
       return { ok: false as const, error: 'wrong' };
     }
@@ -632,19 +858,18 @@ function registerIpc() {
     const secret = normalizeAuthSecret(presented(next, mode), mode);
     if (!secret) return { ok: false as const, error: mode === 'pin' ? 'pin' : 'short' };
     const code = recoveryCode();
-    db.setPasswordHash(await bcrypt.hash(secret, 10));
-    db.setRecoveryHash(await bcrypt.hash(code.replace('-', ''), 10));
+    db.setPasswordHash(await hashSecret(secret));
+    db.setRecoveryHash(await hashSecret(code.replace('-', '')));
     db.setAuthMethod(mode);
-    db.applySettingsPatch({ passwordHint: hint });
+    db.applySettingsPatch({ passwordHint: asText(hint, 200) ?? '' });
     noteSuccess();
     changed();
     return { ok: true as const, recoveryCode: code };
   });
-  ipcMain.handle('auth:remove', async (_e, current: string) => {
+  ipcMain.handle('auth:remove', async (_e, current: unknown) => {
     if (tooManyAttempts()) return false;
-    const hash = db.passwordHash();
     const stored = db.authMethod();
-    if (!hash || !(await bcrypt.compare(presented(current, stored), hash))) {
+    if (!(await verifySecret(presented(current, stored), db.passwordHash()))) {
       noteFailure();
       return false;
     }
@@ -654,18 +879,17 @@ function registerIpc() {
     changed();
     return true;
   });
-  ipcMain.handle('auth:unlock', async (_e, password: string) => {
+  ipcMain.handle('auth:unlock', async (_e, password: unknown) => {
     if (tooManyAttempts()) {
       db.recordAccessEvent('blocked', db.authMethod());
       return 'wait';
     }
-    const hash = db.passwordHash();
-    if (!hash) {
+    if (!db.passwordHash()) {
       sessionLocked = false;
       return 'ok';
     }
     const stored = db.authMethod();
-    if (!(await bcrypt.compare(presented(password, stored), hash))) {
+    if (!(await verifySecret(presented(password, stored), db.passwordHash()))) {
       noteFailure();
       db.recordAccessEvent('failure', stored);
       return 'wrong';
@@ -678,14 +902,13 @@ function registerIpc() {
     void evaluateReminders('unlock');
     return 'ok';
   });
-  ipcMain.handle('auth:recover', async (_e, code: string, next: string, method: unknown) => {
+  ipcMain.handle('auth:recover', async (_e, code: unknown, next: unknown, method: unknown) => {
     if (tooManyAttempts()) {
       db.recordAccessEvent('blocked', 'recovery');
       return { ok: false as const, error: 'wait' };
     }
-    const hash = db.recoveryHash();
-    const normalized = code.trim().toUpperCase().replace(/-/g, '');
-    if (!hash || !(await bcrypt.compare(normalized, hash))) {
+    const normalized = typeof code === 'string' ? code.trim().toUpperCase().replace(/-/g, '') : '';
+    if (!(await verifySecret(normalized, db.recoveryHash()))) {
       noteFailure();
       db.recordAccessEvent('recovery-failure', 'recovery');
       return { ok: false as const, error: 'wrong' };
@@ -694,8 +917,8 @@ function registerIpc() {
     const secret = normalizeAuthSecret(presented(next, mode), mode);
     if (!secret) return { ok: false as const, error: mode === 'pin' ? 'pin' : 'short' };
     const fresh = recoveryCode();
-    db.setPasswordHash(await bcrypt.hash(secret, 10));
-    db.setRecoveryHash(await bcrypt.hash(fresh.replace('-', ''), 10));
+    db.setPasswordHash(await hashSecret(secret));
+    db.setRecoveryHash(await hashSecret(fresh.replace('-', '')));
     db.setAuthMethod(mode);
     noteSuccess();
     db.recordAccessEvent('recovery-success', 'recovery');
@@ -742,35 +965,51 @@ function registerIpc() {
     },
   );
 
-  ipcMain.handle('reminders:due', () => db.listItems().filter((item) => isDue(item, Date.now())));
+  // While the session is locked the item list must not cross the bridge.
+  ipcMain.handle('reminders:due', () => {
+    if (sessionLocked) return [];
+    return db.listItems().filter((item) => isDue(item, Date.now()));
+  });
   ipcMain.handle('reminders:show', () => evaluateReminders('show'));
-  ipcMain.handle('reminders:snooze', (_e, id: string, minutes: number) => {
-    db.snoozeMinutes(id, minutes);
+  ipcMain.handle('reminders:snooze', (_e, id: unknown, minutes: unknown) => {
+    const clean = asId(id);
+    const amount = asNumber(minutes);
+    if (!clean || amount == null) return;
+    db.snoozeMinutes(clean, Math.max(1, Math.floor(amount)));
     afterReminderChange();
   });
-  ipcMain.handle('reminders:snooze-until', (_e, id: string, iso: string) => {
-    db.snoozeItem(id, iso);
+  ipcMain.handle('reminders:snooze-until', (_e, id: unknown, iso: unknown) => {
+    const clean = asId(id);
+    const until = asIsoDate(iso);
+    if (!clean || !until) return;
+    db.snoozeItem(clean, until);
     afterReminderChange();
   });
-  ipcMain.handle('reminders:tomorrow', (_e, id: string) => {
-    db.snoozeItem(id, tomorrowAtNine());
+  ipcMain.handle('reminders:tomorrow', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    db.snoozeItem(clean, tomorrowAtNine());
     afterReminderChange();
   });
-  ipcMain.handle('reminders:dismiss', (_e, id: string) => {
-    db.dismissItem(id);
+  ipcMain.handle('reminders:dismiss', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    db.dismissItem(clean);
     afterReminderChange();
   });
   ipcMain.handle('reminders:dismiss-all', () => {
     for (const item of db.listItems().filter((row) => isDue(row, Date.now()))) db.dismissItem(item.id);
     afterReminderChange();
   });
-  ipcMain.handle('reminders:always-on-top', (_e, value: boolean) => {
-    db.applySettingsPatch({ reminderAlwaysOnTop: value });
-    if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.setAlwaysOnTop(value, 'floating');
+  ipcMain.handle('reminders:always-on-top', (_e, value: unknown) => {
+    db.applySettingsPatch({ reminderAlwaysOnTop: value === true });
+    if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.setAlwaysOnTop(value === true, 'floating');
     changed();
   });
-  ipcMain.handle('reminders:open-item', (_e, id: string) => {
-    pendingNavigate = id;
+  ipcMain.handle('reminders:open-item', (_e, id: unknown) => {
+    const clean = asId(id);
+    if (!clean) return;
+    pendingNavigate = clean;
     showMain();
     if (!sessionLocked) flushNavigate();
   });
@@ -796,18 +1035,40 @@ function registerIpc() {
   });
 
   ipcMain.handle('backup:now', () => {
+    db.flush();
     const name = createBackup('manual');
     pruneBackups(db.readSettings(locale()).autobackupKeep);
     return name;
   });
   ipcMain.handle('backup:list', () => listBackups());
-  ipcMain.handle('backup:restore', (_e, name: string) => {
+  ipcMain.handle('backup:restore', (_e, name: unknown) => {
+    if (typeof name !== 'string') return false;
     const safe = path.basename(name);
+    if (!safe) return false;
     const source = path.join(backupsDir(), safe);
     if (!fs.existsSync(source)) return false;
+    db.flush();
     createBackup('pre-restore');
-    fs.copyFileSync(source, db.databasePath());
-    db.reloadFromDisk();
+    const target = db.databasePath();
+    const staged = `${target}.restore`;
+    // The copy is staged and renamed so a failure cannot leave a half written
+    // database behind.
+    try {
+      fs.copyFileSync(source, staged);
+      fs.renameSync(staged, target);
+    } catch (error) {
+      console.error('CyberGo: could not restore the backup.', error);
+      try {
+        if (fs.existsSync(staged)) fs.unlinkSync(staged);
+      } catch {
+        // Nothing else to clean up.
+      }
+      return false;
+    }
+    if (!db.reloadFromDisk()) {
+      console.error('CyberGo: the restored database could not be opened, keeping the current one.');
+      return false;
+    }
     sessionLocked = db.hasPassword() && db.readSettings(locale()).lockOnLaunch;
     changed();
     return true;
@@ -826,7 +1087,12 @@ function registerIpc() {
     if (result.canceled || !result.filePath) return false;
     const dumped = db.exportRows();
     const csv = toCsv(dumped.items.map((item) => itemToCsvRow(item, dumped.groups)));
-    fs.writeFileSync(result.filePath, `\uFEFF${csv}`, 'utf8');
+    try {
+      fs.writeFileSync(result.filePath, `\uFEFF${csv}`, 'utf8');
+    } catch (error) {
+      console.error('CyberGo: could not write the CSV file.', error);
+      return false;
+    }
     return true;
   });
   ipcMain.handle('csv:import', async () => {
@@ -855,12 +1121,17 @@ function registerIpc() {
     }
     const errors: string[] = [];
     let added = 0;
+    // The group list is read once instead of once per row, and the groups
+    // created along the way are added to it so two rows naming the same new
+    // group do not create it twice.
+    const groups = db.listGroups();
     rows.forEach((row, index) => {
       try {
-        const { draft, newGroupName } = rowToDraft(row, db.listGroups());
+        const { draft, newGroupName } = rowToDraft(row, groups);
         if (newGroupName) {
           const group = db.saveGroup({ name: newGroupName, color: '#6c63e6' });
           draft.groupId = group.id;
+          groups.push(group);
         }
         if (draft.startLocal && draft.endLocal) {
           const start = parseLocal(draft.startLocal, draft.allDay);
@@ -874,6 +1145,7 @@ function registerIpc() {
       }
     });
     if (added) {
+      db.flush();
       changed();
       void evaluateReminders('tick');
     }
@@ -892,16 +1164,21 @@ function registerIpc() {
     if (result.canceled || !result.filePaths[0]) return null;
     const filePath = result.filePaths[0];
     const fileName = path.basename(filePath);
-    const text = fs.readFileSync(filePath, 'utf8');
-    let events;
+    let text: string;
     try {
-      events = parseIcs(text);
+      text = fs.readFileSync(filePath, 'utf8');
+    } catch {
+      return { added: 0, total: 0, fileName, format: 'ics' as const, errors: ['read'] };
+    }
+    let parsed;
+    try {
+      parsed = parseIcs(text);
     } catch (error) {
       return { added: 0, total: 0, fileName, format: 'ics' as const, errors: [error instanceof Error ? error.message : 'invalid'] };
     }
-    const errors: string[] = [];
+    const errors: string[] = [...parsed.errors];
     let added = 0;
-    events.forEach(({ draft }, index) => {
+    parsed.events.forEach(({ draft }, index) => {
       try {
         db.saveItem(draft);
         added += 1;
@@ -911,7 +1188,8 @@ function registerIpc() {
     });
     changed();
     void evaluateReminders('tick');
-    return { added, total: events.length, fileName, format: 'ics' as const, errors };
+    db.flush();
+    return { added, total: parsed.events.length, fileName, format: 'ics' as const, errors };
   });
 }
 
@@ -924,6 +1202,7 @@ if (!gotLock) {
     bootLog('ready');
     app.setAppUserModelId('com.cybergo.app');
     Menu.setApplicationMenu(null);
+    applyContentSecurityPolicy();
     await db.initDatabase(path.join(app.getPath('userData'), 'cybergo.db'), wasmPath(), locale());
     if (verify) db.seedDemoIfEmpty();
     const settings = db.readSettings(locale());
@@ -941,15 +1220,18 @@ if (!gotLock) {
     setInterval(() => maybeAutoBackup(), 60 * 60 * 1000);
     if (verify && mainWindow) {
       bootLog('verify hook');
+      // The screenshots go to the temporary folder, never into whatever
+      // directory the app happened to be started from.
+      const shots = path.join(os.tmpdir(), 'cybergo-verify');
       mainWindow.webContents.once('did-finish-load', () => {
         setTimeout(async () => {
-          fs.mkdirSync(path.join(process.cwd(), 'artifacts'), { recursive: true });
+          fs.mkdirSync(shots, { recursive: true });
           const shot = await mainWindow?.capturePage();
-          if (shot) fs.writeFileSync(path.join(process.cwd(), 'artifacts', 'boot-main.png'), shot.toPNG());
+          if (shot) fs.writeFileSync(path.join(shots, 'boot-main.png'), shot.toPNG());
           await evaluateReminders('show');
           setTimeout(async () => {
             const shot2 = await reminderWindow?.capturePage();
-            if (shot2) fs.writeFileSync(path.join(process.cwd(), 'artifacts', 'boot-reminders.png'), shot2.toPNG());
+            if (shot2) fs.writeFileSync(path.join(shots, 'boot-reminders.png'), shot2.toPNG());
             quitting = true;
             app.quit();
           }, 900);
@@ -969,9 +1251,32 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   persistMainWindowState();
+  db.flush();
   quitting = true;
 });
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  db.close();
+});
+
+// The writes are deferred, so an unexpected failure has to reach the disk
+// before the process goes away.
+process.on('uncaughtException', (error) => {
+  console.error('CyberGo: unexpected failure.', error);
+  try {
+    db.flush();
+  } catch {
+    // Nothing else can be done at this point.
+  }
+});
+
+process.on('SIGINT', () => {
+  db.flush();
+  app.quit();
+});
+
+process.on('SIGTERM', () => {
+  db.flush();
+  app.quit();
 });
