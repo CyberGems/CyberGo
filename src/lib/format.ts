@@ -67,15 +67,27 @@ export function dueState(iso: string | null): 'overdue' | 'today' | 'future' | n
   return dayDiff(iso) === 0 ? 'today' : 'future';
 }
 
-export function daysLeft(item: Item, copy: Copy, lang: Lang): string {
+/**
+ * The state of an item in the list, with the tone it is drawn with.
+ *
+ * A task that is late is overdue, because it still waits to be done. An
+ * event that already happened is not late, it simply passed, so it gets no
+ * state at all. An item in the trash is not pending either.
+ */
+export function itemStatus(item: Item, copy: Copy): { label: string; tone: string } {
+  if (item.deletedAt) return { label: '', tone: '' };
   const iso = item.occurrenceAt || item.startAt;
+  if (!iso) return { label: '', tone: '' };
+  const at = new Date(iso).getTime();
+  if (Number.isNaN(at)) return { label: '', tone: '' };
+  if (at < Date.now()) {
+    if (item.kind === 'event') return { label: '', tone: '' };
+    return { label: overduePhrase(iso, copy), tone: 'overdue' };
+  }
   const diff = dayDiff(iso);
-  if (diff == null) return '';
-  const overdue = overduePhrase(iso, copy);
-  if (overdue) return overdue;
-  if (diff === 0) return copy.todayWord;
-  if (diff === 1) return copy.tomorrowWord;
-  return String(diff);
+  if (diff === 0) return { label: copy.todayWord, tone: 'today' };
+  if (diff === 1) return { label: copy.tomorrowWord, tone: 'future' };
+  return { label: copy.inDays.replace('{days}', String(diff)), tone: 'future' };
 }
 
 export function duePhrase(iso: string | null, copy: Copy): string {

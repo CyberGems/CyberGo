@@ -211,15 +211,14 @@ export default function QuickAdd({
             ))}
           </div>
           {/* The hint already sits in the heading, so this line only shows
-              what the phrase is going to become. */}
-          <div className={`quick-preview ${text.trim() || armed ? '' : 'muted'}`}>
-            {text.trim() || armed ? (
-              <>
-                <Sparkles size={13} />
-                {preview}
-              </>
-            ) : null}
-          </div>
+              what the phrase is going to become. It is not drawn when there
+              is nothing to say, so the card keeps no empty room. */}
+          {(text.trim() || armed) && (
+            <div className="quick-preview">
+              <Sparkles size={13} />
+              {preview}
+            </div>
+          )}
           {error && <div className="quick-error" role="alert">{error}</div>}
         </div>
       )}

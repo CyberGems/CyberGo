@@ -17,6 +17,19 @@
 - A failed automatic backup no longer stops the app from starting.
 - A write that could not be serialized is tried again, instead of waiting for the next change and being lost when the app closed.
 
+### Improved
+
+- The state column says "En 3 días" instead of a bare "3".
+- An event that already happened no longer shows as overdue. A task that is late still does, because it still waits to be done.
+- The quick capture no longer keeps an empty row under the presets.
+- The number of items is shown once, under the workspace title, instead of twice.
+- The date picker and the calendar use the same three-letter weekday names.
+- The calendar keeps a single stop in the tab order, and the arrow keys move the focus from there.
+- The filter names stay on one line at the narrowest window width.
+- A row without a date no longer reads "Buy milk, , ,".
+- An item in the trash no longer shows an overdue badge.
+- The reminder window reports a failed request instead of losing it.
+
 ## 0.1.0-alpha.3 - 2026-10-19
 
 Third public pre-release of CyberGo. This round is about trust in the local data: the database records its own version, writes once per burst of changes instead of once per change, and survives a damaged file. Dates, repetitions and imports were reworked, and every dialog now behaves like a real dialog, with the focus and the keyboard under control.

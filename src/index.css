@@ -1512,6 +1512,9 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   .quick { margin-inline: 16px; }
   .list-head { margin-inline: 16px; }
   .rows { margin-inline: 16px; }
+  /* The filter names have to stay on one line, or the rows end up uneven. */
+  .nav-btn, .group-row { gap: 6px; padding-inline: 6px; white-space: nowrap; }
+  .nav-btn .badge, .group-row .badge { min-width: 18px; padding-inline: 4px; }
 }
 
 @media (max-width: 940px) {

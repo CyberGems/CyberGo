@@ -45,7 +45,8 @@ function weekdayLabels(lang: Lang, weekStart: number) {
   const locale = lang === 'es' ? 'es-ES' : 'en-US';
   return Array.from({ length: 7 }, (_, i) => {
     const day = new Date(2026, 0, 4 + weekStart + i);
-    return day.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '').slice(0, 2);
+    // The same three letters the calendar view uses, so the two read alike.
+    return day.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
   });
 }
 

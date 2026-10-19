@@ -396,8 +396,8 @@ function MainApp() {
         </section>
       </div>
       <footer className="statusbar">
-        <span>{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</span>
-        {loadError && <span className="status-error" role="alert">{copy.loadFailed}</span>}
+        {/* The count already sits under the workspace title, so the status
+            bar only carries the streak. */}
         <span className="grow" />
         <Tooltip label={`${stats.doneWeek} ${copy.streakWeek}`} placement="top">
           <span className="streak">

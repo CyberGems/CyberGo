@@ -14,6 +14,16 @@ function dueTime(item: Item): number {
   return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
 }
 
+/**
+ * Runs a request that nobody waits for.
+ *
+ * A failure has to be reported, otherwise it disappears without a word and
+ * the interface looks like it did something it did not.
+ */
+function detach(promise: Promise<unknown>, what: string) {
+  promise.catch((err) => console.error(`CyberGo could not ${what}`, err));
+}
+
 export default function RemindersWindow() {
   const api = window.cyberGoAPI;
   const [items, setItems] = useState<Item[]>([]);
@@ -141,11 +151,11 @@ export default function RemindersWindow() {
       } else if (event.key === 'Enter') {
         if (previewMode || !current) return;
         event.preventDefault();
-        void api.openItem(current.id);
+        detach(api.openItem(current.id), 'open the item');
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
         if (previewMode || !current) return;
         event.preventDefault();
-        void api.dismiss(current.id);
+        detach(api.dismiss(current.id), 'dismiss the reminder');
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
         event.preventDefault();
         setSelectedIds(ids);
@@ -171,10 +181,10 @@ export default function RemindersWindow() {
     const menu = contextMenu;
     setContextMenu(null);
     if (!menu) return;
-    if (action === 'open') void api.openItem(menu.id);
-    if (action === 'dismiss') void api.dismiss(menu.id);
-    if (action === 'delete') void api.deleteItem(menu.id);
-    if (action === 'dismiss-all') void api.dismissAll();
+    if (action === 'open') detach(api.openItem(menu.id), 'open the item');
+    if (action === 'dismiss') detach(api.dismiss(menu.id), 'dismiss the reminder');
+    if (action === 'delete') detach(api.deleteItem(menu.id), 'delete the item');
+    if (action === 'dismiss-all') detach(api.dismissAll(), 'dismiss every reminder');
   }
 
   return (
@@ -211,7 +221,7 @@ export default function RemindersWindow() {
                   <button type="button" className="head-action" onClick={stopAlert} aria-label={copy.stopSound}><VolumeX size={15} /></button>
                 </Tooltip>
                 <Tooltip label={copy.dismissAll} placement="bottom">
-                  <button type="button" className="head-action" disabled={previewMode || !items.length} onClick={() => void api.dismissAll()} aria-label={copy.dismissAll}><XCircle size={15} /></button>
+                  <button type="button" className="head-action" disabled={previewMode || !items.length} onClick={() => detach(api.dismissAll(), 'dismiss every reminder')} aria-label={copy.dismissAll}><XCircle size={15} /></button>
                 </Tooltip>
                 <Tooltip label={copy.alwaysOnTop} placement="bottom">
                   <button
@@ -247,7 +257,7 @@ export default function RemindersWindow() {
                         setSelectedIds([item.id]);
                       }
                     }}
-                    onDoubleClick={() => { if (!previewMode) void api.openItem(item.id); }}
+                    onDoubleClick={() => { if (!previewMode) detach(api.openItem(item.id), 'open the item'); }}
                     onContextMenu={(event) => showContextMenu(event, item.id)}
                   >
                     <span className="reminder-row-icon">
@@ -257,19 +267,19 @@ export default function RemindersWindow() {
                     <span className="reminder-row-due">{duePhrase(item.occurrenceAt || item.nextFireAt, copy)}</span>
                     <span className="reminder-row-actions" onClick={(event) => event.stopPropagation()}>
                       <Tooltip label={copy.min10} placement="top">
-                        <button type="button" className="row-action" disabled={previewMode} aria-label={`${copy.snoozeFor}: ${copy.min10}`} onClick={() => void api.snooze(item.id, 10)}>
+                        <button type="button" className="row-action" disabled={previewMode} aria-label={`${copy.snoozeFor}: ${copy.min10}`} onClick={() => detach(api.snooze(item.id, 10), 'snooze the reminder')}>
                           <Clock3 size={14} />
                         </button>
                       </Tooltip>
                       {item.kind === 'task' && (
                         <Tooltip label={copy.markComplete} placement="top">
-                          <button type="button" className="row-action" disabled={previewMode} aria-label={copy.markComplete} onClick={() => void api.completeItem(item.id)}>
+                          <button type="button" className="row-action" disabled={previewMode} aria-label={copy.markComplete} onClick={() => detach(api.completeItem(item.id), 'complete the item')}>
                             <CheckCircle2 size={14} />
                           </button>
                         </Tooltip>
                       )}
                       <Tooltip label={copy.dismiss} placement="top">
-                        <button type="button" className="row-action" disabled={previewMode} aria-label={copy.dismiss} onClick={() => void api.dismiss(item.id)}>
+                        <button type="button" className="row-action" disabled={previewMode} aria-label={copy.dismiss} onClick={() => detach(api.dismiss(item.id), 'dismiss the reminder')}>
                           <X size={14} />
                         </button>
                       </Tooltip>
@@ -304,12 +314,12 @@ export default function RemindersWindow() {
                 <p className="reminder-inspector-empty">{copy.pickReminder}</p>
               )}
               <div className="reminder-inspector-actions">
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.openItem(current.id)}><ExternalLink size={13} />{copy.openItem}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.dismiss(current.id)}><X size={13} />{copy.dismiss}</button>
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.openItem(current.id), 'open the item')}><ExternalLink size={13} />{copy.openItem}</button>
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.dismiss(current.id), 'dismiss the reminder')}><X size={13} />{copy.dismiss}</button>
                 <span className="reminder-snooze-label">{copy.snoozeFor}</span>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, 10)}>{copy.min10}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, 60)}>{copy.hour1}</button>
-                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snoozeTomorrow(current.id)}>{copy.tomorrow9}</button>
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snooze(current.id, 10), 'snooze the reminder')}>{copy.min10}</button>
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snooze(current.id, 60), 'snooze the reminder')}>{copy.hour1}</button>
+                <button type="button" className="btn" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snoozeTomorrow(current.id), 'snooze the reminder')}>{copy.tomorrow9}</button>
                 <button type="button" className="btn reminder-custom-toggle" aria-expanded={customOpen} onClick={() => setCustomOpen((v) => !v)}>
                   <SlidersHorizontal size={13} />{copy.custom}{customOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                 </button>
@@ -322,7 +332,7 @@ export default function RemindersWindow() {
                     <option value="hours">{copy.hours}</option>
                     <option value="days">{copy.days}</option>
                   </select>
-                  <button type="button" className="btn btn-primary" disabled={previewMode || !hasSingleSelection} onClick={() => current && void api.snooze(current.id, minutes)}><Timer size={13} />{copy.snooze}</button>
+                  <button type="button" className="btn btn-primary" disabled={previewMode || !hasSingleSelection} onClick={() => current && detach(api.snooze(current.id, minutes), 'snooze the reminder')}><Timer size={13} />{copy.snooze}</button>
                 </div>
               )}
             </div>

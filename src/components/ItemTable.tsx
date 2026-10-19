@@ -3,7 +3,7 @@ import { Flag } from 'lucide-react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import type { Copy } from '../i18n';
 import type { Group, Item, Lang } from '@shared/types';
-import { dayDiff, daysLeft, dueState, formatDate, formatTimeRange } from '../lib/format';
+import { formatDate, formatTimeRange, itemStatus } from '../lib/format';
 import Tooltip from './Tooltip';
 
 const TABLE_WIDTHS = [14, 132, 126, 180, 340, 76];
@@ -165,9 +165,15 @@ export default function ItemTable({
           {items.map((item) => {
             const group = groups.find((g) => g.id === item.groupId);
             const tint = safeTint(item.color || group?.color || '');
-            const diff = dayDiff(item.occurrenceAt || item.startAt);
-            const relative = daysLeft(item, copy, lang);
-            const statusClass = dueState(item.occurrenceAt || item.startAt) ?? (diff == null ? '' : diff < 0 ? 'overdue' : diff === 0 ? 'today' : 'future');
+            const status = itemStatus(item, copy);
+            // The empty parts are left out, so the label does not read
+            // "Buy milk, , ,".
+            const label = [
+              item.title,
+              formatDate(item.occurrenceAt || item.startAt, lang),
+              formatTimeRange(item, lang, copy),
+              status.label,
+            ].filter(Boolean).join(', ');
             return (
               <div
                 key={item.id}
@@ -184,7 +190,7 @@ export default function ItemTable({
                 role="button"
                 tabIndex={0}
                 aria-current={selectedId === item.id ? 'true' : undefined}
-                aria-label={`${item.title}, ${formatDate(item.occurrenceAt || item.startAt, lang)}, ${formatTimeRange(item, lang, copy)}, ${relative}`}
+                aria-label={label}
                 style={tint && selectedId !== item.id ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
               >
                 <i className="dot" style={{ background: tint || 'transparent', border: tint ? 'none' : '1px solid var(--border)' }} />
@@ -197,7 +203,7 @@ export default function ItemTable({
                   <span>{formatTimeRange(item, lang, copy)}</span>
                 </span>
                 <span className="row-status">
-                  {relative && <span className={`status-pill ${statusClass}`}>{relative}</span>}
+                  {status.label && <span className={`status-pill ${status.tone}`}>{status.label}</span>}
                 </span>
                 <span className="subject">{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
                 <span className={`kind-tag kind-${item.kind}`}>{item.kind === 'task' ? copy.task : copy.event}</span>

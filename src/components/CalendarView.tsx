@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Group, Item, Lang } from '@shared/types';
 import type { Copy } from '../i18n';
@@ -6,6 +6,10 @@ import Tooltip from './Tooltip';
 
 function dayKey(date: Date): string {
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+function sameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 function whenOf(item: Item): Date | null {
@@ -57,6 +61,15 @@ export default function CalendarView({
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const weekStart = lang === 'es' ? 1 : 0;
   const locale = lang === 'es' ? 'es-ES' : 'en-US';
+  const gridRef = useRef<HTMLDivElement>(null);
+  /**
+   * The cell that is in the tab order.
+   *
+   * The grid has forty-two cells, and making all of them reachable would
+   * put forty-two stops between the toolbar and the list. Only one of them
+   * is in the tab order, and the arrow keys move the focus from there.
+   */
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
   const byDay = useMemo(() => {
     const map = new Map<string, Item[]>();
@@ -76,6 +89,18 @@ export default function CalendarView({
 
   const undated = useMemo(() => items.filter((item) => !whenOf(item)), [items]);
   const cells = monthCells(cursor.getFullYear(), cursor.getMonth(), weekStart);
+  const todayIndex = cells.findIndex((day) => sameDay(day, today));
+  const tabbableIndex = focusIndex ?? (todayIndex >= 0 ? todayIndex : 0);
+
+  // Another month starts with its own cell in the tab order.
+  useEffect(() => { setFocusIndex(null); }, [cursor]);
+
+  function focusCell(index: number) {
+    const target = gridRef.current?.querySelectorAll<HTMLDivElement>('.cal-cell')[index];
+    if (!target) return;
+    setFocusIndex(index);
+    target.focus();
+  }
   // Only the first letter is raised, so "octubre de 2026" reads correctly.
   const monthTitle = cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   const monthLabel = monthTitle.charAt(0).toLocaleUpperCase(locale) + monthTitle.slice(1);
@@ -97,8 +122,8 @@ export default function CalendarView({
       <div className="cal-dow">
         {weekdayLabels(lang, weekStart).map((name, index) => <span key={index}>{name}</span>)}
       </div>
-      <div className="cal-grid">
-        {cells.map((day) => {
+      <div className="cal-grid" ref={gridRef}>
+        {cells.map((day, index) => {
           const outside = day.getMonth() !== cursor.getMonth();
           const isToday = day.getFullYear() === today.getFullYear() && day.getMonth() === today.getMonth() && day.getDate() === today.getDate();
           const list = byDay.get(dayKey(day)) ?? [];
@@ -108,14 +133,25 @@ export default function CalendarView({
               key={day.toISOString()}
               className={`cal-cell ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}`}
               onDoubleClick={() => onNewDay(day)}
+              onFocus={() => setFocusIndex(index)}
               onKeyDown={(event) => {
                 if (event.target !== event.currentTarget) return;
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   onNewDay(day);
+                  return;
                 }
+                const step = event.key === 'ArrowLeft' ? -1
+                  : event.key === 'ArrowRight' ? 1
+                    : event.key === 'ArrowUp' ? -7
+                      : event.key === 'ArrowDown' ? 7 : 0;
+                if (!step) return;
+                const next = index + step;
+                if (next < 0 || next >= cells.length) return;
+                event.preventDefault();
+                focusCell(next);
               }}
-              tabIndex={0}
+              tabIndex={index === tabbableIndex ? 0 : -1}
               aria-label={`${day.toLocaleDateString(locale, { dateStyle: 'full' })}. ${copy.calNewHint}`}
             >
             <span className="cal-daynum"><span>{day.getDate()}</span>{isToday && <span className="cal-today-label">{copy.todayWord}</span>}</span>
