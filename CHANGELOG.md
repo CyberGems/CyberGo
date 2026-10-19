@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.3 - 2026-10-19
+
+Third public pre-release of CyberGo. This round is about trust in the local data: the database records its own version, writes once per burst of changes instead of once per change, and survives a damaged file. Dates, repetitions and imports were reworked, and every dialog now behaves like a real dialog, with the focus and the keyboard under control.
+
+### Added
+
+- The interface recovers from an unexpected error instead of showing a blank window.
+- A notice appears when the local data had to be recovered.
+- The local database records its own version, so a future update can add fields without breaking an existing installation.
+- The item list is indexed, and the settings are read in a single query.
+- Every value that crosses the bridge between the interface and the local process is checked before it is used.
+
+### Improved
+
+- The database is written once per burst of changes instead of once per change. Importing a large file and dragging the window are noticeably faster.
+- Passwords and PINs are hashed with a native function instead of a slow JavaScript one, so unlocking no longer freezes the interface. Existing codes keep working.
+- The interface is no longer able to navigate the application window away from the app, and a content policy is now in force.
+- The window cannot be opened over a remote page, and pasting from the context menu now works and reports a failure instead of doing nothing.
+- The item editor, the command palette and the confirmation dialog behave like real dialogs: they keep the focus, trap it, and give it back when they close.
+- The context menu can be used with the keyboard, including the date fields.
+- Controls that only show an icon now announce what they do, and every string still exists in English and Spanish.
+- The reminder list and the table rows use valid ARIA, and the table no longer writes to storage on every mouse movement.
+- The quick capture no longer repeats its own hint in two places.
+- A task without a date no longer says "Sin fecha" twice in the list.
+- The calendar closes once you pick a day, and it keeps the time you had chosen.
+- The month reads "Octubre de 2026" instead of "Octubre De 2026".
+- The version in the settings panel no longer breaks in the middle of the number.
+
 ### Fixed
 
 - Escape inside the date picker now closes only the picker. It used to close the whole item editor and discard the draft.
@@ -17,7 +45,7 @@
 - A calendar file with a time zone, a duration or a repetition limit is imported with those values.
 - A reminder no longer fires twice when two checks overlap.
 - A reminder no longer appears while the app is locked in hard mode.
-- A database file that is damaged no longer stops the app from starting. The newest usable copy is restored, and the damaged file is kept aside instead of being deleted.
+- A database file that is damaged no longer stops the app from starting. The newest usable copy is restored, and the app reports what the recovery had to do.
 - Restoring a copy can no longer leave the app unusable. The copy is staged before it replaces anything.
 - A failed sign-in attempt no longer clears the lockout when the app restarts.
 - A damaged password record no longer unlocks the app with any password.
@@ -28,30 +56,6 @@
 - A reminder that could not be shown is able to fire again instead of staying silent.
 - A database from a newer build is left exactly as it is instead of being rewritten.
 - The focus returns to the date button when the calendar closes.
-
-### Improved
-
-- The quick capture no longer repeats its own hint in two places.
-- A task without a date no longer says "Sin fecha" twice in the list.
-- The calendar closes once you pick a day, and it keeps the time you had chosen.
-- The month reads "Octubre de 2026" instead of "Octubre De 2026".
-- The version in the settings panel no longer breaks in the middle of the number.
-- The database is written once per burst of changes instead of once per change. Importing a large file and dragging the window are noticeably faster.
-- The database now records its own version, so a future update can add columns without breaking existing installations.
-- Passwords and PINs are hashed with a native function instead of a slow JavaScript one, so unlocking no longer freezes the interface. Existing codes keep working.
-- The item list is indexed, and the settings are read in a single query.
-- Every value that crosses the bridge between the interface and the local process is checked before it is used.
-- The interface is no longer able to navigate the application window away from the app, and a content policy is now in force.
-- The window cannot be opened over a remote page, and pasting from the context menu now works and reports a failure instead of doing nothing.
-- The item editor, the command palette and the confirmation dialog behave like real dialogs: they keep the focus, trap it, and give it back when they close.
-- The context menu can be used with the keyboard, including the date fields.
-- Controls that only show an icon now announce what they do, and every string still exists in English and Spanish.
-- The reminder list and the table rows use valid ARIA, and the table no longer writes to storage on every mouse movement.
-
-### Added
-
-- The interface recovers from an unexpected error instead of showing a blank window.
-- A notice appears when the local data had to be recovered.
 
 ## 0.1.0-alpha.2 - 2026-10-19
 

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.2"><img src="https://img.shields.io/badge/Download%20pre--release-0.1.0--alpha.2-0891B2?style=for-the-badge" alt="Download CyberGo 0.1.0-alpha.2" /></a>
+  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.3"><img src="https://img.shields.io/badge/Download%20pre--release-0.1.0--alpha.3-0891B2?style=for-the-badge" alt="Download CyberGo 0.1.0-alpha.3" /></a>
   <a href="https://github.com/CyberGems/CyberGo/releases"><img src="https://img.shields.io/badge/All%20releases-30363D?style=for-the-badge&logo=github&logoColor=white" alt="All releases" /></a>
 </p>
 
@@ -58,7 +58,7 @@ The interface is available in **English and Spanish**. The application is curren
 ### Data and experience
 
 - CSV and ICS import and export with validation feedback.
-- A damaged local database is recovered from the newest usable copy, and the damaged file is kept aside instead of being thrown away.
+- A damaged local database no longer stops the app from starting: the newest usable copy is restored, and a notice tells you what had to be done.
 - The local database records its own version, so a future update can add fields without breaking an existing installation.
 - Dark, gray, and light themes, with a lower-contrast dark theme.
 - Settings panel organized as a drawer with icon navigation and section headings.
@@ -70,7 +70,7 @@ The interface is available in **English and Spanish**. The application is curren
 
 ## Download
 
-Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.2).
+Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.3).
 
 The alpha installers are unsigned Windows executables. Windows SmartScreen may display a warning because the file does not yet have code-signing reputation. You can inspect the source, compare the SHA-256 value published with the release, or build the installer yourself.
 

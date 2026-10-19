@@ -1,7 +1,7 @@
 {
   "name": "cybergo",
   "private": true,
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "author": "CyberGems",
   "license": "GPL-3.0-only",
   "description": "Local event and task reminders for Windows",
@@ -29,7 +29,9 @@
     ],
     "win": {
       "icon": "public/icon.png",
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "extraResources": [
       {
