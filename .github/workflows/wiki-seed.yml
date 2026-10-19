@@ -1,0 +1,26 @@
+name: Seed wiki
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the wiki repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          code=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X PUT \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -d '{"title":"Home","body":"Welcome to the CyberGo wiki!"}' \
+            "https://api.github.com/repos/$REPO/wiki/pages")
+          echo "PUT /wiki/pages -> $code"
+          cat /tmp/resp.json | head -c 300
+          echo
