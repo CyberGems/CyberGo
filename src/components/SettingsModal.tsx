@@ -203,7 +203,14 @@ export default function SettingsModal({
   }, [tab]);
 
   async function patch(partial: Partial<PublicSettings>) {
-    const saved = await api.patchSettings(partial);
+    let saved: PublicSettings;
+    try {
+      saved = await api.patchSettings(partial);
+    } catch (err) {
+      // The session may have been locked while the panel was open.
+      console.error('CyberGo could not save the setting', err);
+      return;
+    }
     if (partial.theme) applyTheme(saved.theme);
     if (partial.accessLogEnabled != null) void refreshAccessLog();
     setMessage(copy.saved);

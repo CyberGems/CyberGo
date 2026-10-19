@@ -77,6 +77,28 @@ function snapshot() {
   };
 }
 
+/**
+ * Whether a request from the renderer has to be refused because the session
+ * is locked.
+ *
+ * The lock belongs to the main window, which is the one that shows the lock
+ * screen. The reminder window keeps working while the session is locked in
+ * soft mode, so it is not refused. Every other channel is, so a locked app
+ * cannot read, change or hand out the agenda.
+ */
+function refusedByLock(event: Electron.IpcMainInvokeEvent): boolean {
+  if (!sessionLocked) return false;
+  const sender = BrowserWindow.fromWebContents(event.sender);
+  if (!sender) return true;
+  if (reminderWindow && !reminderWindow.isDestroyed() && sender === reminderWindow) return false;
+  return true;
+}
+
+/** Throws when the request comes from the locked main window. */
+function refuseWhenLocked(event: Electron.IpcMainInvokeEvent) {
+  if (refusedByLock(event)) throw new Error('locked');
+}
+
 function showMain() {
   if (!mainWindow) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
@@ -762,7 +784,8 @@ function registerIpc() {
   ipcMain.handle('window:close', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
   ipcMain.handle('window:is-maximized', (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false);
 
-  ipcMain.handle('items:save', (_e, draft: unknown) => {
+  ipcMain.handle('items:save', (e, draft: unknown) => {
+    refuseWhenLocked(e);
     const clean = asDraft(draft);
     if (!clean) throw new Error('invalid draft');
     const item = db.saveItem(clean);
@@ -770,32 +793,37 @@ function registerIpc() {
     void evaluateReminders('tick');
     return item;
   });
-  ipcMain.handle('items:delete', (_e, id: unknown) => {
+  ipcMain.handle('items:delete', (e, id: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     if (!clean) return;
     db.softDelete(clean);
     changed();
   });
-  ipcMain.handle('items:restore', (_e, id: unknown) => {
+  ipcMain.handle('items:restore', (e, id: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     if (!clean) return;
     db.restoreItem(clean);
     changed();
   });
-  ipcMain.handle('items:purge', (_e, id: unknown) => {
+  ipcMain.handle('items:purge', (e, id: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     if (!clean) return;
     db.purgeItem(clean);
     changed();
   });
-  ipcMain.handle('items:empty-trash', () => { db.emptyTrash(); changed(); });
-  ipcMain.handle('items:complete', (_e, id: unknown) => {
+  ipcMain.handle('items:empty-trash', (e) => { refuseWhenLocked(e); db.emptyTrash(); changed(); });
+  ipcMain.handle('items:complete', (e, id: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     if (!clean) return;
     db.completeItem(clean);
     changed();
   });
-  ipcMain.handle('groups:save', (_e, input: unknown) => {
+  ipcMain.handle('groups:save', (e, input: unknown) => {
+    refuseWhenLocked(e);
     if (!input || typeof input !== 'object') throw new Error('invalid group');
     const raw = input as Record<string, unknown>;
     const name = asText(raw.name, 120);
@@ -808,14 +836,16 @@ function registerIpc() {
     changed();
     return group;
   });
-  ipcMain.handle('groups:delete', (_e, id: unknown) => {
+  ipcMain.handle('groups:delete', (e, id: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     if (!clean) return;
     db.deleteGroup(clean);
     changed();
   });
 
-  ipcMain.handle('settings:patch', (_e, patch: Partial<PublicSettings>) => {
+  ipcMain.handle('settings:patch', (e, patch: Partial<PublicSettings>) => {
+    refuseWhenLocked(e);
     db.applySettingsPatch(patch);
     if (patch.openAtLogin != null) applyLogin(patch.openAtLogin);
     if (patch.reminderAlwaysOnTop != null && reminderWindow && !reminderWindow.isDestroyed()) {
@@ -834,7 +864,8 @@ function registerIpc() {
     return db.readSettings(locale());
   });
 
-  ipcMain.handle('auth:set', async (_e, password: unknown, hint: unknown, method: unknown) => {
+  ipcMain.handle('auth:set', async (e, password: unknown, hint: unknown, method: unknown) => {
+    refuseWhenLocked(e);
     if (db.hasPassword()) return { ok: false as const, error: 'exists' };
     const mode = methodOf(method);
     const secret = normalizeAuthSecret(presented(password, mode), mode);
@@ -847,7 +878,8 @@ function registerIpc() {
     changed();
     return { ok: true as const, recoveryCode: code };
   });
-  ipcMain.handle('auth:change', async (_e, current: unknown, next: unknown, hint: unknown, method: unknown) => {
+  ipcMain.handle('auth:change', async (e, current: unknown, next: unknown, hint: unknown, method: unknown) => {
+    refuseWhenLocked(e);
     if (tooManyAttempts()) return { ok: false as const, error: 'wait' };
     const stored = db.authMethod();
     if (!(await verifySecret(presented(current, stored), db.passwordHash()))) {
@@ -866,7 +898,8 @@ function registerIpc() {
     changed();
     return { ok: true as const, recoveryCode: code };
   });
-  ipcMain.handle('auth:remove', async (_e, current: unknown) => {
+  ipcMain.handle('auth:remove', async (e, current: unknown) => {
+    refuseWhenLocked(e);
     if (tooManyAttempts()) return false;
     const stored = db.authMethod();
     if (!(await verifySecret(presented(current, stored), db.passwordHash()))) {
@@ -937,8 +970,9 @@ function registerIpc() {
     return true;
   });
 
-  ipcMain.handle('access-log:list', () => db.listAccessLog());
-  ipcMain.handle('access-log:clear', () => {
+  ipcMain.handle('access-log:list', (e) => { refuseWhenLocked(e); return db.listAccessLog(); });
+  ipcMain.handle('access-log:clear', (e) => {
+    refuseWhenLocked(e);
     db.clearAccessLog();
     changed();
   });
@@ -1014,7 +1048,8 @@ function registerIpc() {
     if (!sessionLocked) flushNavigate();
   });
   ipcMain.handle('sound:path', () => soundFile());
-  ipcMain.handle('sound:pick', async () => {
+  ipcMain.handle('sound:pick', async (e) => {
+    refuseWhenLocked(e);
     const result = mainWindow
       ? await dialog.showOpenDialog(mainWindow, {
         filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'ogg'] }],
@@ -1029,19 +1064,22 @@ function registerIpc() {
     changed();
     return result.filePaths[0];
   });
-  ipcMain.handle('sound:clear', () => {
+  ipcMain.handle('sound:clear', (e) => {
+    refuseWhenLocked(e);
     db.applySettingsPatch({ soundPath: '' });
     changed();
   });
 
-  ipcMain.handle('backup:now', () => {
+  ipcMain.handle('backup:now', (e) => {
+    refuseWhenLocked(e);
     db.flush();
     const name = createBackup('manual');
     pruneBackups(db.readSettings(locale()).autobackupKeep);
     return name;
   });
-  ipcMain.handle('backup:list', () => listBackups());
-  ipcMain.handle('backup:restore', (_e, name: unknown) => {
+  ipcMain.handle('backup:list', (e) => { refuseWhenLocked(e); return listBackups(); });
+  ipcMain.handle('backup:restore', (e, name: unknown) => {
+    refuseWhenLocked(e);
     if (typeof name !== 'string') return false;
     const safe = path.basename(name);
     if (!safe) return false;
@@ -1073,8 +1111,9 @@ function registerIpc() {
     changed();
     return true;
   });
-  ipcMain.handle('data:open-folder', () => shell.openPath(app.getPath('userData')));
-  ipcMain.handle('csv:export', async () => {
+  ipcMain.handle('data:open-folder', (e) => { refuseWhenLocked(e); return shell.openPath(app.getPath('userData')); });
+  ipcMain.handle('csv:export', async (e) => {
+    refuseWhenLocked(e);
     const result = mainWindow
       ? await dialog.showSaveDialog(mainWindow, {
         defaultPath: 'cybergo.csv',
@@ -1095,7 +1134,8 @@ function registerIpc() {
     }
     return true;
   });
-  ipcMain.handle('csv:import', async () => {
+  ipcMain.handle('csv:import', async (e) => {
+    refuseWhenLocked(e);
     const result = mainWindow
       ? await dialog.showOpenDialog(mainWindow, {
         filters: [{ name: 'CSV', extensions: ['csv'] }],
@@ -1151,7 +1191,8 @@ function registerIpc() {
     }
     return { added, total: rows.length, fileName, format, errors };
   });
-  ipcMain.handle('ics:import', async () => {
+  ipcMain.handle('ics:import', async (e) => {
+    refuseWhenLocked(e);
     const result = mainWindow
       ? await dialog.showOpenDialog(mainWindow, {
         filters: [{ name: 'Calendar', extensions: ['ics'] }],
