@@ -10,18 +10,17 @@ jobs:
   seed:
     runs-on: ubuntu-latest
     steps:
-      - name: Push the first wiki page
+      - name: Create the first wiki page
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.WIKI_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           set -e
-          mkdir -p /tmp/wikiseed
-          cd /tmp/wikiseed
-          git init -q -b master
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          printf 'Welcome to the CyberGo wiki!\n' > Home.md
-          git add Home.md
-          git commit -qm "Initial Home page"
-          git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.wiki.git" master 2>&1 | tail -5
+          code=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X PUT \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -d '{"title":"Home","body":"Welcome to the CyberGo wiki!"}' \
+            "https://api.github.com/repos/$REPO/wiki/pages")
+          echo "PUT /wiki/pages -> $code"
+          head -c 400 /tmp/resp.json
+          echo
