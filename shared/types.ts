@@ -117,6 +117,8 @@ export interface RecoveryNotice {
   kind: 'backup' | 'set-aside' | 'empty' | 'unreadable';
   /** Name of the file involved, when there is one. */
   file?: string;
+  /** Name of the damaged file that was kept as a copy, when there is one. */
+  keptAs?: string;
 }
 
 export interface Bootstrap {

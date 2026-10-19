@@ -33,7 +33,12 @@ export default function App() {
 
 /** The recovery notice is built here so the text comes from the dictionary. */
 function recoveryText(copy: Copy, notice: RecoveryNotice): string {
-  if (notice.kind === 'backup') return copy.recoveryFromBackup.replace('{file}', notice.file ?? '');
+  if (notice.kind === 'backup') {
+    const text = notice.keptAs
+      ? copy.recoveryFromBackupKept
+      : copy.recoveryFromBackup;
+    return text.replace('{file}', notice.file ?? '').replace('{kept}', notice.keptAs ?? '');
+  }
   if (notice.kind === 'set-aside') return copy.recoverySetAside.replace('{file}', notice.file ?? '');
   if (notice.kind === 'empty') return copy.recoveryEmpty;
   return copy.recoveryUnreadable;

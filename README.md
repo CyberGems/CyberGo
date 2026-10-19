@@ -58,7 +58,7 @@ The interface is available in **English and Spanish**. The application is curren
 ### Data and experience
 
 - CSV and ICS import and export with validation feedback.
-- A damaged local database no longer stops the app from starting: the newest usable copy is restored, and a notice tells you what had to be done.
+- A damaged local database no longer stops the app from starting: the newest usable copy is restored, the damaged file is kept aside, and a notice tells you what had to be done.
 - The local database records its own version, so a future update can add fields without breaking an existing installation.
 - Dark, gray, and light themes, with a lower-contrast dark theme.
 - Settings panel organized as a drawer with icon navigation and section headings.

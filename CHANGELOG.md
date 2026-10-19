@@ -7,6 +7,7 @@
 - The command palette and the text context menu no longer disappear behind the settings panel.
 - The command palette no longer opens on top of an open dialog, where the two fought over the keyboard and the focus.
 - Changing only the reminder of a repeating item no longer sends the series back to its first date, which made it fire for a moment that had already passed.
+- A damaged database file is now kept aside even when the data is recovered from a backup. The recovered copy used to replace it, and the original bytes were lost.
 
 ## 0.1.0-alpha.3 - 2026-10-19
 

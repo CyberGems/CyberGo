@@ -409,10 +409,28 @@ function restoreFromBackup(): { handle: any; file: string } | null {
   return null;
 }
 
+/**
+ * A name no other file can take, so a second corruption never overwrites the
+ * copy that was kept of the first one.
+ */
+function corruptFileName(): string {
+  const now = new Date();
+  const p = (value: number, size = 2) => String(value).padStart(size, '0');
+  const stamp = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
+    + `T${p(now.getHours())}-${p(now.getMinutes())}-${p(now.getSeconds())}-${p(now.getMilliseconds(), 3)}`;
+  const folder = path.dirname(dbPath);
+  let name = `cybergo.corrupt-${stamp}.db`;
+  let counter = 1;
+  while (fs.existsSync(path.join(folder, name))) {
+    name = `cybergo.corrupt-${stamp}-${counter}.db`;
+    counter += 1;
+  }
+  return name;
+}
+
 /** Moves an unreadable database aside so the original bytes are never lost. */
 function setAsideCorruptFile(): string | null {
-  const stamp = new Date().toISOString().replace(/\.\d{3}Z$/, '').replace(/:/g, '-');
-  const target = path.join(path.dirname(dbPath), `cybergo.corrupt-${stamp}.db`);
+  const target = path.join(path.dirname(dbPath), corruptFileName());
   try {
     fs.renameSync(dbPath, target);
     return target;
@@ -425,6 +443,24 @@ function setAsideCorruptFile(): string | null {
     return target;
   } catch (error) {
     console.error('CyberGo: could not copy the unreadable database aside.', error);
+    return null;
+  }
+}
+
+/**
+ * Keeps a copy of the damaged file next to it.
+ *
+ * The live file is left where it is, because the recovered copy replaces it
+ * a moment later. A file that is only worth keeping must never be moved
+ * away from the place the app expects to find it.
+ */
+function preserveCorruptFile(): string | null {
+  const target = path.join(path.dirname(dbPath), corruptFileName());
+  try {
+    fs.copyFileSync(dbPath, target);
+    return target;
+  } catch (error) {
+    console.error('CyberGo: could not keep a copy of the damaged database.', error);
     return null;
   }
 }
@@ -448,7 +484,12 @@ function openLiveDatabase(): any {
     console.error('CyberGo: the database file is damaged.', error);
     const restored = restoreFromBackup();
     if (restored) {
-      recovery = { kind: 'backup', file: path.basename(restored.file) };
+      // The recovered copy is about to replace the live file, so a copy of
+      // the damaged one is kept first. Nothing it held is ever thrown away.
+      const kept = preserveCorruptFile();
+      recovery = kept
+        ? { kind: 'backup', file: path.basename(restored.file), keptAs: path.basename(kept) }
+        : { kind: 'backup', file: path.basename(restored.file) };
       return restored.handle;
     }
     const aside = setAsideCorruptFile();

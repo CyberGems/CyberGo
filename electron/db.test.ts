@@ -415,8 +415,12 @@ test('a corrupt database file is recovered from the most recent backup', async (
     assert.ok(db.recoveryNote()!.file!.includes('cybergo-auto-2026-01-01T00-00-00.db'));
     assert.equal(db.listItems().length, 1);
     assert.equal(db.listItems()[0].title, 'Tarea respaldada');
-    // No file was set aside because the backup was usable.
-    assert.deepEqual(fs.readdirSync(dir).filter((name) => name.startsWith('cybergo.corrupt-')), []);
+    // The damaged file is kept as a copy, so the bytes it held are never
+    // lost when the recovered copy replaces it.
+    const kept = fs.readdirSync(dir).filter((name) => name.startsWith('cybergo.corrupt-'));
+    assert.equal(kept.length, 1);
+    assert.equal(db.recoveryNote()!.keptAs, kept[0]);
+    assert.deepEqual(fs.readFileSync(path.join(dir, kept[0])), garbage);
   } finally {
     db.close();
     fs.rmSync(dir, { recursive: true, force: true });
