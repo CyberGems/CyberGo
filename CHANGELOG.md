@@ -2,9 +2,31 @@
 
 ## Unreleased
 
+### Added
+
+- Bilingual About dialog with the application version, system information, and a one-click diagnostics copy.
+- Links to the website, repository, wiki, issues, and releases from the About dialog.
+- Branded configuration footer in the settings panel, showing the CyberGo icon and version and opening the About dialog.
+- Contextual reminder actions in the reminder window, with separate entries for tasks and events.
+- Multi-selection of reminders with Ctrl+click, and a count of the selected items.
+- Per-row urgency states in the reminder window, with overdue items listed first and due phrases refreshed while the window stays open.
+- Inline quick actions on every reminder: snooze ten minutes, mark a task as done, and dismiss.
+- Keyboard navigation in the reminder window: arrows to move, Enter to open, Delete to dismiss, and Ctrl+A to select everything.
+- Compact inspector that details the selected reminder and groups its open, dismiss, and snooze actions.
+- GPL-3.0 license.
+
 ### Improved
 
 - Reworked the settings panel into a CyberNotes-inspired drawer with icon navigation, section headings, saved-state feedback, responsive layout, and a dedicated close action.
+- Compacted the reminder window to a smaller default size, with clearer header actions for stop sound, dismiss all, and always on top.
+- Notification previews now hide after three seconds, so they stay unobtrusive.
+- Preview and sound controls in the notification settings now use matching icons.
+- Softer default notification sound that plays reliably from the Test button.
+
+### Fixed
+
+- Tray context menus now open at the clicked icon, so a duplicated taskbar on a secondary monitor anchors the menu on the correct screen.
+- The initial live-data reload no longer clears the demo reminders shown in the notification preview.
 
 ## 0.1.0-alpha.1 - 2026-09-28
 
