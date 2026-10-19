@@ -6,6 +6,18 @@
   --titlebar-height: 44px;
   --sidebar-width: 220px;
   --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  /*
+   * Layer order, from the bottom up. Every overlay picks one of these, so a
+   * new panel cannot land underneath an older one. The dialogs sit above the
+   * settings drawer, and the menus, the toasts and the tooltips sit above
+   * everything, including the drawer.
+   */
+  --z-dialog: 200;
+  --z-picker: 250;
+  --z-drawer: 300;
+  --z-menu: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
   color-scheme: dark;
 }
 
@@ -179,7 +191,7 @@ button { cursor: pointer; }
 .toolbar { display: flex; gap: 4px; -webkit-app-region: no-drag; }
 .text-context-menu {
   position: fixed;
-  z-index: 100;
+  z-index: var(--z-menu);
   min-width: 210px;
   padding: 6px;
   border: 1px solid var(--border-strong);
@@ -212,7 +224,7 @@ button { cursor: pointer; }
 
 .backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-  display: flex; align-items: center; justify-content: center; z-index: 20;
+  display: flex; align-items: center; justify-content: center; z-index: var(--z-dialog);
 }
 .modal {
   width: min(640px, calc(100% - 32px));
@@ -664,7 +676,7 @@ button { cursor: pointer; }
 .picker-btn svg { color: var(--text-muted); flex-shrink: 0; }
 .picker-pop {
   position: fixed;
-  z-index: 40;
+  z-index: var(--z-picker);
   display: grid;
   grid-template-columns: 280px 1fr;
   grid-template-rows: 1fr auto;
@@ -1181,7 +1193,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 
 .tooltip-layer {
   position: fixed;
-  z-index: 10000;
+  z-index: var(--z-tooltip);
   pointer-events: none;
 }
 .tooltip-card {
@@ -1791,7 +1803,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .panel-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  z-index: var(--z-drawer);
   display: flex;
   justify-content: flex-end;
   background: rgba(0, 0, 0, 0.48);
@@ -2219,7 +2231,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   left: 50%;
   bottom: 42px;
   transform: translateX(-50%);
-  z-index: 200;
+  z-index: var(--z-toast);
   padding: 9px 14px;
   border: 1px solid color-mix(in srgb, var(--danger, #ef4444) 50%, var(--border, #303640));
   border-radius: var(--radius-md, 10px);

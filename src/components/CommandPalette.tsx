@@ -160,6 +160,7 @@ export default function CommandPalette({
       className="palette"
       backdropClassName="palette-backdrop"
       label={copy.cmdSearch}
+      dataOverlay="palette"
       onBackdropMouseDown={() => handlers.current.onClose()}
       onKeyDown={onKeyDown}
     >

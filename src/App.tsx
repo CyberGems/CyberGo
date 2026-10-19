@@ -59,6 +59,13 @@ function MainApp() {
   ));
   const [confirm, setConfirm] = useState<null | { title: string; body: string; action: string; danger?: boolean; run: () => void }>(null);
   const lastTheme = useRef<string | null>(null);
+  /**
+   * Whether a dialog is already open. The command palette is a launcher, so
+   * it stays out of the way while another dialog owns the keyboard. Two
+   * dialogs at once would fight over the focus and over the Enter key.
+   */
+  const dialogOpen = useRef(false);
+  dialogOpen.current = Boolean(editing) || settingsOpen || aboutOpen || Boolean(confirm);
 
   /** Runs a promise that nobody waits for, so a failure never becomes an unhandled rejection. */
   function detach(promise: Promise<unknown>, what: string) {
@@ -105,6 +112,7 @@ function MainApp() {
   useEffect(() => {
     function keys(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        if (dialogOpen.current) return;
         event.preventDefault();
         setPaletteOpen(true);
       }
@@ -113,7 +121,8 @@ function MainApp() {
     return () => document.removeEventListener('keydown', keys);
   }, []);
 
-  function newFromPalette(kind: 'event' | 'task') {    setSeed({
+  function newFromPalette(kind: 'event' | 'task') {
+    setSeed({
       kind,
       title: '',
       notes: '',

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Fixed
+
+- The command palette and the text context menu no longer disappear behind the settings panel.
+- The command palette no longer opens on top of an open dialog, where the two fought over the keyboard and the focus.
+
 ## 0.1.0-alpha.3 - 2026-10-19
 
 Third public pre-release of CyberGo. This round is about trust in the local data: the database records its own version, writes once per burst of changes instead of once per change, and survives a damaged file. Dates, repetitions and imports were reworked, and every dialog now behaves like a real dialog, with the focus and the keyboard under control.

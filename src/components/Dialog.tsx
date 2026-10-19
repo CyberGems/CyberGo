@@ -168,6 +168,12 @@ export interface DialogPanelProps {
    * the panel itself for dialogs driven by the Enter and Escape shortcuts.
    */
   focusTarget?: 'first' | 'container';
+  /**
+   * Marks the panel as a layer that belongs to the dialog that opened it.
+   * A parent dialog that traps the focus lets it go while the focus is inside
+   * a panel with this marker, so the two do not fight over it.
+   */
+  dataOverlay?: string;
 }
 
 /**
@@ -185,6 +191,7 @@ export default function DialogPanel({
   onBackdropMouseDown,
   onKeyDown,
   focusTarget,
+  dataOverlay,
 }: DialogPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true, focusTarget);
@@ -198,6 +205,7 @@ export default function DialogPanel({
         aria-modal="true"
         aria-label={label}
         aria-labelledby={labelledBy}
+        data-dialog-overlay={dataOverlay}
         tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
         onKeyDown={onKeyDown}
