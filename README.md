@@ -30,7 +30,7 @@ The interface is available in **English and Spanish**. The application is curren
 
 - List and calendar views for tasks and events.
 - Quick Add understands phrases such as `Pagar el agua cada 30 días` and `Ir al super el 15 de cada mes`.
-- Daily and monthly recurrence support, including local date and time parsing.
+- Daily, weekly, monthly, and yearly recurrence, including local date and time parsing.
 - Importance, groups, colors, notes, all-day events, and configurable reminders.
 - Friendly overdue durations and resizable table columns with persisted widths.
 

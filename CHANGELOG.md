@@ -35,7 +35,7 @@ First public pre-release of CyberGo.
 ### Added
 
 - Local events and tasks with Spanish and English interfaces.
-- Recurring event parsing for daily intervals and monthly day anchors.
+- Recurring event parsing for daily, weekly, monthly, and yearly intervals, with monthly day anchors.
 - Access log for successful and failed authentication attempts, with an option to disable it.
 - Backup and CSV/ICS import and export workflows with visible feedback.
 - Monitor-aware main window restoration and configurable reminder placement preview.
