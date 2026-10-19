@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.1"><img src="https://img.shields.io/badge/Download%20pre--release-0.1.0--alpha.1-0891B2?style=for-the-badge" alt="Download CyberGo 0.1.0-alpha.1" /></a>
+  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.2"><img src="https://img.shields.io/badge/Download%20pre--release-0.1.0--alpha.2-0891B2?style=for-the-badge" alt="Download CyberGo 0.1.0-alpha.2" /></a>
   <a href="https://github.com/CyberGems/CyberGo/releases"><img src="https://img.shields.io/badge/All%20releases-30363D?style=for-the-badge&logo=github&logoColor=white" alt="All releases" /></a>
 </p>
 
@@ -65,9 +65,9 @@ The interface is available in **English and Spanish**. The application is curren
 
 ## Download
 
-Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.1).
+Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.2).
 
-The first alpha installer is an unsigned Windows executable. Windows SmartScreen may display a warning because the file does not yet have code-signing reputation. You can inspect the source, compare the SHA-256 value published with the release, or build the installer yourself.
+The alpha installers are unsigned Windows executables. Windows SmartScreen may display a warning because the file does not yet have code-signing reputation. You can inspect the source, compare the SHA-256 value published with the release, or build the installer yourself.
 
 This alpha targets **Windows 10 and Windows 11, 64-bit**.
 
@@ -163,7 +163,7 @@ Inside the reminder window:
 
 ## Alpha notes
 
-- This is the first public pre-release. Features and data formats may change.
+- This is an alpha pre-release. Features and data formats may change.
 - Keep a recent backup before importing or upgrading.
 - The installer is not digitally signed yet.
 - The provisional icon and visual identity may change before the first stable release.

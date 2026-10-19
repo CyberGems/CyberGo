@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.2 - 2026-10-19
+
+Second public pre-release of CyberGo. The reminder window is now a complete workspace, the settings panel was reworked, and the app finally has an About dialog, a wiki and a public source page.
+
 ### Added
 
 - Bilingual About dialog with the application version, system information, and a one-click diagnostics copy.
