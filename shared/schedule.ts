@@ -5,12 +5,32 @@ export function parseLocal(value: string, allDay: boolean): Date {
   const datePart = trimmed.slice(0, 10);
   const [y, m, d] = datePart.split('-').map(Number);
   if (!y || !m || !d) throw new Error('invalid date');
+  if (m > 12 || d > 31) throw new Error('invalid date');
   if (allDay || trimmed.length <= 10) {
-    return new Date(y, m - 1, d, allDay ? 9 : 0, 0, 0, 0);
+    return localDate(y, m - 1, d, allDay ? 9 : 0, 0);
   }
   const time = trimmed.slice(11);
   const [hh, mm] = time.split(':').map(Number);
-  return new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0);
+  if (hh > 23 || mm > 59) throw new Error('invalid time');
+  return localDate(y, m - 1, d, hh || 0, mm || 0);
+}
+
+/**
+ * Builds a local date and rejects the values the Date constructor would
+ * silently roll over, such as the 30th of February. Years below 100 are set
+ * explicitly so they are not read as nineteen hundred.
+ */
+function localDate(year: number, month: number, day: number, hour: number, minute: number): Date {
+  const date = new Date(year, month, day, hour, minute, 0, 0);
+  if (year >= 0 && year < 100) date.setFullYear(year);
+  if (
+    date.getFullYear() !== year
+    || date.getMonth() !== month
+    || date.getDate() !== day
+  ) {
+    throw new Error('invalid date');
+  }
+  return date;
 }
 
 export function toDateInput(iso: string | null): string {
@@ -39,18 +59,26 @@ export function toDateTimeInput(iso: string | null): string {
 export function nextDate(from: Date, rec: Recurrence): Date | null {
   const d = new Date(from.getTime());
   const n = Math.max(1, Math.floor(rec.interval || 1));
+  const anchor = anchorDay(rec);
   if (rec.freq === 'daily') d.setDate(d.getDate() + n);
   else if (rec.freq === 'weekly') d.setDate(d.getDate() + 7 * n);
   else if (rec.freq === 'monthly') {
     const monthIndex = d.getMonth() + n;
     const year = d.getFullYear() + Math.floor(monthIndex / 12);
     const month = monthIndex % 12;
-    const requestedDay = Number(rec.dayOfMonth);
-    const day = requestedDay >= 1 && requestedDay <= 31 ? requestedDay : d.getDate();
     const lastDay = new Date(year, month + 1, 0).getDate();
-    d.setFullYear(year, month, Math.min(day, lastDay));
+    // The day anchor lives in the recurrence, so clamping a short month never
+    // moves the series to the 28th for good.
+    d.setFullYear(year, month, Math.min(anchor ?? d.getDate(), lastDay));
   }
-  else d.setFullYear(d.getFullYear() + n);
+  else {
+    // Yearly keeps the calendar month. setFullYear alone would roll February 29
+    // forward to March 1 and freeze the series there.
+    const year = d.getFullYear() + n;
+    const month = d.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    d.setFullYear(year, month, Math.min(anchor ?? d.getDate(), lastDay));
+  }
   if (rec.until) {
     const [y, m, day] = rec.until.split('-').map(Number);
     if (!y || !m || !day) return d;
@@ -58,6 +86,28 @@ export function nextDate(from: Date, rec: Recurrence): Date | null {
     if (d.getTime() > end.getTime()) return null;
   }
   return d;
+}
+
+function anchorDay(rec: Recurrence): number | null {
+  const day = Number(rec.dayOfMonth);
+  return day >= 1 && day <= 31 ? Math.floor(day) : null;
+}
+
+/**
+ * Fills in the calendar day a monthly series must return to. Without it a
+ * January 31 event would settle on the 28th of February and stay there.
+ */
+export function normalizeRecurrence(rec: Recurrence | null, startLocal: string | null): Recurrence | null {
+  if (!rec) return null;
+  const freq = rec.freq;
+  const interval = Math.max(1, Math.floor(Number(rec.interval) || 1));
+  const until = /^\d{4}-\d{2}-\d{2}$/.test(rec.until ?? '') ? rec.until : null;
+  let dayOfMonth = anchorDay(rec);
+  if ((freq === 'monthly' || freq === 'yearly') && dayOfMonth == null && startLocal) {
+    const day = Number(startLocal.slice(8, 10));
+    if (day >= 1 && day <= 31) dayOfMonth = day;
+  }
+  return { freq, interval, until, dayOfMonth };
 }
 
 export function buildSchedule(draft: Pick<ItemDraft, 'startLocal' | 'endLocal' | 'allDay' | 'remindMinutes'>) {

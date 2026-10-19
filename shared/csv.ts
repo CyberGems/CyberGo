@@ -20,8 +20,35 @@ export const CSV_HEADERS = [
 
 const LEGACY_HEADERS = ['start date', 'subject', 'group'];
 
+/**
+ * A cell that starts with one of these characters is executed as a formula by
+ * Excel and LibreOffice. The same reasoning that protects the color column
+ * from CSS injection protects every exported cell from formula injection:
+ * the value is prefixed with a quote so the spreadsheet keeps it as text.
+ */
+const FORMULA_HEAD = /^[=+\-@\t\r]/;
+
+/** The characters that make a spreadsheet read a cell as a formula. */
+const FORMULA_TRIGGERS = '=+-@\t\r';
+
 function esc(value: string): string {
-  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  // The guard is applied before quoting so the quote is the first character
+  // the spreadsheet sees.
+  const safe = FORMULA_HEAD.test(value) ? `'${value}` : value;
+  if (/[",\n\r]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
+  return safe;
+}
+
+/**
+ * Removes the protective quote esc() adds on export, so an export followed by
+ * an import returns the original text. Only a quote that sits in front of a
+ * formula trigger is removed, a value that simply starts with an apostrophe
+ * is kept.
+ */
+export function unguardFormula(value: string): string {
+  if (value.length > 1 && value[0] === "'" && FORMULA_TRIGGERS.includes(value[1])) {
+    return value.slice(1);
+  }
   return value;
 }
 
@@ -33,19 +60,47 @@ export function toCsv(rows: Record<string, string>[]): string {
   return lines.join('\r\n') + '\r\n';
 }
 
-export function parseCsv(text: string): Record<string, string>[] {
-  const src = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  let delimiter: ',' | ';' = ',';
+/**
+ * Picks the delimiter used by the first record. Only the characters outside
+ * quoted fields are counted, so a comma inside a quoted title is not a
+ * delimiter candidate.
+ */
+function detectDelimiter(src: string): ',' | ';' {
   let commas = 0;
   let semicolons = 0;
-  let quotedHeader = false;
-  for (const ch of src) {
-    if (ch === '"') quotedHeader = !quotedHeader;
-    else if (!quotedHeader && ch === ',') commas += 1;
-    else if (!quotedHeader && ch === ';') semicolons += 1;
-    else if (!quotedHeader && ch === '\n') break;
+  let quoted = false;
+  let i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (quoted) {
+      if (ch === '"') {
+        if (src[i + 1] === '"') {
+          i += 2;
+          continue;
+        }
+        quoted = false;
+        i++;
+        continue;
+      }
+      i++;
+      continue;
+    }
+    if (ch === '"') {
+      quoted = true;
+      i++;
+      continue;
+    }
+    if (ch === ',') commas += 1;
+    else if (ch === ';') semicolons += 1;
+    else if (ch === '\n' || ch === '\r') break;
+    i++;
   }
-  if (semicolons > commas) delimiter = ';';
+  return semicolons > commas ? ';' : ',';
+}
+
+export function parseCsv(text: string): Record<string, string>[] {
+  const src = text.replace(/^\uFEFF/, '');
+  const delimiter = detectDelimiter(src);
   const table: string[][] = [];
   let row: string[] = [];
   let cell = '';
@@ -64,6 +119,8 @@ export function parseCsv(text: string): Record<string, string>[] {
         i++;
         continue;
       }
+      // Inside a quoted field the line break belongs to the value, so it is
+      // kept exactly as it was written.
       cell += ch;
       i++;
       continue;
@@ -79,12 +136,15 @@ export function parseCsv(text: string): Record<string, string>[] {
       i++;
       continue;
     }
-    if (ch === '\n') {
+    if (ch === '\n' || ch === '\r') {
+      // A record ends here. Only line breaks outside quoted fields end a
+      // record, a quoted field may hold CRLF, CR or LF of its own.
+      if (ch === '\r' && src[i + 1] === '\n') i += 2;
+      else i++;
       row.push(cell);
       table.push(row);
       row = [];
       cell = '';
-      i++;
       continue;
     }
     cell += ch;
@@ -117,7 +177,7 @@ function normalizeHeader(value: string): string {
 function field(row: Record<string, string>, ...names: string[]): string {
   const wanted = names.map(normalizeHeader);
   const key = Object.keys(row).find((candidate) => wanted.includes(normalizeHeader(candidate)));
-  return key ? row[key] ?? '' : '';
+  return key ? unguardFormula(row[key] ?? '') : '';
 }
 
 function hasField(row: Record<string, string>, ...names: string[]): boolean {
@@ -175,7 +235,18 @@ function numberWord(value: string): number | null {
   return words[normalizeHeader(value).replace(/\s+/g, ' ')] ?? null;
 }
 
-function normalizeDate(value: string): string {
+interface DateParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+/** Reads a calendar date out of a date or timestamp. */
+function dateParts(value: string): DateParts {
   const raw = value.trim().split(/[T ]/)[0];
   const iso = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(raw);
   const legacy = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(raw);
@@ -192,38 +263,124 @@ function normalizeDate(value: string): string {
   if (check.getFullYear() !== year || check.getMonth() !== month - 1 || check.getDate() !== day) {
     throw new Error('invalid date');
   }
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return { year, month, day };
 }
 
-function normalizeTime(value: string): string {
+function formatDate(parts: DateParts): string {
+  return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
+}
+
+function normalizeDate(value: string): string {
+  return formatDate(dateParts(value));
+}
+
+interface TimeParts {
+  hour: number;
+  minute: number;
+  second: number;
+  /** Minutes to add to the local time to get UTC, null when the time is local. */
+  offsetMinutes: number | null;
+}
+
+/**
+ * Reads a time of day. Seconds and a UTC offset are accepted, a time that
+ * carries an offset is an absolute moment and is converted to the local
+ * wall clock, a time without one is local already.
+ */
+function parseTimeParts(value: string): TimeParts {
   const raw = value.trim().toUpperCase();
-  const match = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/.exec(raw);
+  const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?(?:\s*(Z|[+-]\d{2}:?\d{2})?)$/.exec(raw);
   if (!match) throw new Error('invalid time');
   let hour = Number(match[1]);
   const minute = Number(match[2]);
-  if (minute > 59) throw new Error('invalid time');
-  if (match[3]) {
+  const second = Number(match[3] ?? '0');
+  if (minute > 59 || second > 59) throw new Error('invalid time');
+  if (match[4]) {
     if (hour < 1 || hour > 12) throw new Error('invalid time');
-    if (match[3] === 'AM' && hour === 12) hour = 0;
-    if (match[3] === 'PM' && hour !== 12) hour += 12;
+    if (match[4] === 'AM' && hour === 12) hour = 0;
+    if (match[4] === 'PM' && hour !== 12) hour += 12;
   } else if (hour > 23) {
     throw new Error('invalid time');
   }
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  let offsetMinutes: number | null = null;
+  const offset = match[5];
+  if (offset) {
+    if (offset === 'Z') {
+      offsetMinutes = 0;
+    } else {
+      const sign = offset[0] === '-' ? -1 : 1;
+      const digits = offset.slice(1).replace(':', '');
+      const offsetHour = Number(digits.slice(0, 2));
+      const offsetMinute = Number(digits.slice(2, 4) || '0');
+      if (offsetHour > 23 || offsetMinute > 59) throw new Error('invalid time');
+      offsetMinutes = sign * (offsetHour * 60 + offsetMinute);
+    }
+  }
+  return { hour, minute, second, offsetMinutes };
+}
+
+/**
+ * Normalizes a time of day, for example "9:30 AM". A time that carries a UTC
+ * offset is placed on the local clock, the day it lands on is worked out by
+ * resolveStamp.
+ */
+function normalizeTime(value: string): string {
+  const parts = parseTimeParts(value);
+  if (parts.offsetMinutes !== null) {
+    const local = new Date(Date.UTC(1970, 0, 1, parts.hour, parts.minute, parts.second) - parts.offsetMinutes * 60_000);
+    return `${pad2(local.getHours())}:${pad2(local.getMinutes())}`;
+  }
+  return `${pad2(parts.hour)}:${pad2(parts.minute)}`;
+}
+
+/** Splits a timestamp into its date part and its time part. */
+function splitStamp(value: string): { datePart: string; timePart: string } {
+  const raw = value.trim();
+  const cut = raw.search(/[T ]/);
+  if (cut < 0) return { datePart: raw, timePart: '' };
+  return { datePart: raw.slice(0, cut), timePart: raw.slice(cut + 1).trim() };
+}
+
+/** True when the value carries a time of day and not only a date. */
+function hasTimePart(value: string): boolean {
+  return splitStamp(value).timePart !== '';
+}
+
+/**
+ * Turns a date and a time into the local wall clock. A time that carries a
+ * UTC offset is an absolute moment, so it is shifted to the local calendar,
+ * which can also move the day.
+ */
+function resolveStamp(dateValue: string, timeValue: string): { date: string; time: string } {
+  const date = dateParts(dateValue);
+  const time = parseTimeParts(timeValue);
+  if (time.offsetMinutes === null) {
+    return { date: formatDate(date), time: `${pad2(time.hour)}:${pad2(time.minute)}` };
+  }
+  const instant = Date.UTC(date.year, date.month - 1, date.day, time.hour, time.minute, time.second)
+    - time.offsetMinutes * 60_000;
+  const local = new Date(instant);
+  return {
+    date: `${local.getFullYear()}-${pad2(local.getMonth() + 1)}-${pad2(local.getDate())}`,
+    time: `${pad2(local.getHours())}:${pad2(local.getMinutes())}`,
+  };
 }
 
 function normalizeLocal(value: string, allDay: boolean): string {
   const raw = value.trim();
   if (!raw) return '';
-  const date = normalizeDate(raw);
-  if (allDay || raw.length <= 10) return date;
-  const time = raw.slice(10).trim().replace(/^T/, '');
-  return `${date}T${normalizeTime(time)}`;
+  const { datePart, timePart } = splitStamp(raw);
+  const date = normalizeDate(datePart);
+  if (allDay || !timePart) return date;
+  const resolved = resolveStamp(datePart, timePart);
+  return `${resolved.date}T${resolved.time}`;
 }
 
 function combineLegacyDateTime(dateValue: string, timeValue: string): string {
   const date = normalizeDate(dateValue);
-  return timeValue.trim() ? `${date}T${normalizeTime(timeValue)}` : date;
+  if (!timeValue.trim()) return date;
+  const resolved = resolveStamp(dateValue, timeValue);
+  return `${resolved.date}T${resolved.time}`;
 }
 
 function nextDateValue(value: string): string {
@@ -266,6 +423,41 @@ function parseLegacyRecurrence(raw: string, startLocal: string): ItemDraft['recu
 export function sanitizeColor(value: string): string {
   const v = value.trim();
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v : '';
+}
+
+/** Reads the optional calendar day of a monthly series. */
+function parseDayOfMonth(value: string): number | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return null;
+  const day = Math.floor(parsed);
+  return day >= 1 && day <= 31 ? day : null;
+}
+
+/**
+ * A monthly series without a calendar day slides to the 28th of February and
+ * stays there, so the day of the start date is used as the anchor.
+ */
+function anchorFromStart(freq: Freq, startRaw: string): number | null {
+  if (freq !== 'monthly' && freq !== 'yearly') return null;
+  if (!startRaw) return null;
+  const day = Number(startRaw.slice(8, 10));
+  return day >= 1 && day <= 31 ? day : null;
+}
+
+/**
+ * Validates the end of a recurrence. A malformed date is rejected instead of
+ * being stored, because a recurrence that should end would never end.
+ */
+function parseUntil(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  try {
+    return normalizeDate(raw);
+  } catch {
+    throw new Error('invalid recurrence_until');
+  }
 }
 
 export function itemToCsvRow(item: Item, groups: Group[]): Record<string, string> {
@@ -311,16 +503,17 @@ export function rowToDraft(row: Record<string, string>, groups: Group[]): { draf
   const startInput = field(row, 'start_at').trim();
   const endInput = field(row, 'end_at').trim();
   const allDay = asBool(field(row, 'all_day'));
-  const startRaw = startInput ? normalizeLocal(startInput, allDay || startInput.length <= 10) : '';
-  const endRaw = endInput ? normalizeLocal(endInput, allDay || endInput.length <= 10) : '';
-  const normalizedAllDay = allDay || (Boolean(startInput) && startInput.length <= 10);
+  const startRaw = startInput ? normalizeLocal(startInput, allDay || !hasTimePart(startInput)) : '';
+  const endRaw = endInput ? normalizeLocal(endInput, allDay || !hasTimePart(endInput)) : '';
+  // A value that holds only a date describes a whole day.
+  const normalizedAllDay = allDay || (Boolean(startInput) && !hasTimePart(startInput));
   const kind = asKind(field(row, 'kind'), Boolean(startRaw));
-  if (startRaw) parseLocal(startRaw, allDay || startRaw.length <= 10);
-  if (endRaw) parseLocal(endRaw, normalizedAllDay || endRaw.length <= 10);
+  if (startRaw) parseLocal(startRaw, startRaw.length <= 10);
+  if (endRaw) parseLocal(endRaw, endRaw.length <= 10);
   const freq = asFreq(field(row, 'recurrence_freq'));
   const interval = Math.max(1, Number(field(row, 'recurrence_interval') || '1') || 1);
-  const dayOfMonth = Number(field(row, 'recurrence_day_of_month'));
-  const until = field(row, 'recurrence_until').trim();
+  const dayOfMonth = parseDayOfMonth(field(row, 'recurrence_day_of_month'));
+  const until = parseUntil(field(row, 'recurrence_until'));
   const groupName = field(row, 'group').trim();
   const existing = groups.find((g) => g.name.toLowerCase() === groupName.toLowerCase());
   const remind = Math.max(0, Number(field(row, 'remind_minutes') || '0') || 0);
@@ -337,8 +530,8 @@ export function rowToDraft(row: Record<string, string>, groups: Group[]): { draf
     recurrence: freq ? {
       freq,
       interval,
-      until: until || null,
-      dayOfMonth: dayOfMonth >= 1 && dayOfMonth <= 31 ? Math.floor(dayOfMonth) : null,
+      until,
+      dayOfMonth: dayOfMonth ?? anchorFromStart(freq, startRaw),
     } : null,
     remindMinutes: remind,
   };

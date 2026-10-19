@@ -1,5 +1,5 @@
 import type { Freq, Importance, Recurrence } from './types';
-import { nextDate } from './schedule';
+import { formatLocalInput, nextDate, normalizeRecurrence } from './schedule';
 
 export interface QuickDraft {
   title: string;
@@ -43,6 +43,14 @@ const NUMBER_WORDS: Record<string, number> = {
 const NUMBER_TOKEN = String.raw`(?:\d{1,2}|${Object.keys(NUMBER_WORDS).join('|')})`;
 const WEEKDAY_TOKEN = String.raw`(?:domingo|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|sunday|monday|tuesday|wednesday|thursday|friday|saturday)`;
 
+/**
+ * Words that turn a plain hour into a moment of the day. A bare number is
+ * never a time, so "buy 3 apples" stays intact.
+ */
+const TIME_MARKER = String.raw`(?:a\.?\s*m\.?|p\.?\s*m\.?|am|pm|in\s+the\s+(?:morning|afternoon|evening)|in\s+(?:morning|afternoon|evening)|morning|afternoon|evening|night|de\s+la\s+ma[nñ]ana|por\s+la\s+ma[nñ]ana|de\s+la\s+tarde|por\s+la\s+tarde|de\s+la\s+noche|por\s+la\s+noche|la\s+ma[nñ]ana|la\s+tarde|la\s+noche)(?![\p{L}\d])`;
+/** Prepositions that introduce an hour on their own. */
+const TIME_PREFIX = String.raw`(?:a\s+las?|at|from|desde|de\s+las)`;
+
 function fold(value: string): string {
   return value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 }
@@ -59,29 +67,145 @@ function at(day: Date, hour: number, minute: number): Date {
   return next;
 }
 
-function meridianHour(hour: number, marker: string | undefined): number {
-  if (hour > 12) return hour;
-  if (!marker) return hour;
-  const mark = fold(marker).replace(/\./g, '').replace(/\s/g, '');
-  const pm = mark === 'pm' || mark.includes('tarde') || mark.includes('noche') || mark.includes('evening');
-  const am = mark === 'am' || mark.includes('manana') || mark.includes('morning');
-  if (pm && hour < 12) return hour + 12;
-  if (am && hour === 12) return 0;
+function isPmMarker(marker: string): boolean {
+  const mark = fold(marker).replace(/[.\s]/g, '');
+  return mark.includes('pm') || mark.includes('tarde') || mark.includes('noche')
+    || mark.includes('evening') || mark.includes('afternoon') || mark.includes('night');
+}
+
+function isAmMarker(marker: string): boolean {
+  const mark = fold(marker).replace(/[.\s]/g, '');
+  return mark.includes('am') || mark.includes('manana') || mark.includes('morning');
+}
+
+/**
+ * Turns an hour into a 24 hour value. A written meridian wins, otherwise the
+ * business hours rule keeps the same phrase meaning the same thing no matter
+ * which day word surrounds it.
+ */
+function resolveHour(hour: number, marker: string | null): number {
+  if (marker) {
+    if (hour > 12) return hour;
+    if (isPmMarker(marker)) return hour === 12 ? 12 : hour + 12;
+    return hour === 12 ? 0 : hour;
+  }
+  if (hour >= 13) return hour;
+  if (hour >= 1 && hour <= 6) return hour + 12;
   return hour;
 }
 
-function place(day: Date, hour: number, minute: number, marker: string | undefined, now: Date): Date {
-  const stated = meridianHour(hour, marker);
-  if (stated > 23) return at(day, 9, 0);
-  if (marker || stated > 12) {
-    const exact = at(day, stated === 24 ? 0 : stated, minute);
-    return exact.getTime() <= now.getTime() ? addDays(exact, 1) : exact;
+interface TimeFragment {
+  rest: string;
+  hour: number;
+  minute: number;
+  marker: string | null;
+}
+
+/** Pulls a time out of the sentence, wherever it sits, and removes it. */
+function extractTime(rest: string): TimeFragment | null {
+  // Each pattern is tried against the untouched text, so a match that turns
+  // out to be an impossible hour leaves the sentence alone.
+  const patterns: { source: string; marker: boolean }[] = [
+    { source: String.raw`\b${TIME_PREFIX}\s+(\d{1,2})(?:[:.](\d{2}))?(?:\s*(${TIME_MARKER}))?`, marker: true },
+    { source: String.raw`\b(\d{1,2})(?:[:.](\d{2}))?\s*(${TIME_MARKER})`, marker: true },
+    { source: String.raw`\b(\d{1,2}):(\d{2})`, marker: false },
+  ];
+  for (const pattern of patterns) {
+    const hit = consume(rest, pattern.source);
+    if (!hit) continue;
+    const hour = Number(hit.match[1]);
+    const minute = Number(hit.match[2] || 0);
+    if (!Number.isInteger(hour) || hour < 0 || hour > 23) continue;
+    if (!Number.isInteger(minute) || minute < 0 || minute > 59) continue;
+    return {
+      rest: hit.rest,
+      hour,
+      minute,
+      marker: pattern.marker ? hit.match[3] ?? null : null,
+    };
   }
-  const morning = at(day, stated === 12 ? 12 : stated, minute);
-  const evening = stated < 12 ? at(day, stated + 12, minute) : null;
-  if (morning.getTime() > now.getTime()) return morning;
-  if (evening && evening.getTime() > now.getTime()) return evening;
-  return addDays(morning, 1);
+  return null;
+}
+
+type DaySpec =
+  | { kind: 'offset'; days: number }
+  | { kind: 'fixed'; hour: number; minute: number }
+  | { kind: 'weekday'; index: number; strict: boolean };
+
+interface DayFragment {
+  rest: string;
+  day: DaySpec;
+}
+
+/** Pulls a day out of the sentence, wherever it sits, and removes it. */
+function extractDay(rest: string): DayFragment | null {
+  const two = consume(rest, String.raw`\b(?:pasado\s+ma[nñ]ana|day\s+after\s+tomorrow)\b`);
+  if (two) return { rest: two.rest, day: { kind: 'offset', days: 2 } };
+  const one = consume(rest, String.raw`\b(?<!\bde\s)(?<!\bpor\s)(?:la\s+ma[nñ]ana|ma[nñ]ana|tomorrow)\b`);
+  if (one) return { rest: one.rest, day: { kind: 'offset', days: 1 } };
+  const zero = consume(rest, String.raw`\b(?:hoy|today)\b`);
+  if (zero) return { rest: zero.rest, day: { kind: 'offset', days: 0 } };
+  const night = consume(rest, String.raw`\b(?:esta\s+noche|tonight)\b`);
+  if (night) return { rest: night.rest, day: { kind: 'fixed', hour: 21, minute: 0 } };
+  const evening = consume(rest, String.raw`\b(?:esta\s+tarde|this\s+afternoon|this\s+evening)\b`);
+  if (evening) return { rest: evening.rest, day: { kind: 'fixed', hour: 18, minute: 0 } };
+  const weekday = consume(
+    rest,
+    String.raw`\b(?:el\s+|la\s+|los\s+|on\s+|the\s+)?(?:pr[oó]xim[oa]?|next|este|esta|this)?\s*(${WEEKDAY_TOKEN})\b`,
+  );
+  if (weekday) {
+    const name = fold(weekday.match[1]);
+    const index = WEEKDAYS.includes(name) ? WEEKDAYS.indexOf(name) : WEEKDAYS_EN.indexOf(name);
+    if (index >= 0) {
+      const strict = /\b(?:proximo|next)\b/.test(fold(weekday.match[0]));
+      return { rest: weekday.rest, day: { kind: 'weekday', index, strict } };
+    }
+  }
+  const days = consume(rest, String.raw`\b(?:en|dentro\s+de|in)\s+(\d+)\s*(?:d[ií]as?|days?)\b`);
+  if (days) return { rest: days.rest, day: { kind: 'offset', days: Number(days.match[1]) } };
+  return null;
+}
+
+/**
+ * Combines a day and a time. A written day is fixed, so it never rolls over.
+ * Without a day the target is today, moved to tomorrow when the moment has
+ * already passed.
+ */
+function combineDayAndTime(day: DaySpec | null, time: TimeFragment | null, now: Date): Date | null {
+  if (!day && !time) return null;
+  const hour = time ? resolveHour(time.hour, time.marker) : 9;
+  const minute = time ? time.minute : 0;
+  if (!day) {
+    const today = at(now, hour, minute);
+    return today.getTime() >= now.getTime() ? today : addDays(today, 1);
+  }
+  if (day.kind === 'offset') return at(addDays(now, day.days), hour, minute);
+  if (day.kind === 'fixed') return time ? at(now, hour, minute) : at(now, day.hour, day.minute);
+  const delta = (day.index - now.getDay() + 7) % 7;
+  if (day.strict) {
+    const next = delta === 0 ? 7 : delta;
+    return at(addDays(now, next), hour, minute);
+  }
+  const when = at(addDays(now, delta), hour, minute);
+  return when.getTime() < now.getTime() ? addDays(when, 7) : when;
+}
+
+interface RelativeFragment {
+  rest: string;
+  start: Date;
+}
+
+/** Pulls an offset from now, such as "en 10 minutos" or "in 2 hours". */
+function extractRelative(rest: string, now: Date): RelativeFragment | null {
+  const minutes = consume(rest, String.raw`\b(?:en|dentro\s+de|in)\s+(\d+)\s*(?:minutos?|mins?|min|minutes?)\b`);
+  if (minutes) return { rest: minutes.rest, start: new Date(now.getTime() + Number(minutes.match[1]) * 60_000) };
+  const half = consume(rest, String.raw`\b(?:en\s+media\s+hora|en\s+medio\s+hora|in\s+half\s+an\s+hour)\b`);
+  if (half) return { rest: half.rest, start: new Date(now.getTime() + 30 * 60_000) };
+  const hours = consume(rest, String.raw`\b(?:en|dentro\s+de|in)\s+(\d+)\s*(?:horas?|hrs?|hours?)\b`);
+  if (hours) return { rest: hours.rest, start: new Date(now.getTime() + Number(hours.match[1]) * 3_600_000) };
+  const oneHour = consume(rest, String.raw`\b(?:en\s+una\s+hora|en\s+1\s+hora|dentro\s+de\s+una\s+hora|in\s+an\s+hour|in\s+1\s+hour)\b`);
+  if (oneHour) return { rest: oneHour.rest, start: new Date(now.getTime() + 3_600_000) };
+  return null;
 }
 
 interface RecurrenceMatch {
@@ -135,19 +259,6 @@ function nextWeekday(weekday: number, hour: number, minute: number, now: Date): 
   return candidate;
 }
 
-function consumeRecurrenceClock(rest: string): { rest: string; hour: number; minute: number; marker?: string } | null {
-  const marker = String.raw`(?:a\.?\s*m\.?|p\.?\s*m\.?|am|pm|de la mañana|de la tarde|de la noche|morning|afternoon|evening|night)`;
-  const prefixed = consume(rest, String.raw`\b(?:a\s+las|at)\s+(\d{1,2})(?::(\d{2}))?(?:\s*(${marker}))?\b`);
-  const marked = prefixed ?? consume(rest, String.raw`\b(\d{1,2})(?::(\d{2}))?\s*(${marker})\b`);
-  if (!marked) return null;
-  return {
-    rest: marked.rest,
-    hour: Number(marked.match[1]),
-    minute: Number(marked.match[2] || 0),
-    marker: marked.match[3],
-  };
-}
-
 function consumeRecurrenceUntil(rest: string): { rest: string; until: string } | null {
   const hit = consume(rest, String.raw`\b(?:hasta|until)(?:\s+(?:el|the))?\s+(\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{4})\b`);
   if (!hit) return null;
@@ -158,11 +269,12 @@ function consumeRecurrenceUntil(rest: string): { rest: string; until: string } |
 function parseRecurrence(rest: string, now: Date): RecurrenceMatch | null {
   const dayMonthly = consume(
     rest,
-    String.raw`\b(?:cada\s+)?(?:el\s+|los\s+|the\s+|on\s+the\s+)?(${NUMBER_TOKEN})(?:st|nd|rd|th)?\s+(?:de\s+cada\s+mes(?:es)?|of\s+every\s+month(?:s)?)\b`,
+    String.raw`\b(?:cada\s+)?(?:el\s+|los\s+|the\s+|on\s+the\s+)?(?:d[ií]a|day)?\s*(${NUMBER_TOKEN})(?:st|nd|rd|th)?\s+(?:de\s+cada\s+mes(?:es)?|of\s+every\s+month(?:s)?)\b`,
   );
+  // "on monday" is a single day, not a repeat, so "on" is not a repeat marker.
   const weekday = dayMonthly
     ? null
-    : consume(rest, String.raw`\b(?:cada|todos\s+los|los|every|each|on)\s+(${WEEKDAY_TOKEN})s?\b`);
+    : consume(rest, String.raw`\b(?:cada|todos\s+los|los|every|each)\s+(${WEEKDAY_TOKEN})s?\b`);
   const interval = dayMonthly || weekday
     ? null
     : consume(
@@ -181,11 +293,11 @@ function parseRecurrence(rest: string, now: Date): RecurrenceMatch | null {
   if (interval && !unit) return null;
 
   let remaining = (dayMonthly || weekday || interval)!.rest;
-  const time = consumeRecurrenceClock(remaining);
-  if (time) remaining = time.rest;
   const until = consumeRecurrenceUntil(remaining);
   if (until) remaining = until.rest;
-  const hour = time ? meridianHour(time.hour, time.marker) : 9;
+  const time = extractTime(remaining);
+  if (time) remaining = time.rest;
+  const hour = time ? resolveHour(time.hour, time.marker) : 9;
   const minute = time?.minute ?? 0;
   let recurrence: Recurrence;
   let start: Date;
@@ -193,14 +305,19 @@ function parseRecurrence(rest: string, now: Date): RecurrenceMatch | null {
   if (dayMonthly) {
     recurrence = { freq: 'monthly', interval: 1, until: until?.until ?? null, dayOfMonth: monthlyDay };
     start = nextMonthlyDay(monthlyDay!, hour, minute, now);
+    recurrence = normalizeRecurrence(recurrence, formatLocalInput(start)) ?? recurrence;
   } else if (weekday) {
     recurrence = { freq: 'weekly', interval: 1, until: until?.until ?? null };
     start = nextWeekday(weekdayIndex, hour, minute, now);
   } else {
     const count = Math.max(1, numberValue(interval!.match[1]) ?? 1);
-    recurrence = { freq: unit!, interval: count, until: until?.until ?? null };
-    const first = nextDate(now, recurrence) ?? addDays(now, count);
+    const base: Recurrence = { freq: unit!, interval: count, until: until?.until ?? null };
+    const first = nextDate(now, base) ?? addDays(now, count);
     start = at(first, hour, minute);
+    // A monthly rule always keeps the calendar day it lands on.
+    recurrence = base.freq === 'monthly'
+      ? (normalizeRecurrence(base, formatLocalInput(start)) ?? base)
+      : base;
   }
   return { rest: remaining, recurrence, start };
 }
@@ -211,8 +328,6 @@ function consume(rest: string, source: string): { rest: string; match: RegExpExe
   const blank = ' '.repeat(match[0].length);
   return { rest: `${rest.slice(0, match.index)}${blank}${rest.slice(match.index + match[0].length)}`, match };
 }
-
-const clock = String.raw`(?:\s*(?:a las|at)\s+)?(\d{1,2})(?::(\d{2}))?(?:\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm|de la mañana|de la tarde|de la noche))?`;
 
 export function presetStart(preset: QuickPreset, now = new Date()): Date {
   if (preset === '10m') return new Date(now.getTime() + 10 * 60_000);
@@ -248,40 +363,19 @@ export function parseQuick(text: string, now = new Date()): QuickDraft {
     rest = recurring.rest;
     recurrence = recurring.recurrence;
     start = recurring.start;
-  }
-
-  const rules: { source: string; apply: (match: RegExpExecArray) => Date }[] = [
-    { source: String.raw`\b(?:en|dentro de|in)\s+(\d+)\s*(?:minutos?|mins?|min|minutes?)\b`, apply: (m) => new Date(now.getTime() + Number(m[1]) * 60_000) },
-    { source: String.raw`\b(?:en media hora|en medio hora|in half an hour)\b`, apply: () => new Date(now.getTime() + 30 * 60_000) },
-    { source: String.raw`\b(?:en|dentro de|in)\s+(\d+)\s*(?:horas?|hrs?|hours?)\b`, apply: (m) => new Date(now.getTime() + Number(m[1]) * 60 * 60_000) },
-    { source: String.raw`\b(?:en una hora|en 1 hora|dentro de una hora|in an hour|in 1 hour)\b`, apply: () => new Date(now.getTime() + 60 * 60_000) },
-    { source: String.raw`\b(?:en|dentro de|in)\s+(\d+)\s*(?:d[ií]as?|days?)\b`, apply: (m) => at(addDays(now, Number(m[1])), 9, 0) },
-    { source: String.raw`\b(?:pasado mañana|day after tomorrow)(?:\s+${clock})?\b`, apply: (m) => m[1] ? place(addDays(now, 2), Number(m[1]), Number(m[2] || 0), m[3], now) : at(addDays(now, 2), 9, 0) },
-    { source: String.raw`\b(?:mañana|tomorrow)(?:\s+${clock})?\b`, apply: (m) => m[1] ? place(addDays(now, 1), Number(m[1]), Number(m[2] || 0), m[3], now) : at(addDays(now, 1), 9, 0) },
-    { source: String.raw`\b(?:hoy|today)(?:\s+${clock})?\b`, apply: (m) => m[1] ? place(now, Number(m[1]), Number(m[2] || 0), m[3], now) : at(now, 9, 0) },
-    { source: String.raw`\b(?:esta noche|tonight)\b`, apply: () => presetStart('tonight', now) },
-    { source: String.raw`\b(?:esta tarde|this evening|this afternoon)\b`, apply: () => { const evening = at(now, 18, 0); return evening.getTime() > now.getTime() ? evening : addDays(evening, 1); } },
-    { source: String.raw`\b(?:el\s+|on\s+)?(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday)(?:\s+${clock})?\b`, apply: (m) => {
-      const name = fold(m[1]);
-      const index = WEEKDAYS.includes(name) ? WEEKDAYS.indexOf(name) : WEEKDAYS_EN.indexOf(name);
-      const hour = m[2] ? meridianHour(Number(m[2]), m[4]) : 9;
-      const minute = Number(m[3] || 0);
-      if (index < 0) return at(addDays(now, 1), hour, minute);
-      let delta = (index - now.getDay() + 7) % 7;
-      let when = at(addDays(now, delta), hour, minute);
-      if (when.getTime() <= now.getTime()) when = addDays(when, 7);
-      return when;
-    } },
-    { source: String.raw`\b(?:a las|at)\s+(\d{1,2})(?::(\d{2}))?(?:\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm|de la mañana|de la tarde|de la noche))?\b`, apply: (m) => place(now, Number(m[1]), Number(m[2] || 0), m[3], now) },
-  ];
-
-  if (!recurrence) {
-    for (const rule of rules) {
-      const hit = consume(rest, rule.source);
-      if (!hit) continue;
-      rest = hit.rest;
-      start = rule.apply(hit.match);
-      break;
+  } else {
+    const relative = extractRelative(rest, now);
+    if (relative) {
+      rest = relative.rest;
+      start = relative.start;
+    } else {
+      // The time and the day are read on their own, so their order in the
+      // sentence does not matter and neither leaks into the title.
+      const time = extractTime(rest);
+      if (time) rest = time.rest;
+      const day = extractDay(rest);
+      if (day) rest = day.rest;
+      start = combineDayAndTime(day?.day ?? null, time, now);
     }
   }
 
