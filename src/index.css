@@ -1095,6 +1095,11 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   color: var(--text-secondary);
 }
 .quick-preview svg { color: var(--accent-light); }
+.quick-error {
+  color: var(--danger);
+  font-size: 12px;
+  min-height: 16px;
+}
 
 .list-head, .row {
   grid-template-columns: var(--table-columns);
@@ -2185,3 +2190,53 @@ button, input, select, textarea { transition: border-color var(--transition), ba
     animation: none;
   }
 }
+
+/* Failure screen shown when the app cannot render or load the data. */
+.fatal {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app, #0c0c12);
+  padding: 24px;
+}
+.fatal-card {
+  max-width: 420px;
+  text-align: center;
+  background: var(--bg-modal, #1d222b);
+  border: 1px solid var(--border, #303640);
+  border-radius: var(--radius-lg, 12px);
+  padding: 26px 24px;
+  box-shadow: var(--shadow-md, 0 16px 34px rgba(0,0,0,0.24));
+}
+.fatal-card h1 { margin: 0 0 10px; font-size: 17px; color: var(--text-primary, #f1f2f5); }
+.fatal-card p { margin: 0 0 18px; font-size: 13px; line-height: 1.5; color: var(--text-secondary, #b8bdc8); }
+
+/* Short message shown when a clipboard action does not work. */
+.text-context-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 42px;
+  transform: translateX(-50%);
+  z-index: 200;
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger, #ef4444) 50%, var(--border, #303640));
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-modal, #1d222b);
+  color: var(--text-primary, #f1f2f5);
+  font-size: 12px;
+  box-shadow: var(--shadow-md, 0 16px 34px rgba(0,0,0,0.24));
+}
+
+/* Notice shown at the top of the workspace when the data had to be recovered. */
+.recovery-notice {
+  margin: 14px 20px 0;
+  align-items: flex-start;
+}
+.recovery-notice-copy { flex: 1; min-width: 0; }
+.recovery-notice-dismiss {
+  padding: 4px 6px;
+  align-self: flex-start;
+}
+
+.status-error { color: var(--danger, #ef4444); }

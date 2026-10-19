@@ -1,27 +1,56 @@
 import { useEffect, useRef } from 'react';
 
-type Keys = { esc?: () => void; enter?: () => void };
-const stack: { current: Keys }[] = [];
+export type ModalKeys = { esc?: () => void; enter?: () => void };
+
+export interface ModalEntry {
+  order: number;
+  keys: ModalKeys;
+}
+
+/**
+ * The topmost modal is the one with the highest order, never the one that
+ * happens to sit last in the array. React flushes effects from the deepest
+ * child upwards, so a date picker nested in the item dialog registers before
+ * its parent and the parent used to win the key.
+ */
+export function resolveModalHandler(entries: ModalEntry[], kind: 'esc' | 'enter'): (() => void) | undefined {
+  let best: ModalEntry | null = null;
+  for (const entry of entries) {
+    if (!entry.keys[kind]) continue;
+    if (!best || entry.order > best.order) best = entry;
+  }
+  return best ? best.keys[kind] : undefined;
+}
+
+/** A select opens its own list on Enter and a button runs its own action. */
+export function enterTargetHandlesItself(target: { closest: (selector: string) => unknown } | null): boolean {
+  if (!target) return false;
+  return Boolean(target.closest('textarea, select, button'));
+}
+
+type Entry = { ref: { current: ModalKeys }; order: number };
+
+const stack: Entry[] = [];
+
+/**
+ * Monotonic counter used to order the modal stack. The number is taken while
+ * rendering, not while the effect runs, so a nested dialog always ends up
+ * above the dialog that contains it.
+ */
+let sequence = 0;
 
 function onKey(e: KeyboardEvent) {
-  const find = (kind: 'esc' | 'enter') => {
-    for (let i = stack.length - 1; i >= 0; i--) {
-      const fn = stack[i].current[kind];
-      if (fn) return fn;
-    }
-    return undefined;
-  };
+  const entries: ModalEntry[] = stack.map((entry) => ({ order: entry.order, keys: entry.ref.current }));
   if (e.key === 'Escape') {
-    const esc = find('esc');
+    const esc = resolveModalHandler(entries, 'esc');
     if (!esc) return;
     e.preventDefault();
     esc();
     return;
   }
   if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
-  const tag = (e.target as HTMLElement | null)?.tagName;
-  if (tag === 'TEXTAREA' || tag === 'BUTTON') return;
-  const enter = find('enter');
+  if (enterTargetHandlesItself(e.target as HTMLElement | null)) return;
+  const enter = resolveModalHandler(entries, 'enter');
   if (!enter) return;
   e.preventDefault();
   enter();
@@ -29,14 +58,19 @@ function onKey(e: KeyboardEvent) {
 
 if (typeof window !== 'undefined') window.addEventListener('keydown', onKey);
 
-export function useModalKeys(enabled: boolean, keys: Keys) {
+export function useModalKeys(enabled: boolean, keys: ModalKeys) {
   const ref = useRef(keys);
   ref.current = keys;
+  const order = useRef(0);
+  const wasEnabled = useRef(false);
+  if (enabled && !wasEnabled.current) order.current = ++sequence;
+  wasEnabled.current = enabled;
   useEffect(() => {
     if (!enabled) return;
-    stack.push(ref);
+    const entry: Entry = { ref, order: order.current };
+    stack.push(entry);
     return () => {
-      const index = stack.indexOf(ref);
+      const index = stack.indexOf(entry);
       if (index >= 0) stack.splice(index, 1);
     };
   }, [enabled]);

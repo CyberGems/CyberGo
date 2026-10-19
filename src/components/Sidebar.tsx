@@ -3,7 +3,7 @@ import type { Group, Item } from '@shared/types';
 import type { FilterId } from '../lib/view';
 import { matchesFilter } from '../lib/view';
 import { SWATCHES } from '@shared/types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, Clock3, Flag, FolderPlus, Inbox, ListFilter, Plus, Trash2 } from 'lucide-react';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import Tooltip from './Tooltip';
@@ -19,6 +19,13 @@ const FILTER_ICONS = {
   high: Flag,
   completed: CheckCircle2,
 } as const;
+const SWATCH_NAMES = ['violet', 'cyan', 'green', 'amber', 'red', 'pink', 'blue', 'magenta'] as const;
+
+function swatchLabel(copy: Copy, index: number): string {
+  const name = SWATCH_NAMES[index];
+  if (!name) return '';
+  return copy.colorName.replace('{name}', copy.swatch[name]);
+}
 
 export default function Sidebar({
   copy,
@@ -62,7 +69,17 @@ export default function Sidebar({
     completed: copy.completed,
     trash: copy.trash,
   };
-  const count = (id: FilterId, gid: string | null = null) => items.filter((item) => matchesFilter(item, id, gid)).length;
+  const count = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const id of FILTERS) {
+      counts.set(id, items.filter((item) => matchesFilter(item, id, null)).length);
+    }
+    counts.set('trash', items.filter((item) => matchesFilter(item, 'trash', null)).length);
+    for (const group of groups) {
+      counts.set(`group:${group.id}`, items.filter((item) => matchesFilter(item, 'all', group.id)).length);
+    }
+    return counts;
+  }, [items, groups]);
 
   return (
     <aside className="sidebar">
@@ -72,7 +89,7 @@ export default function Sidebar({
           <button key={id} className={`nav-btn ${filter === id && !groupId ? 'active' : ''}`} onClick={() => onFilter(id, null)} aria-current={filter === id && !groupId ? 'page' : undefined}>
             {(() => { const Icon = FILTER_ICONS[id]; return <Icon size={15} />; })()}
             {labels[id]}
-            <span className="badge">{count(id)}</span>
+            <span className="badge">{count.get(id)}</span>
           </button>
         ))}
         <div className="side-label"><FolderPlus size={12} />{copy.groups}</div>
@@ -82,7 +99,7 @@ export default function Sidebar({
             <button type="button" className="group-main" onClick={() => onFilter('all', group.id)} aria-current={groupId === group.id ? 'page' : undefined}>
               <i className="dot" style={{ background: group.color }} />
               <span className="subject">{group.name}</span>
-              <span className="badge">{count('all', group.id)}</span>
+              <span className="badge">{count.get(`group:${group.id}`)}</span>
             </button>
             <Tooltip label={copy.delete} placement="right">
               <button type="button" className="icon-btn" onClick={() => onDeleteGroup(group)} aria-label={`${copy.delete}: ${group.name}`}><Trash2 size={13} /></button>
@@ -93,8 +110,8 @@ export default function Sidebar({
           <form className="field" onSubmit={(e) => { e.preventDefault(); if (!name.trim()) return; onCreateGroup(name.trim(), color); setName(''); setAdding(false); }}>
             <input className="inline-input" autoFocus placeholder={copy.groupName} value={name} onChange={(e) => setName(e.target.value)} />
             <div className="swatches">
-              {SWATCHES.map((swatch) => (
-                <button type="button" key={swatch} className={`swatch ${color === swatch ? 'on' : ''}`} style={{ background: swatch }} onClick={() => setColor(swatch)} aria-label={swatch} aria-pressed={color === swatch} />
+              {SWATCHES.map((swatch, index) => (
+                <button type="button" key={swatch} className={`swatch ${color === swatch ? 'on' : ''}`} style={{ background: swatch }} onClick={() => setColor(swatch)} aria-label={swatchLabel(copy, index)} aria-pressed={color === swatch} />
               ))}
             </div>
             <div className="row-actions">
@@ -110,7 +127,7 @@ export default function Sidebar({
         <button className={`nav-btn ${filter === 'trash' ? 'active' : ''}`} onClick={() => onFilter('trash', null)} aria-current={filter === 'trash' ? 'page' : undefined}>
           <Trash2 size={15} />
           {copy.trash}
-          <span className="badge">{count('trash')}</span>
+          <span className="badge">{count.get('trash')}</span>
         </button>
       </div>
     </aside>

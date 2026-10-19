@@ -61,6 +61,7 @@ export default function QuickAdd({
   const [exampleOn, setExampleOn] = useState(true);
   const [armed, setArmed] = useState<QuickPreset | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('cybergo-quick-collapsed') === '1');
   const inputRef = useRef<HTMLInputElement>(null);
   const parsed = parseQuick(text);
@@ -102,7 +103,7 @@ export default function QuickAdd({
   const preview = [
     copy.task,
     parsed.title || '…',
-    start ? duePhrase(start.toISOString(), lang) : copy.quickNone,
+    start ? duePhrase(start.toISOString(), copy) : copy.quickNone,
     start && !previewDraft.allDay ? formatClock(start.toISOString(), lang) : '',
     parsed.importance === 'high' ? copy.highImp : '',
     parsed.recurrence ? recurrenceSummary(copy, parsed.recurrence) : '',
@@ -112,10 +113,15 @@ export default function QuickAdd({
     const draft = draftFrom(text, armed, groupId, force);
     if (!draft.title || busy) return;
     setBusy(true);
+    setError('');
     try {
       await onSave(draft);
       setText('');
       setArmed(null);
+    } catch {
+      // The text stays where it is. Clearing it would throw away what the
+      // user wrote because the save did not go through.
+      setError(copy.saveFailed);
     } finally {
       setBusy(false);
       inputRef.current?.focus();
@@ -141,7 +147,7 @@ export default function QuickAdd({
           <span className="quick-title-mark"><Sparkles size={15} /></span>
           <span className="quick-title-copy">
             <strong>{copy.quickAddLabel}</strong>
-            <span>{copy.quickHint}</span>
+            <span id="quick-add-hint">{copy.quickHint}</span>
           </span>
         </button>
         <div className="quick-heading-actions">
@@ -167,7 +173,8 @@ export default function QuickAdd({
               <input
                 ref={inputRef}
                 value={text}
-                aria-label={copy.quickHint}
+                aria-label={copy.quickAddLabel}
+                aria-describedby="quick-add-hint"
                 placeholder=""
                 onChange={(event) => {
                   const next = event.target.value;
@@ -207,6 +214,7 @@ export default function QuickAdd({
             <Sparkles size={13} />
             {text.trim() || armed ? preview : copy.quickHint}
           </div>
+          {error && <div className="quick-error" role="alert">{error}</div>}
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@ import type { AuthMethod } from '@shared/types';
 import type { Copy } from '../i18n';
 import TitleBar from './TitleBar';
 import Tooltip from './Tooltip';
+import { useFocusTrap } from './Dialog';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 
 function digits(value: string) {
@@ -23,6 +24,9 @@ export default function LockScreen({ copy, hint, method, hasPassword }: { copy: 
   const [recovery, setRecovery] = useState('');
   const pin = method === 'pin';
   const loginRef = useRef<HTMLInputElement>(null);
+  const cardRef = useRef<HTMLFormElement>(null);
+
+  useFocusTrap(cardRef);
 
   useEffect(() => {
     if (mode !== 'login') return;
@@ -45,6 +49,9 @@ export default function LockScreen({ copy, hint, method, hasPassword }: { copy: 
       if (result === 'ok') return;
       if (pin) setPassword('');
       setError(result === 'wait' ? copy.wait : pin ? copy.wrongPin : copy.wrongPassword);
+    } catch (err) {
+      console.error('CyberGo could not unlock', err);
+      setError(copy.unlockFailed);
     } finally {
       setLoading(false);
     }
@@ -62,6 +69,9 @@ export default function LockScreen({ copy, hint, method, hasPassword }: { copy: 
       }
       setRecovery(result.recoveryCode);
       setMode('code');
+    } catch (err) {
+      console.error('CyberGo could not recover the access', err);
+      setError(copy.unlockFailed);
     } finally {
       setLoading(false);
     }
@@ -80,7 +90,14 @@ export default function LockScreen({ copy, hint, method, hasPassword }: { copy: 
       <main className={`lock-screen login-screen ${mode !== 'login' ? 'login-screen-recovery' : ''}`}>
         <div className="login-ambient login-ambient-one" aria-hidden="true" />
         <div className="login-ambient login-ambient-two" aria-hidden="true" />
-        <form className={`lock-card login-card ${error ? 'has-error' : ''}`} onSubmit={mode === 'recover' ? recover : unlock}>
+        <form
+          ref={cardRef}
+          className={`lock-card login-card ${error ? 'has-error' : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label={copy.loginTitle}
+          onSubmit={mode === 'recover' ? recover : unlock}
+        >
           <div className="login-brand">
             <div className="login-icon-shell">
               <img className="login-icon" src="/icon.png" alt="" />

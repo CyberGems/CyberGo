@@ -71,14 +71,20 @@ export default function DateTimeField({
   const weekStart = lang === 'es' ? 1 : 0;
   const locale = lang === 'es' ? 'es-ES' : 'en-US';
 
-  useModalKeys(open, { esc: () => setOpen(false) });
+  /** Closing the popover hands the focus back to the button that opened it. */
+  function closePicker() {
+    setOpen(false);
+    buttonRef.current?.focus();
+  }
+
+  useModalKeys(open, { esc: closePicker });
 
   useEffect(() => {
     if (!open) return;
     function down(event: MouseEvent) {
       const target = event.target as Node;
       if (buttonRef.current?.contains(target) || popRef.current?.contains(target)) return;
-      setOpen(false);
+      closePicker();
     }
     document.addEventListener('mousedown', down);
     return () => document.removeEventListener('mousedown', down);
@@ -136,6 +142,7 @@ export default function DateTimeField({
     <div
       ref={popRef}
       className={`picker-pop ${allDay ? 'date-only' : ''}`}
+      data-dialog-overlay="picker"
       style={{ top: box.top, left: box.left }}
       onMouseDown={(event) => event.stopPropagation()}
     >
@@ -143,8 +150,8 @@ export default function DateTimeField({
         <div className="picker-head">
           <strong>{cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}</strong>
           <span>
-            <button type="button" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}><ChevronLeft size={14} /></button>
-            <button type="button" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}><ChevronRight size={14} /></button>
+            <button type="button" aria-label={copy.previousMonth} onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}><ChevronLeft size={14} /></button>
+            <button type="button" aria-label={copy.nextMonth} onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}><ChevronRight size={14} /></button>
           </span>
         </div>
         <div className="picker-week">
@@ -159,6 +166,7 @@ export default function DateTimeField({
               <button
                 type="button"
                 key={day.toISOString()}
+                aria-label={day.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 className={`${outside ? 'outside' : ''} ${on ? 'on' : ''} ${isToday ? 'today' : ''}`}
                 onClick={() => choose(new Date(day.getFullYear(), day.getMonth(), day.getDate()))}
               >
@@ -172,14 +180,14 @@ export default function DateTimeField({
         <div className="picker-time">
           <div className="time-col">
             {Array.from({ length: 24 }, (_, hour) => (
-              <button type="button" key={hour} className={shown.getHours() === hour && selected ? 'on' : ''} onClick={() => chooseTime(hour, shown.getMinutes())}>
+              <button type="button" key={hour} aria-label={copy.hourSlot.replace('{hour}', pad(hour))} className={shown.getHours() === hour && selected ? 'on' : ''} onClick={() => chooseTime(hour, shown.getMinutes())}>
                 {pad(hour)}
               </button>
             ))}
           </div>
           <div className="time-col">
             {minutes.map((minute) => (
-              <button type="button" key={minute} className={shown.getMinutes() === minute && selected ? 'on' : ''} onClick={() => chooseTime(shown.getHours(), minute)}>
+              <button type="button" key={minute} aria-label={copy.minuteSlot.replace('{minute}', pad(minute))} className={shown.getMinutes() === minute && selected ? 'on' : ''} onClick={() => chooseTime(shown.getHours(), minute)}>
                 {pad(minute)}
               </button>
             ))}
@@ -187,7 +195,7 @@ export default function DateTimeField({
         </div>
       )}
       <div className="picker-foot">
-        <button type="button" onClick={() => { onChange(''); setOpen(false); }}>{copy.pickerClear}</button>
+        <button type="button" onClick={() => { onChange(''); closePicker(); }}>{copy.pickerClear}</button>
         <button type="button" onClick={() => { onChange(stamp(new Date(), allDay)); setCursor(new Date()); }}>{copy.pickerToday}</button>
       </div>
     </div>
@@ -199,7 +207,7 @@ export default function DateTimeField({
         type="button"
         ref={buttonRef}
         className={`picker-btn ${selected ? '' : 'placeholder'}`}
-        aria-label={copy.pickDate}
+        aria-label={label}
         onClick={() => {
           setCursor(selected ?? new Date());
           setOpen((prev) => !prev);

@@ -3,6 +3,10 @@ import type { Item, Lang } from '@shared/types';
 
 const locale = (lang: Lang) => (lang === 'es' ? 'es-ES' : 'en-US');
 
+function fill(template: string, duration: string): string {
+  return template.replace('{duration}', duration);
+}
+
 export function dayDiff(iso: string | null): number | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -35,24 +39,24 @@ export function formatTimeRange(item: Item, lang: Lang, copy: Copy): string {
   return `${start} - ${formatClock(item.endAt, lang)}`;
 }
 
-export function formatDuration(totalMinutes: number, lang: Lang): string {
+export function formatDuration(totalMinutes: number, copy: Copy): string {
   const minutes = Math.max(1, Math.round(totalMinutes));
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
   const remainder = minutes % 60;
   const parts: string[] = [];
-  if (days) parts.push(`${days} ${lang === 'es' ? (days === 1 ? 'día' : 'días') : (days === 1 ? 'day' : 'days')}`);
+  if (days) parts.push(`${days} ${days === 1 ? copy.dayUnit : copy.daysUnit}`);
   if (hours) parts.push(`${hours} h`);
   if (remainder && parts.length < 2) parts.push(`${remainder} min`);
   return parts.join(' ');
 }
 
-export function overduePhrase(iso: string | null, lang: Lang): string {
+export function overduePhrase(iso: string | null, copy: Copy): string {
   if (!iso) return '';
   const at = new Date(iso).getTime();
   if (Number.isNaN(at) || at >= Date.now()) return '';
-  const duration = formatDuration((Date.now() - at) / 60_000, lang);
-  return lang === 'es' ? `Vencido hace ${duration}` : `Overdue by ${duration}`;
+  const duration = formatDuration((Date.now() - at) / 60_000, copy);
+  return fill(copy.overdueBy, duration);
 }
 
 export function dueState(iso: string | null): 'overdue' | 'today' | 'future' | null {
@@ -67,25 +71,21 @@ export function daysLeft(item: Item, copy: Copy, lang: Lang): string {
   const iso = item.occurrenceAt || item.startAt;
   const diff = dayDiff(iso);
   if (diff == null) return '';
-  const overdue = overduePhrase(iso, lang);
+  const overdue = overduePhrase(iso, copy);
   if (overdue) return overdue;
   if (diff === 0) return copy.todayWord;
   if (diff === 1) return copy.tomorrowWord;
   return String(diff);
 }
 
-export function duePhrase(iso: string | null, lang: Lang): string {
+export function duePhrase(iso: string | null, copy: Copy): string {
   if (!iso) return '';
   const ms = new Date(iso).getTime() - Date.now();
   if (Number.isNaN(ms)) return '';
   const past = ms < 0;
   const abs = Math.abs(ms);
   const minutes = Math.max(1, Math.round(abs / 60_000));
-  const duration = formatDuration(minutes, lang);
-  if (lang === 'es') {
-    if (minutes < 2 && !past) return 'Ahora';
-    return past ? `Vencido hace ${duration}` : `En ${duration}`;
-  }
-  if (minutes < 2 && !past) return 'Now';
-  return past ? `Overdue by ${duration}` : `In ${duration}`;
+  const duration = formatDuration(minutes, copy);
+  if (minutes < 2 && !past) return copy.dueNow;
+  return fill(past ? copy.overdueBy : copy.dueIn, duration);
 }

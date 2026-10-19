@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Flag } from 'lucide-react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import type { Copy } from '../i18n';
@@ -49,9 +49,28 @@ export default function ItemTable({
   onOpen: (item: Item) => void;
 }) {
   const [widths, setWidths] = useState(initialTableWidths);
-  useEffect(() => {
-    window.localStorage.setItem(TABLE_WIDTH_STORAGE, JSON.stringify(widths));
-  }, [widths]);
+  const widthsRef = useRef(widths);
+  const stopResizeRef = useRef<(() => void) | null>(null);
+
+  const applyWidths = useCallback((next: number[]) => {
+    widthsRef.current = next;
+    setWidths(next);
+  }, []);
+
+  // Column widths are written once per finished resize, not on every pointer
+  // move, so dragging a column does not hammer localStorage.
+  const persistWidths = useCallback((next: number[]) => {
+    try {
+      window.localStorage.setItem(TABLE_WIDTH_STORAGE, JSON.stringify(next));
+    } catch {
+      /* Storage can be unavailable, the widths just will not persist. */
+    }
+  }, []);
+
+  useEffect(() => () => {
+    stopResizeRef.current?.();
+  }, []);
+
   if (!items.length) return null;
 
   const tableStyle = {
@@ -62,25 +81,53 @@ export default function ItemTable({
   function resizeColumn(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
+    const handle = event.currentTarget;
+    const pointerId = event.pointerId;
     const startX = event.clientX;
-    const startWidth = widths[index];
+    const startWidth = widthsRef.current[index];
     document.body.classList.add('is-resizing-column');
     const move = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
       const nextWidth = Math.min(
         TABLE_MAX_WIDTHS[index],
         Math.max(TABLE_MIN_WIDTHS[index], Math.round(startWidth + moveEvent.clientX - startX)),
       );
-      setWidths((current) => current.map((width, currentIndex) => currentIndex === index ? nextWidth : width));
+      applyWidths(widthsRef.current.map((width, currentIndex) => currentIndex === index ? nextWidth : width));
     };
     const stop = () => {
       document.body.classList.remove('is-resizing-column');
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', stop);
       window.removeEventListener('pointercancel', stop);
+      window.removeEventListener('blur', stop);
+      try {
+        if (handle.hasPointerCapture(pointerId)) handle.releasePointerCapture(pointerId);
+      } catch {
+        /* The capture may already be gone, nothing else to clean up. */
+      }
+      stopResizeRef.current = null;
+      persistWidths(widthsRef.current);
     };
+    stopResizeRef.current = stop;
+    try {
+      handle.setPointerCapture(pointerId);
+    } catch {
+      /* Capture is an optimisation, the window listeners still work. */
+    }
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', stop);
     window.addEventListener('pointercancel', stop);
+    window.addEventListener('blur', stop);
+  }
+
+  function setColumnWidth(index: number, width: number) {
+    const next = widthsRef.current.map((current, currentIndex) => (
+      currentIndex === index
+        ? Math.min(TABLE_MAX_WIDTHS[index], Math.max(TABLE_MIN_WIDTHS[index], width))
+        : current
+    ));
+    applyWidths(next);
+    persistWidths(next);
   }
 
   const headers = [null, copy.colWhen, copy.colTime, copy.colLeft, copy.colSubject, copy.kind];
@@ -106,11 +153,9 @@ export default function ItemTable({
                     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
                     event.preventDefault();
                     const delta = event.key === 'ArrowRight' ? 12 : -12;
-                    setWidths((current) => current.map((width, currentIndex) => currentIndex === index
-                      ? Math.min(TABLE_MAX_WIDTHS[index], Math.max(TABLE_MIN_WIDTHS[index], width + delta))
-                      : width));
+                    setColumnWidth(index, widthsRef.current[index] + delta);
                   }}
-                  onDoubleClick={() => setWidths((current) => current.map((width, currentIndex) => currentIndex === index ? TABLE_WIDTHS[index] : width))}
+                  onDoubleClick={() => setColumnWidth(index, TABLE_WIDTHS[index])}
                 />
               </Tooltip>
             </span>
@@ -138,7 +183,7 @@ export default function ItemTable({
                 }}
                 role="button"
                 tabIndex={0}
-                aria-pressed={selectedId === item.id}
+                aria-current={selectedId === item.id ? 'true' : undefined}
                 aria-label={`${item.title}, ${formatDate(item.occurrenceAt || item.startAt, lang)}, ${formatTimeRange(item, lang, copy)}, ${relative}`}
                 style={tint && selectedId !== item.id ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
               >
@@ -150,11 +195,7 @@ export default function ItemTable({
                   <span>{formatTimeRange(item, lang, copy) || copy.quickNone}</span>
                 </span>
                 <span className="row-status">
-                  {relative && (
-                    <Tooltip label={relative} placement="top">
-                      <span className={`status-pill ${statusClass}`} aria-label={relative}>{relative}</span>
-                    </Tooltip>
-                  )}
+                  {relative && <span className={`status-pill ${statusClass}`}>{relative}</span>}
                 </span>
                 <span className="subject">{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
                 <span className={`kind-tag kind-${item.kind}`}>{item.kind === 'task' ? copy.task : copy.event}</span>

@@ -4,7 +4,25 @@ import { parseLocal, toDateInput, toDateTimeInput } from '@shared/schedule';
 import type { Copy } from '../i18n';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import DateTimeField from './DateTimeField';
+import DialogPanel from './Dialog';
 import Tooltip from './Tooltip';
+
+/** Name of every colour offered by the swatch row, keyed by its hex value. */
+const SWATCH_NAMES: Record<string, keyof Copy['swatch']> = {
+  '#6c63e6': 'violet',
+  '#06b6d4': 'cyan',
+  '#10b981': 'green',
+  '#f59e0b': 'amber',
+  '#ef4444': 'red',
+  '#ec4899': 'pink',
+  '#3b82f6': 'blue',
+  '#d946ef': 'magenta',
+};
+
+function swatchLabel(copy: Copy, hex: string) {
+  const name = SWATCH_NAMES[hex];
+  return copy.colorName.replace('{name}', name ? copy.swatch[name] : hex);
+}
 
 function fromItem(item: Item): ItemDraft {
   return {
@@ -36,6 +54,38 @@ const blank = (): ItemDraft => ({
   recurrence: null,
   remindMinutes: 0,
 });
+
+/**
+ * A monthly series keeps the calendar day of its first occurrence. Without
+ * that anchor a January 31 event would settle on the 28th of February and
+ * stay there for good.
+ */
+function monthlyAnchor(draft: ItemDraft): ItemDraft['recurrence'] {
+  const day = Number(draft.startLocal?.slice(8, 10) ?? 0);
+  return {
+    freq: 'monthly',
+    interval: 1,
+    until: null,
+    dayOfMonth: day >= 1 && day <= 31 ? day : null,
+  };
+}
+
+/**
+ * Moving the start date moves the anchor with it. A series left on the old
+ * day would jump to a date the user is not looking at.
+ */
+function withStartDate(draft: ItemDraft, startLocal: string): ItemDraft {
+  const recurrence = draft.recurrence;
+  if (!recurrence || (recurrence.freq !== 'monthly' && recurrence.freq !== 'yearly')) {
+    return { ...draft, startLocal };
+  }
+  const day = Number(startLocal.slice(8, 10));
+  return {
+    ...draft,
+    startLocal,
+    recurrence: { ...recurrence, dayOfMonth: day >= 1 && day <= 31 ? day : null },
+  };
+}
 
 export default function ItemModal({
   copy,
@@ -107,113 +157,125 @@ export default function ItemModal({
   useModalKeys(true, { esc: onClose, enter: canSave ? () => void save() : undefined });
 
   return (
-    <div className="backdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <h2>{item ? copy.edit : copy.newItem}</h2>
-        <div className="field">
-          <span>{copy.kind}</span>
-          <div className="seg">
-            <button type="button" className={draft.kind === 'event' ? 'on' : ''} onClick={() => set({ kind: 'event' })}>{copy.event}</button>
-            <button type="button" className={draft.kind === 'task' ? 'on' : ''} onClick={() => set({ kind: 'task' })}>{copy.task}</button>
-          </div>
-        </div>
-        <label className="field"><span>{copy.title}</span><input value={draft.title} onChange={(e) => set({ title: e.target.value })} autoFocus /></label>
-        <label className="field"><span>{copy.notes}</span><textarea value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></label>
-        <label className="check">
-          <input type="checkbox" checked={draft.allDay} onChange={(e) => toggleAllDay(e.target.checked)} />
-          {copy.allDay}
-        </label>
-        <div className="grid-2">
-          <label className="field">
-            <span>{draft.kind === 'task' ? `${copy.due} (${copy.optional})` : copy.start}</span>
-            <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.startLocal || ''} onChange={(startLocal) => set({ startLocal })} />
-          </label>
-          <label className="field">
-            <span>{copy.end} ({copy.optional})</span>
-            <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.endLocal || ''} onChange={(endLocal) => set({ endLocal })} />
-          </label>
-        </div>
-        <div className="grid-2">
-          <label className="field">
-            <span>{copy.importance}</span>
-            <select value={draft.importance} onChange={(e) => set({ importance: e.target.value as ItemDraft['importance'] })}>
-              <option value="low">{copy.low}</option>
-              <option value="normal">{copy.normal}</option>
-              <option value="high">{copy.highImp}</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>{copy.group}</span>
-            <select value={draft.groupId || ''} onChange={(e) => set({ groupId: e.target.value || null })}>
-              <option value="">{copy.noGroup}</option>
-              {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className="field">
-          <span>{copy.color}</span>
-          <div className="swatches">
-            <Tooltip label={copy.none} placement="top">
-              <button type="button" className={`swatch ${draft.color === '' ? 'on' : ''}`} onClick={() => set({ color: '' })} />
-            </Tooltip>
-            {SWATCHES.map((swatch) => (
-              <button type="button" key={swatch} className={`swatch ${draft.color === swatch ? 'on' : ''}`} style={{ background: swatch }} onClick={() => set({ color: swatch })} />
-            ))}
-          </div>
-        </div>
-        <div className="field">
-          <span>{copy.remind}</span>
-          <select
-            value={custom ? 'custom' : String(draft.remindMinutes)}
-            onChange={(e) => {
-              if (e.target.value === 'custom') set({ remindMinutes: 5 });
-              else set({ remindMinutes: Number(e.target.value) });
-            }}
-          >
-            <option value="0">{copy.atTime}</option>
-            <option value="15">{copy.before15}</option>
-            <option value="60">{copy.before60}</option>
-            <option value="1440">{copy.beforeDay}</option>
-            <option value="custom">{copy.custom}</option>
-          </select>
-          {custom && (
-            <input type="number" min={0} value={draft.remindMinutes} onChange={(e) => set({ remindMinutes: Number(e.target.value) })} />
-          )}
-        </div>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={!!draft.recurrence}
-            onChange={(e) => set({ recurrence: e.target.checked ? { freq: 'monthly', interval: 1, until: null } : null })}
-          />
-          {copy.repeat}
-        </label>
-        {draft.recurrence && (
-          <div className="grid-2">
-            <label className="field">
-              <span>{copy.every}</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input type="number" min={1} value={draft.recurrence.interval} onChange={(e) => set({ recurrence: { ...draft.recurrence!, interval: Number(e.target.value) || 1 } })} />
-                <select value={draft.recurrence.freq} onChange={(e) => set({ recurrence: { ...draft.recurrence!, freq: e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly' } })}>
-                  <option value="daily">{copy.daily}</option>
-                  <option value="weekly">{copy.weekly}</option>
-                  <option value="monthly">{copy.monthly}</option>
-                  <option value="yearly">{copy.yearly}</option>
-                </select>
-              </div>
-            </label>
-            <label className="field">
-              <span>{copy.until} ({copy.optional})</span>
-              <input type="date" value={draft.recurrence.until || ''} onChange={(e) => set({ recurrence: { ...draft.recurrence!, until: e.target.value || null } })} />
-            </label>
-          </div>
-        )}
-        <div className="error">{endInvalid ? copy.badEnd : error}</div>
-        <div className="row-actions">
-          <button className="btn" onClick={onClose}>{copy.cancel}<EscHint /></button>
-          <button className="btn btn-primary" disabled={!canSave} onClick={() => void save()}>{copy.save}<EnterGlyph /></button>
+    <DialogPanel className="modal" labelledBy="item-modal-title" onBackdropMouseDown={onClose}>
+      <h2 id="item-modal-title">{item ? copy.edit : copy.newItem}</h2>
+      <div className="field">
+        <span>{copy.kind}</span>
+        <div className="seg">
+          <button type="button" className={draft.kind === 'event' ? 'on' : ''} onClick={() => set({ kind: 'event' })}>{copy.event}</button>
+          <button type="button" className={draft.kind === 'task' ? 'on' : ''} onClick={() => set({ kind: 'task' })}>{copy.task}</button>
         </div>
       </div>
-    </div>
+      <label className="field"><span>{copy.title}</span><input value={draft.title} onChange={(e) => set({ title: e.target.value })} autoFocus /></label>
+      <label className="field"><span>{copy.notes}</span><textarea value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></label>
+      <label className="check">
+        <input type="checkbox" checked={draft.allDay} onChange={(e) => toggleAllDay(e.target.checked)} />
+        {copy.allDay}
+      </label>
+      <div className="grid-2">
+        <label className="field">
+          <span>{draft.kind === 'task' ? `${copy.due} (${copy.optional})` : copy.start}</span>
+          <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.startLocal || ''} onChange={(startLocal) => setDraft((prev) => withStartDate(prev, startLocal))} />
+        </label>
+        <label className="field">
+          <span>{copy.end} ({copy.optional})</span>
+          <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.endLocal || ''} onChange={(endLocal) => set({ endLocal })} />
+        </label>
+      </div>
+      <div className="grid-2">
+        <label className="field">
+          <span>{copy.importance}</span>
+          <select value={draft.importance} onChange={(e) => set({ importance: e.target.value as ItemDraft['importance'] })}>
+            <option value="low">{copy.low}</option>
+            <option value="normal">{copy.normal}</option>
+            <option value="high">{copy.highImp}</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{copy.group}</span>
+          <select value={draft.groupId || ''} onChange={(e) => set({ groupId: e.target.value || null })}>
+            <option value="">{copy.noGroup}</option>
+            {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+          </select>
+        </label>
+      </div>
+      <div className="field">
+        <span>{copy.color}</span>
+        <div className="swatches">
+          <Tooltip label={copy.none} placement="top">
+            <button type="button" aria-label={copy.none} className={`swatch ${draft.color === '' ? 'on' : ''}`} onClick={() => set({ color: '' })} />
+          </Tooltip>
+          {SWATCHES.map((swatch) => (
+            <button
+              type="button"
+              key={swatch}
+              aria-label={swatchLabel(copy, swatch)}
+              aria-pressed={draft.color === swatch}
+              className={`swatch ${draft.color === swatch ? 'on' : ''}`}
+              style={{ background: swatch }}
+              onClick={() => set({ color: swatch })}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="field">
+        <span>{copy.remind}</span>
+        <select
+          value={custom ? 'custom' : String(draft.remindMinutes)}
+          onChange={(e) => {
+            if (e.target.value === 'custom') set({ remindMinutes: 5 });
+            else set({ remindMinutes: Number(e.target.value) });
+          }}
+        >
+          <option value="0">{copy.atTime}</option>
+          <option value="15">{copy.before15}</option>
+          <option value="60">{copy.before60}</option>
+          <option value="1440">{copy.beforeDay}</option>
+          <option value="custom">{copy.custom}</option>
+        </select>
+        {custom && (
+          <input type="number" min={0} value={draft.remindMinutes} onChange={(e) => set({ remindMinutes: Number(e.target.value) })} />
+        )}
+      </div>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={!!draft.recurrence}
+          onChange={(e) => set({ recurrence: e.target.checked ? monthlyAnchor(draft) : null })}
+        />
+        {copy.repeat}
+      </label>
+      {draft.recurrence && (
+        <div className="grid-2">
+          <label className="field">
+            <span>{copy.every}</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input type="number" min={1} value={draft.recurrence.interval} onChange={(e) => set({ recurrence: { ...draft.recurrence!, interval: Number(e.target.value) || 1 } })} />
+              <select value={draft.recurrence.freq} onChange={(e) => {
+                const freq = e.target.value as 'daily' | 'weekly' | 'monthly' | 'yearly';
+                const anchor = freq === 'monthly' && draft.recurrence?.dayOfMonth == null
+                  ? monthlyAnchor(draft)?.dayOfMonth ?? null
+                  : draft.recurrence!.dayOfMonth ?? null;
+                set({ recurrence: { ...draft.recurrence!, freq, dayOfMonth: anchor } });
+              }}>
+                <option value="daily">{copy.daily}</option>
+                <option value="weekly">{copy.weekly}</option>
+                <option value="monthly">{copy.monthly}</option>
+                <option value="yearly">{copy.yearly}</option>
+              </select>
+            </div>
+          </label>
+          <label className="field">
+            <span>{copy.until} ({copy.optional})</span>
+            <input type="date" value={draft.recurrence.until || ''} onChange={(e) => set({ recurrence: { ...draft.recurrence!, until: e.target.value || null } })} />
+          </label>
+        </div>
+      )}
+      <div className="error">{endInvalid ? copy.badEnd : error}</div>
+      <div className="row-actions">
+        <button className="btn" onClick={onClose}>{copy.cancel}<EscHint /></button>
+        <button className="btn btn-primary" disabled={!canSave} onClick={() => void save()}>{copy.save}<EnterGlyph /></button>
+      </div>
+    </DialogPanel>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BookOpen, Bug, Check, ClipboardCopy, Cpu, Github, Globe, Tag, X } from 'lucide-react';
 import type { AppInfo } from '@shared/types';
 import type { Copy } from '../i18n';
+import { useFocusTrap } from './Dialog';
 import Tooltip from './Tooltip';
 
 const REPO_URL = 'https://github.com/CyberGems/CyberGo';
@@ -29,7 +30,10 @@ export default function AboutModal({
   const about = copy.about;
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const version = info?.version || '…';
+
+  useFocusTrap(panelRef);
 
   useEffect(() => () => {
     if (copiedTimer.current) clearTimeout(copiedTimer.current);
@@ -69,6 +73,7 @@ export default function AboutModal({
   return (
     <div className="backdrop" onMouseDown={onClose}>
       <div
+        ref={panelRef}
         className="modal about-modal"
         role="dialog"
         aria-modal="true"
@@ -96,7 +101,7 @@ export default function AboutModal({
               <div><span>{about.application}</span><strong>{version}</strong></div>
               <div><span>{about.platform}</span><strong>{info ? `${platformLabel(info.platform)} ${info.osRelease}` : '…'}</strong></div>
               <div><span>{about.engine}</span><strong>{info ? `Electron ${info.electron}` : '…'}</strong></div>
-              <div><span>Node</span><strong>{info?.node || '…'}</strong></div>
+              <div><span>{about.node}</span><strong>{info?.node || '…'}</strong></div>
             </div>
           </section>
 

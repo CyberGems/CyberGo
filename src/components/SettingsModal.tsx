@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -38,6 +38,7 @@ import type {
 import { applyTheme } from '../themes';
 import { builtInSoundUrl, playAlert } from '../lib/sound';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
+import { useFocusTrap } from './Dialog';
 import Tooltip from './Tooltip';
 
 type Tab = 'general' | 'notifications' | 'security' | 'data';
@@ -149,7 +150,8 @@ export default function SettingsModal({
   const [message, setMessage] = useState('');
   const [recovery, setRecovery] = useState('');
   const [backups, setBackups] = useState<BackupInfo[]>([]);
-  const [keep, setKeep] = useState(settings.autobackupKeep);
+  const [keepText, setKeepText] = useState(() => String(settings.autobackupKeep));
+  const previewTimer = useRef<number | null>(null);
   const [restoreName, setRestoreName] = useState<string | null>(null);
   const [accessLog, setAccessLog] = useState<AccessLogEntry[]>([]);
   const [clearAccessConfirm, setClearAccessConfirm] = useState(false);
@@ -157,6 +159,14 @@ export default function SettingsModal({
   const [previewing, setPreviewing] = useState(false);
   const [dataBusy, setDataBusy] = useState<DataBusy | null>(null);
   const [dataNotice, setDataNotice] = useState<DataNotice | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useFocusTrap(panelRef);
+  // An empty or invalid retention field means "not changed", never 0. The
+  // effective value is the one that is stored and the one that is shown.
+  const parsedKeep = Number.parseInt(keepText, 10);
+  const fallbackKeep = settings.autobackupKeep >= 1 ? settings.autobackupKeep : 7;
+  const keepValue = Number.isFinite(parsedKeep) && parsedKeep >= 1 ? Math.min(60, parsedKeep) : fallbackKeep;
   const navItems = [
     { id: 'general' as const, label: copy.general, icon: <SlidersHorizontal size={15} /> },
     { id: 'notifications' as const, label: copy.notifications, icon: <BellRing size={15} /> },
@@ -183,6 +193,9 @@ export default function SettingsModal({
     }
   }, [tab]);
   useEffect(() => { if (tab === 'security') void refreshAccessLog(); }, [tab]);
+  useEffect(() => () => {
+    if (previewTimer.current) window.clearTimeout(previewTimer.current);
+  }, []);
   useEffect(() => {
     if (tab === 'notifications') {
       void api.listDisplays().then(setDisplays).catch(() => setDisplays([]));
@@ -207,7 +220,11 @@ export default function SettingsModal({
         reminderPosition: override.reminderPosition ?? settings.reminderPosition,
       });
     } finally {
-      window.setTimeout(() => setPreviewing(false), 700);
+      if (previewTimer.current) window.clearTimeout(previewTimer.current);
+      previewTimer.current = window.setTimeout(() => {
+        previewTimer.current = null;
+        setPreviewing(false);
+      }, 700);
     }
   }
 
@@ -317,7 +334,7 @@ export default function SettingsModal({
 
   return (
     <div className="panel-overlay" onMouseDown={onClose}>
-      <div className="panel settings-panel" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={copy.settings}>
+      <div ref={panelRef} className="panel settings-panel" onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={copy.settings}>
         <header className="settings-header">
           <div className="settings-header-title">
             <span className="settings-header-icon"><Settings2 size={17} /></span>
@@ -663,10 +680,13 @@ export default function SettingsModal({
                   type="number"
                   min={1}
                   max={60}
-                  value={keep}
+                  value={keepText}
                   disabled={!settings.autobackup}
-                  onChange={(e) => setKeep(Number(e.target.value))}
-                  onBlur={() => void patch({ autobackupKeep: keep || 7 })}
+                  onChange={(e) => setKeepText(e.target.value)}
+                  onBlur={() => {
+                    setKeepText(String(keepValue));
+                    void patch({ autobackupKeep: keepValue });
+                  }}
                 />
               </label>
             </section>

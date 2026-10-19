@@ -99,8 +99,14 @@ export const THEMES: { id: ThemeId; vars: Record<string, string> }[] = [
   },
 ];
 
+let appliedThemeId: string | null = null;
+
 export function applyTheme(id: string) {
   const theme = THEMES.find((t) => t.id === id) ?? THEMES[0];
+  // Rewriting every custom property invalidates the whole style tree, so the
+  // theme is only applied when it actually changes.
+  if (appliedThemeId === theme.id) return;
+  appliedThemeId = theme.id;
   for (const [key, value] of Object.entries(theme.vars)) {
     document.documentElement.style.setProperty(key, value);
   }

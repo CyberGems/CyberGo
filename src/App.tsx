@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Bell, CalendarDays, Command, Flame, List, Lock, Pencil, Plus, Search, Settings, Trash2, X } from 'lucide-react';
-import type { AppInfo, Bootstrap, Item, ItemDraft } from '@shared/types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Bell, CalendarDays, Command, Flame, Info, List, Lock, Pencil, Plus, Search, Settings, Trash2, X } from 'lucide-react';
+import type { AppInfo, Bootstrap, Item, ItemDraft, RecoveryNotice } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
-import { copyOf } from './i18n';
+import { copyOf, type Copy } from './i18n';
 import { matchesFilter, sortItems, type FilterId } from './lib/view';
 import { computeStats } from './lib/stats';
 import { applyTheme } from './themes';
@@ -19,6 +19,7 @@ import LockScreen from './components/LockScreen';
 import RemindersWindow from './components/RemindersWindow';
 import TextContextMenu from './components/TextContextMenu';
 import Tooltip from './components/Tooltip';
+import DialogPanel from './components/Dialog';
 import { EnterGlyph, EscHint, useModalKeys } from './components/ModalKeys';
 
 export default function App() {
@@ -30,9 +31,18 @@ export default function App() {
   return <MainApp />;
 }
 
+/** The recovery notice is built here so the text comes from the dictionary. */
+function recoveryText(copy: Copy, notice: RecoveryNotice): string {
+  if (notice.kind === 'backup') return copy.recoveryFromBackup.replace('{file}', notice.file ?? '');
+  if (notice.kind === 'set-aside') return copy.recoverySetAside.replace('{file}', notice.file ?? '');
+  if (notice.kind === 'empty') return copy.recoveryEmpty;
+  return copy.recoveryUnreadable;
+}
+
 function MainApp() {
   const api = window.cyberGoAPI;
   const [boot, setBoot] = useState<Bootstrap | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterId>('all');
   const [groupId, setGroupId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -43,15 +53,31 @@ function MainApp() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [recoveryDismissed, setRecoveryDismissed] = useState(false);
   const [view, setView] = useState<'list' | 'calendar'>(() => (
     localStorage.getItem('cybergo-view') === 'calendar' ? 'calendar' : 'list'
   ));
-  const [confirm, setConfirm] = useState<null | { title: string; body: string; danger?: boolean; run: () => void }>(null);
+  const [confirm, setConfirm] = useState<null | { title: string; body: string; action: string; danger?: boolean; run: () => void }>(null);
+  const lastTheme = useRef<string | null>(null);
+
+  /** Runs a promise that nobody waits for, so a failure never becomes an unhandled rejection. */
+  function detach(promise: Promise<unknown>, what: string) {
+    promise.catch((err) => console.error(`CyberGo could not ${what}`, err));
+  }
 
   async function reload() {
-    const next = await api.getBootstrap();
-    setBoot(next);
-    applyTheme(next.settings.theme);
+    try {
+      const next = await api.getBootstrap();
+      setBoot(next);
+      setLoadError(null);
+      if (lastTheme.current !== next.settings.theme) {
+        lastTheme.current = next.settings.theme;
+        applyTheme(next.settings.theme);
+      }
+    } catch (err) {
+      console.error('CyberGo could not load the data', err);
+      setLoadError(err instanceof Error ? err.message : String(err));
+    }
   }
 
   useEffect(() => {
@@ -62,9 +88,13 @@ function MainApp() {
       setSelectedId(id);
       void api.getBootstrap().then((next) => {
         setBoot(next);
+        if (lastTheme.current !== next.settings.theme) {
+          lastTheme.current = next.settings.theme;
+          applyTheme(next.settings.theme);
+        }
         const item = next.items.find((row) => row.id === id);
         if (item) setEditing(item);
-      });
+      }).catch((err) => console.error('CyberGo could not open the item', err));
     });
     const focusQuick = api.onQuickAddFocus(() => {
       window.dispatchEvent(new Event('cybergo:focus-quick'));
@@ -76,7 +106,7 @@ function MainApp() {
     function keys(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setPaletteOpen((prev) => !prev);
+        setPaletteOpen(true);
       }
     }
     document.addEventListener('keydown', keys);
@@ -161,13 +191,38 @@ function MainApp() {
 
   function askDelete(item: Item) {
     if (item.deletedAt) {
-      setConfirm({ title: copy.confirmPurge, body: copy.confirmPurgeBody, danger: true, run: () => void api.purgeItem(item.id) });
+      setConfirm({
+        title: copy.confirmPurge,
+        body: copy.confirmPurgeBody,
+        action: copy.actionConfirm,
+        danger: true,
+        run: () => detach(api.purgeItem(item.id), 'delete the item permanently'),
+      });
       return;
     }
-    setConfirm({ title: copy.confirmDelete, body: copy.confirmDeleteBody, danger: true, run: () => void api.deleteItem(item.id) });
+    setConfirm({
+      title: copy.confirmDelete,
+      body: copy.confirmDeleteBody,
+      action: copy.actionConfirm,
+      danger: true,
+      run: () => detach(api.deleteItem(item.id), 'move the item to the recycle bin'),
+    });
   }
 
-  if (!boot) return <div className="boot" />;
+  if (!boot) {
+    if (loadError) {
+      return (
+        <div className="fatal">
+          <div className="fatal-card">
+            <h1>{copy.fatalTitle}</h1>
+            <p>{copy.loadFailed}</p>
+            <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>{copy.reload}</button>
+          </div>
+        </div>
+      );
+    }
+    return <div className="boot" />;
+  }
   if (boot.locked) {
     return (
       <>
@@ -198,13 +253,13 @@ function MainApp() {
             <button className="btn" disabled={!selected} onClick={() => selected && askDelete(selected)}>
               <Trash2 size={14} /><span className="toolbar-label">{copy.delete}</span>
             </button>
-            <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt} onClick={() => selected && void api.completeItem(selected.id)}>
+            <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt || filter === 'trash'} onClick={() => selected && detach(api.completeItem(selected.id), 'complete the item')}>
               <span className="toolbar-label">{copy.done}</span>
             </button>
           </div>
           <span className="toolbar-divider" />
           <div className="toolbar-utility">
-            <button className="btn" onClick={() => void api.showReminders()}><Bell size={14} /><span className="toolbar-label">{copy.reminders}</span></button>
+            <button className="btn" onClick={() => detach(api.showReminders(), 'show the reminders')}><Bell size={14} /><span className="toolbar-label">{copy.reminders}</span></button>
             <div className="search-wrap">
               <Search size={14} />
               <input className="search" aria-label={copy.search} placeholder={copy.search} value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -218,7 +273,7 @@ function MainApp() {
               <button className="icon-btn" aria-label={copy.commandShortcut} onClick={() => setPaletteOpen(true)}><Command size={15} /></button>
             </Tooltip>
             <Tooltip label={copy.lock} placement="bottom">
-              <button className="icon-btn" aria-label={copy.lock} onClick={() => void api.lock()}><Lock size={15} /></button>
+              <button className="icon-btn" aria-label={copy.lock} onClick={() => detach(api.lock(), 'lock the app')}><Lock size={15} /></button>
             </Tooltip>
             <Tooltip label={copy.settings} placement="bottom">
               <button className="icon-btn" aria-label={copy.settings} onClick={() => setSettingsOpen(true)}><Settings size={15} /></button>
@@ -234,15 +289,28 @@ function MainApp() {
           filter={filter}
           groupId={groupId}
           onFilter={(next, gid) => { setFilter(gid ? 'all' : next); setGroupId(gid); }}
-          onCreateGroup={(name, color) => void api.saveGroup({ name, color })}
+          onCreateGroup={(name, color) => detach(api.saveGroup({ name, color }), 'save the group')}
           onDeleteGroup={(group) => setConfirm({
             title: copy.confirmGroup,
             body: copy.confirmGroupBody,
+            action: copy.actionDeleteGroup,
             danger: true,
-            run: () => void api.deleteGroup(group.id),
+            run: () => detach(api.deleteGroup(group.id), 'delete the group'),
           })}
         />
         <section className="list-wrap">
+          {boot.recovery && !recoveryDismissed && (
+            <div className="data-notice info recovery-notice" role="status" aria-live="polite">
+              <span className="data-notice-icon"><Info size={18} /></span>
+              <div className="recovery-notice-copy">
+                <strong>{copy.dataRecovered}</strong>
+                <p>{recoveryText(copy, boot.recovery)}</p>
+              </div>
+              <button type="button" className="btn recovery-notice-dismiss" aria-label={copy.dismiss} onClick={() => setRecoveryDismissed(true)}>
+                <X size={13} />
+              </button>
+            </div>
+          )}
           <div className="workspace-head">
             <div className="workspace-head-copy">
               <p className="workspace-kicker">{copy.workspace}</p>
@@ -263,7 +331,12 @@ function MainApp() {
               copy={copy}
               lang={boot.settings.language}
               groupId={groupId}
-              onSave={(draft) => api.saveItem(draft).then(() => undefined)}
+              onSave={(draft) => api.saveItem(draft).then(() => undefined).catch((err) => {
+                console.error('CyberGo could not save the item', err);
+                // The rejection has to reach the quick add, otherwise it clears
+                // the text as if the item had been created.
+                throw err;
+              })}
               onMore={(draft) => { setSeed(draft); setEditing('new'); }}
             />
           )}
@@ -296,12 +369,13 @@ function MainApp() {
           )}
           {filter === 'trash' && items.some((item) => item.deletedAt) && (
             <div className="side-foot" style={{ display: 'flex', gap: 8 }}>
-              <button className="btn" disabled={!selected} onClick={() => selected && void api.restoreItem(selected.id)}>{copy.restore}</button>
+              <button className="btn" disabled={!selected} onClick={() => selected && detach(api.restoreItem(selected.id), 'restore the item')}>{copy.restore}</button>
               <button className="btn btn-danger" onClick={() => setConfirm({
                 title: copy.confirmTrash,
                 body: copy.confirmTrashBody,
+                action: copy.actionEmptyTrash,
                 danger: true,
-                run: () => void api.emptyTrash(),
+                run: () => detach(api.emptyTrash(), 'empty the recycle bin'),
               })}>{copy.clearTrash}</button>
             </div>
           )}
@@ -309,6 +383,7 @@ function MainApp() {
       </div>
       <footer className="statusbar">
         <span>{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</span>
+        {loadError && <span className="status-error" role="alert">{copy.loadFailed}</span>}
         <span className="grow" />
         <Tooltip label={`${stats.doneWeek} ${copy.streakWeek}`} placement="top">
           <span className="streak">
@@ -335,7 +410,7 @@ function MainApp() {
           settings={boot.settings}
           hasPassword={boot.hasPassword}
           onClose={() => setSettingsOpen(false)}
-          onLock={() => { setSettingsOpen(false); void api.lock(); }}
+          onLock={() => { setSettingsOpen(false); detach(api.lock(), 'lock the app'); }}
           appInfo={appInfo}
           onOpenAbout={() => { setSettingsOpen(false); setAboutOpen(true); }}
         />
@@ -350,22 +425,20 @@ function MainApp() {
           onOpenItem={(item) => { setSelectedId(item.id); setEditing(item); }}
           onNew={newFromPalette}
           onGoFilter={(next) => { setFilter(next); setGroupId(null); }}
-          onShowReminders={() => void api.showReminders()}
-          onLock={() => void api.lock()}
+          onShowReminders={() => detach(api.showReminders(), 'show the reminders')}
+          onLock={() => detach(api.lock(), 'lock the app')}
           onOpenSettings={() => setSettingsOpen(true)}
         />
       )}
       {confirm && (
-        <div className="backdrop" onMouseDown={() => setConfirm(null)}>
-          <div className="modal narrow" onMouseDown={(e) => e.stopPropagation()}>
-            <h2>{confirm.title}</h2>
-            <p>{confirm.body}</p>
-            <div className="row-actions">
-              <button className="btn" onClick={() => setConfirm(null)}>{copy.cancel}<EscHint /></button>
-              <button className={`btn ${confirm.danger ? 'btn-danger' : 'btn-primary'}`} onClick={() => { confirm.run(); setConfirm(null); }}>{copy.delete}<EnterGlyph /></button>
-            </div>
+        <DialogPanel className="modal narrow" labelledBy="confirm-title" focusTarget="container" onBackdropMouseDown={() => setConfirm(null)}>
+          <h2 id="confirm-title">{confirm.title}</h2>
+          <p>{confirm.body}</p>
+          <div className="row-actions">
+            <button className="btn" onClick={() => setConfirm(null)}>{copy.cancel}<EscHint /></button>
+            <button className={`btn ${confirm.danger ? 'btn-danger' : 'btn-primary'}`} onClick={() => { confirm.run(); setConfirm(null); }}>{confirm.action}<EnterGlyph /></button>
           </div>
-        </div>
+        </DialogPanel>
       )}
       </div>
       <TextContextMenu copy={copy} />

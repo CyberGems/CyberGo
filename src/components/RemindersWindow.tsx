@@ -28,6 +28,7 @@ export default function RemindersWindow() {
   const [customOpen, setCustomOpen] = useState(false);
   const [, setNow] = useState(() => Date.now());
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const pulseTimer = useRef<number | null>(null);
   const copy = copyOf(settings?.language || 'es');
 
   async function reload(pulseIds: string[] = []) {
@@ -49,7 +50,11 @@ export default function RemindersWindow() {
     });
     if (pulseIds.length) {
       setPulse(pulseIds);
-      window.setTimeout(() => setPulse([]), 1600);
+      if (pulseTimer.current) window.clearTimeout(pulseTimer.current);
+      pulseTimer.current = window.setTimeout(() => {
+        pulseTimer.current = null;
+        setPulse([]);
+      }, 1600);
     }
   }
 
@@ -71,7 +76,15 @@ export default function RemindersWindow() {
       applyTheme(payload.settings.theme);
     });
     void reload();
-    return () => { offData(); off(); offPreview(); };
+    return () => {
+      offData();
+      off();
+      offPreview();
+      if (pulseTimer.current) {
+        window.clearTimeout(pulseTimer.current);
+        pulseTimer.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -213,7 +226,7 @@ export default function RemindersWindow() {
                 </Tooltip>
               </div>
             </header>
-            <div className="reminder-list" role="listbox" aria-multiselectable aria-label={copy.remindersTitle}>
+            <div className="reminder-list" role="list" aria-label={copy.remindersTitle}>
               {orderedItems.map((item) => {
                 const state = dueState(item.occurrenceAt || item.nextFireAt) ?? 'future';
                 const selected = selectedIds.includes(item.id);
@@ -221,8 +234,8 @@ export default function RemindersWindow() {
                   <div
                     key={item.id}
                     ref={(el) => { rowRefs.current[item.id] = el; }}
-                    role="option"
-                    aria-selected={selected}
+                    role="listitem"
+                    aria-current={selected ? 'true' : undefined}
                     tabIndex={0}
                     className={`reminder-row urgency-${state} ${selected ? 'selected' : ''} ${pulse.includes(item.id) ? 'pulse' : ''}`}
                     onClick={(event) => {
@@ -241,7 +254,7 @@ export default function RemindersWindow() {
                       {item.kind === 'event' ? <CalendarDays size={14} /> : <ListTodo size={14} />}
                     </span>
                     <span className="reminder-row-title subject">{item.title}</span>
-                    <span className="reminder-row-due">{duePhrase(item.occurrenceAt || item.nextFireAt, settings?.language || 'es')}</span>
+                    <span className="reminder-row-due">{duePhrase(item.occurrenceAt || item.nextFireAt, copy)}</span>
                     <span className="reminder-row-actions" onClick={(event) => event.stopPropagation()}>
                       <Tooltip label={copy.min10} placement="top">
                         <button type="button" className="row-action" disabled={previewMode} aria-label={`${copy.snoozeFor}: ${copy.min10}`} onClick={() => void api.snooze(item.id, 10)}>
@@ -282,7 +295,7 @@ export default function RemindersWindow() {
                     <h2 className="reminder-inspector-title">{selectedItems.length > 1 ? `${selectedItems.length} ${copy.itemMany}` : current.title}</h2>
                     {selectedItems.length === 1 && (
                       <p className={`reminder-inspector-due urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
-                        {duePhrase(current.occurrenceAt || current.nextFireAt, settings?.language || 'es')}
+                        {duePhrase(current.occurrenceAt || current.nextFireAt, copy)}
                       </p>
                     )}
                   </div>
@@ -303,8 +316,8 @@ export default function RemindersWindow() {
               </div>
               {customOpen && (
                 <div className="reminder-custom">
-                  <input type="number" min={1} value={amount} aria-label={copy.snoozeFor} onChange={(e) => setAmount(Number(e.target.value))} />
-                  <select value={unit} aria-label={copy.snoozeFor} onChange={(e) => setUnit(e.target.value as 'minutes' | 'hours' | 'days')}>
+                  <input type="number" min={1} value={amount} aria-label={copy.snoozeAmount} onChange={(e) => setAmount(Number(e.target.value))} />
+                  <select value={unit} aria-label={copy.snoozeUnit} onChange={(e) => setUnit(e.target.value as 'minutes' | 'hours' | 'days')}>
                     <option value="minutes">{copy.minutes}</option>
                     <option value="hours">{copy.hours}</option>
                     <option value="days">{copy.days}</option>
@@ -326,21 +339,21 @@ export default function RemindersWindow() {
           onContextMenu={(event) => event.preventDefault()}
           onMouseDown={(event) => event.stopPropagation()}
         >
-          <button type="button" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('open')}>
+          <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('open')}>
             <ExternalLink size={15} />
             <span>{copy.openItem}</span>
           </button>
-          <button type="button" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('dismiss')}>
+          <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('dismiss')}>
             <X size={15} />
             <span>{copy.dismiss}</span>
           </button>
           <div className="text-context-menu-separator" />
-          <button type="button" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('delete')}>
+          <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('delete')}>
             <Trash2 size={15} />
             <span>{copy.delete}</span>
           </button>
           <div className="text-context-menu-separator" />
-          <button type="button" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('dismiss-all')}>
+          <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('dismiss-all')}>
             <XCircle size={15} />
             <span>{copy.dismissAll}</span>
           </button>
