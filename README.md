@@ -37,6 +37,10 @@ The interface is available in **English and Spanish**. The application is curren
 ### Notifications
 
 - Dedicated reminder window with snooze, dismiss, open-item, and sound actions.
+- Urgency states on every row, with overdue items listed first and due phrases refreshed live.
+- Per-row quick actions: snooze ten minutes, mark a task as done, and dismiss.
+- Multi-selection with Ctrl+click, plus a compact inspector for the selected item.
+- Full keyboard navigation: arrows to move, Enter to open, Delete to dismiss, Ctrl+A to select all.
 - Optional always-on-top behavior.
 - Monitor selection, active-monitor mode, position selection, and a demo preview.
 - Main window bounds are remembered and restored on the last available monitor.
@@ -53,6 +57,8 @@ The interface is available in **English and Spanish**. The application is curren
 
 - CSV and ICS import and export with validation feedback.
 - Dark, gray, and light themes, with a lower-contrast dark theme.
+- Settings panel organized as a drawer with icon navigation and section headings.
+- About dialog with the version, system information, and a one-click diagnostics copy.
 - Styled tooltips for explanatory and truncated content.
 - English and Spanish context menus for editable fields.
 - Keyboard-friendly controls, including resizable table columns.
@@ -119,7 +125,9 @@ CyberGo/
 │   ├── quick.ts             Natural quick-add parsing
 │   ├── schedule.ts          Dates, recurrence, and local time conversion
 │   ├── csv.ts               CSV import and export
-│   └── ics.ts               ICS import and export
+│   ├── ics.ts               ICS import and export
+│   ├── auth.ts              Password and PIN secret validation
+│   └── types.ts             Shared item, settings, and IPC types
 ├── src/
 │   ├── components/          React UI, settings, reminders, and shared tooltip
 │   ├── lib/                 Formatting, filtering, statistics, and sound
@@ -135,12 +143,23 @@ CyberGo uses **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js**
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+N` | Create a new item |
-| `Ctrl+F` | Focus search |
+| `Ctrl+K` | Open or close the command palette |
+| `Alt+Shift+G` | Quick capture from anywhere in Windows |
 | `Enter` | Open or confirm the focused action |
 | `Escape` | Close the current modal or cancel the current action |
+| `Space` | Select the focused row in the item table |
 | `←` / `→` on a column handle | Resize the focused table column |
 | Double-click on a column handle | Restore that column's default width |
+
+Inside the reminder window:
+
+| Shortcut | Action |
+|---|---|
+| `↑` / `↓` | Move the selection |
+| `Enter` | Open the selected reminder |
+| `Delete` / `Backspace` | Dismiss the selected reminder |
+| `Ctrl+A` | Select every reminder |
+| `Ctrl+click` | Add or remove an item from the selection |
 
 ## Alpha notes
 
