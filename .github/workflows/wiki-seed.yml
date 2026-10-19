@@ -10,23 +10,17 @@ jobs:
   seed:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe the wiki API from GitHub infrastructure
+      - name: Diagnose wiki API availability
         env:
           GH_TOKEN: ${{ secrets.WIKI_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          echo "--- GET wiki pages on a repo that HAS pages (CyberNotes) ---"
-          curl -s -o /tmp/a.json -w "http=%{http_code}\n" \
-            -H "Authorization: token $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/CyberGems/CyberNotes/wiki/pages"
-          head -c 200 /tmp/a.json
-          echo
-          echo "--- PUT create the first page on CyberGo ---"
-          curl -s -o /tmp/b.json -w "http=%{http_code}\n" -X PUT \
-            -H "Authorization: token $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -d '{"title":"Home","body":"Welcome to the CyberGo wiki!"}' \
-            "https://api.github.com/repos/$REPO/wiki/pages"
-          head -c 300 /tmp/b.json
+          api() { curl -s -o /tmp/o.json -w "%{http_code}" -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" "$1"; }
+          echo "repos/CyberNotes        -> $(api https://api.github.com/repos/CyberGems/CyberNotes)"
+          echo "repos/CyberNotes/wiki   -> $(api https://api.github.com/repos/CyberGems/CyberNotes/wiki)"
+          echo "repos/CyberNotes/wiki/p -> $(api https://api.github.com/repos/CyberGems/CyberNotes/wiki/pages)"
+          echo "repos/CyberNotes/commits-> $(api https://api.github.com/repos/CyberGems/CyberNotes/commits)"
+          echo "--- create CyberGo wiki page ---"
+          echo "PUT wiki/pages           -> $(curl -s -o /tmp/c.json -w '%{http_code}' -X PUT -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" -d '{"title":"Home","body":"Welcome to the CyberGo wiki!"}' "https://api.github.com/repos/$REPO/wiki/pages")"
+          head -c 300 /tmp/c.json
           echo
