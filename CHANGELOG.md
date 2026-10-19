@@ -31,6 +31,7 @@
 - The text of the reminder window is no longer selected when the pointer drags over it.
 - The reminder window shows a short wording of the moment, so the name of the item is not cut off.
 - The keyboard hints of the reminder window moved into a button, so they no longer take a whole line.
+- The reminder window selection can be extended with Shift and the arrow keys, and the focused row can be marked with the space bar.
 - The state column says "En 3 días" instead of a bare "3".
 - An event that already happened no longer shows as overdue. A task that is late still does, because it still waits to be done.
 - The quick capture no longer keeps an empty row under the presets.

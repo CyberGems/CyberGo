@@ -68,6 +68,8 @@ export default function RemindersWindow() {
   const dragHitsRef = useRef<string[]>([]);
   const skipClickRef = useRef(false);
   const lastDragRef = useRef(0);
+  /** The row the selection started from, so Shift can extend it. */
+  const anchorRef = useRef<string | null>(null);
   const copy = copyOf(settings?.language || 'es');
 
   async function reload(pulseIds: string[] = []) {
@@ -271,8 +273,26 @@ export default function RemindersWindow() {
         const delta = event.key === 'ArrowDown' ? 1 : -1;
         const base = index < 0 ? (delta > 0 ? -1 : 0) : index;
         const next = ids[Math.max(0, Math.min(ids.length - 1, base + delta))];
-        setSelectedIds([next]);
+        // Shift extends the selection from the row it started on.
+        const anchor = anchorRef.current ? ids.indexOf(anchorRef.current) : -1;
+        const target = ids.indexOf(next);
+        if (event.shiftKey && anchor >= 0 && target >= 0) {
+          const [from, to] = anchor <= target ? [anchor, target] : [target, anchor];
+          setSelectedIds(ids.slice(from, to + 1));
+        } else {
+          anchorRef.current = next;
+          setSelectedIds([next]);
+        }
         rowRefs.current[next]?.focus();
+      } else if (event.key === ' ') {
+        // Space marks the focused row, the way a checkbox does.
+        event.preventDefault();
+        const focused = document.activeElement?.getAttribute('data-id');
+        if (!focused) return;
+        anchorRef.current = focused;
+        setSelectedIds((previous) => (previous.includes(focused)
+          ? previous.filter((id) => id !== focused)
+          : [...previous, focused]));
       } else if (event.key === 'Enter') {
         if (previewMode || !current) return;
         event.preventDefault();
@@ -393,7 +413,8 @@ export default function RemindersWindow() {
 
             <div
               className="reminder-list"
-              role="list"
+              role="listbox"
+              aria-multiselectable="true"
               aria-label={copy.remindersTitle}
               ref={listRef}
               onMouseDown={(event) => {
@@ -417,8 +438,7 @@ export default function RemindersWindow() {
                     key={item.id}
                     data-id={item.id}
                     ref={(el) => { rowRefs.current[item.id] = el; }}
-                    role="listitem"
-                    aria-current={selected ? 'true' : undefined}
+                    role="option"
                     aria-selected={selected}
                     tabIndex={0}
                     className={`reminder-row urgency-${state} ${selected ? 'selected' : ''} ${inDrag ? 'in-drag' : ''} ${pulse.includes(item.id) ? 'pulse' : ''}`}
@@ -427,8 +447,13 @@ export default function RemindersWindow() {
                         skipClickRef.current = false;
                         return;
                       }
-                      if (event.ctrlKey || event.metaKey) toggleOne(item.id);
-                      else selectOnly(item.id);
+                      if (event.ctrlKey || event.metaKey) {
+                        anchorRef.current = item.id;
+                        toggleOne(item.id);
+                      } else {
+                        anchorRef.current = item.id;
+                        selectOnly(item.id);
+                      }
                     }}
                     onDoubleClick={() => {
                       // A drag that ends on a row would otherwise count as the
