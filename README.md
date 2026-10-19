@@ -30,7 +30,9 @@ The interface is available in **English and Spanish**. The application is curren
 
 - List and calendar views for tasks and events.
 - Quick Add understands phrases such as `Pagar el agua cada 30 días` and `Ir al super el 15 de cada mes`.
+- The date and the time can be written in any order, in English or Spanish: `Llamar mañana a las 9`, `Dentist 3pm tomorrow` and `Llamar a las 10 mañana` all land on the day and the hour you mean.
 - Daily, weekly, monthly, and yearly recurrence, including local date and time parsing.
+- Monthly and yearly repetitions keep their calendar day, so a series created on the 31st returns to the 31st.
 - Importance, groups, colors, notes, all-day events, and configurable reminders.
 - Friendly overdue durations and resizable table columns with persisted widths.
 
@@ -56,11 +58,14 @@ The interface is available in **English and Spanish**. The application is curren
 ### Data and experience
 
 - CSV and ICS import and export with validation feedback.
+- A damaged local database is recovered from the newest usable copy, and the damaged file is kept aside instead of being thrown away.
+- The local database records its own version, so a future update can add fields without breaking an existing installation.
 - Dark, gray, and light themes, with a lower-contrast dark theme.
 - Settings panel organized as a drawer with icon navigation and section headings.
 - About dialog with the version, system information, and a one-click diagnostics copy.
 - Styled tooltips for explanatory and truncated content.
-- English and Spanish context menus for editable fields.
+- English and Spanish context menus for editable fields, usable with the keyboard.
+- Dialogs keep the focus while they are open and give it back when they close.
 - Keyboard-friendly controls, including resizable table columns.
 
 ## Download
@@ -143,7 +148,7 @@ CyberGo uses **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js**
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+K` | Open or close the command palette |
+| `Ctrl+K` | Open the command palette |
 | `Alt+Shift+G` | Quick capture from anywhere in Windows |
 | `Enter` | Open or confirm the focused action |
 | `Escape` | Close the current modal or cancel the current action |

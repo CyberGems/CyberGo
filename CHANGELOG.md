@@ -2,6 +2,52 @@
 
 ## Unreleased
 
+### Fixed
+
+- Escape inside the date picker now closes only the picker. It used to close the whole item editor and discard the draft.
+- Enter on a dropdown no longer saves the item. The dropdown opens as expected.
+- Monthly repetitions keep the day of the month they were created on. A January 31 event used to settle on the 28th of February and stay there.
+- Yearly repetitions keep their calendar month. A February 29 event used to drift to March 1.
+- Quick Add understands the date and the time wherever they appear. "Llamar a las 10 mañana" no longer leaves "a las 10" in the title, and the hour is no longer lost.
+- Quick Add no longer reads "on Monday" as a weekly repetition. It is a single appointment.
+- Quick Add keeps the meaning of "today". "hoy a las 3" no longer jumps to tomorrow at 3 in the morning.
+- Quick Add uses the same hour for the same phrase, whether or not a day is mentioned.
+- A malformed calendar event no longer cancels the whole import. The rest of the file is imported and the problem is reported.
+- A spreadsheet formula typed in a title is no longer executed when the exported CSV is opened.
+- A calendar file with a time zone, a duration or a repetition limit is imported with those values.
+- A reminder no longer fires twice when two checks overlap.
+- A reminder no longer appears while the app is locked in hard mode.
+- A database file that is damaged no longer stops the app from starting. The newest usable copy is restored, and the damaged file is kept aside instead of being deleted.
+- Restoring a copy can no longer leave the app unusable. The copy is staged before it replaces anything.
+- A failed sign-in attempt no longer clears the lockout when the app restarts.
+- A damaged password record no longer unlocks the app with any password.
+- The quick capture no longer loses what you wrote when the save fails.
+- Importing a file no longer creates the same group twice.
+- A monthly repetition now follows the start date when you move it.
+- A decimal time such as `3.30pm` is read as a time and no longer swallows the title.
+- A reminder that could not be shown is able to fire again instead of staying silent.
+- A database from a newer build is left exactly as it is instead of being rewritten.
+- The focus returns to the date button when the calendar closes.
+
+### Improved
+
+- The database is written once per burst of changes instead of once per change. Importing a large file and dragging the window are noticeably faster.
+- The database now records its own version, so a future update can add columns without breaking existing installations.
+- Passwords and PINs are hashed with a native function instead of a slow JavaScript one, so unlocking no longer freezes the interface. Existing codes keep working.
+- The item list is indexed, and the settings are read in a single query.
+- Every value that crosses the bridge between the interface and the local process is checked before it is used.
+- The interface is no longer able to navigate the application window away from the app, and a content policy is now in force.
+- The window cannot be opened over a remote page, and pasting from the context menu now works and reports a failure instead of doing nothing.
+- The item editor, the command palette and the confirmation dialog behave like real dialogs: they keep the focus, trap it, and give it back when they close.
+- The context menu can be used with the keyboard, including the date fields.
+- Controls that only show an icon now announce what they do, and every string still exists in English and Spanish.
+- The reminder list and the table rows use valid ARIA, and the table no longer writes to storage on every mouse movement.
+
+### Added
+
+- The interface recovers from an unexpected error instead of showing a blank window.
+- A notice appears when the local data had to be recovered.
+
 ## 0.1.0-alpha.2 - 2026-10-19
 
 Second public pre-release of CyberGo. The reminder window is now a complete workspace, the settings panel was reworked, and the app finally has an About dialog, a wiki and a public source page.
