@@ -150,13 +150,26 @@ export function afterDismiss(item: Item): Pick<Item, 'occurrenceAt' | 'nextFireA
   if (!item.recurrence || !item.occurrenceAt) return cleared;
   const next = nextDate(new Date(item.occurrenceAt), item.recurrence);
   if (!next) return cleared;
-  const fire = new Date(next.getTime() - Math.max(0, item.remindMinutes) * 60_000);
   return {
     occurrenceAt: next.toISOString(),
-    nextFireAt: fire.toISOString(),
+    nextFireAt: fireTimeFor(next.toISOString(), item.remindMinutes),
     snoozeUntil: null,
     alertKey: null,
   };
+}
+
+/**
+ * The moment the alert of an occurrence has to fire.
+ *
+ * The fire time follows the occurrence, not the start of the series, so a
+ * series that already advanced keeps its own schedule.
+ */
+export function fireTimeFor(occurrenceIso: string | null, remindMinutes: number): string | null {
+  if (!occurrenceIso) return null;
+  const at = new Date(occurrenceIso);
+  if (Number.isNaN(at.getTime())) return null;
+  const minutes = Math.max(0, Math.floor(remindMinutes || 0));
+  return new Date(at.getTime() - minutes * 60_000).toISOString();
 }
 
 export function snoozeUntilFromNow(minutes: number, now = new Date()): string {

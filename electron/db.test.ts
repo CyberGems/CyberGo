@@ -544,3 +544,57 @@ test('a database from a newer build is left untouched', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('changing only the reminder keeps the occurrence the series had reached', async () => {
+  const dir = tempDir();
+  const database = path.join(dir, 'cybergo.db');
+
+  try {
+    await db.initDatabase(database, wasm, 'en');
+    const item = db.saveItem({
+      kind: 'event',
+      title: 'Reunion mensual',
+      notes: '',
+      allDay: false,
+      startLocal: '2026-01-05T10:00',
+      endLocal: null,
+      importance: 'normal',
+      color: '',
+      groupId: null,
+      recurrence: { freq: 'monthly', interval: 1, until: null, dayOfMonth: 5 },
+      remindMinutes: 15,
+    });
+
+    // The first occurrence is dismissed, so the series moves to February.
+    db.dismissItem(item.id);
+    const advanced = db.listItems()[0];
+    assert.equal(advanced.occurrenceAt, new Date(2026, 1, 5, 10, 0, 0, 0).toISOString());
+
+    // Only the reminder offset changes. The series must stay on February,
+    // otherwise it would go back to January and fire for a moment that has
+    // already passed.
+    db.saveItem({
+      id: item.id,
+      kind: 'event',
+      title: 'Reunion mensual',
+      notes: '',
+      allDay: false,
+      startLocal: '2026-01-05T10:00',
+      endLocal: null,
+      importance: 'normal',
+      color: '',
+      groupId: null,
+      recurrence: { freq: 'monthly', interval: 1, until: null, dayOfMonth: 5 },
+      remindMinutes: 30,
+    });
+
+    const updated = db.listItems()[0];
+    assert.equal(updated.occurrenceAt, advanced.occurrenceAt);
+    // The alert moves with the new offset, half an hour before the same
+    // occurrence.
+    assert.equal(updated.nextFireAt, new Date(2026, 1, 5, 9, 30, 0, 0).toISOString());
+  } finally {
+    db.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

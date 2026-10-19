@@ -6,6 +6,7 @@ import {
   afterDismiss,
   buildSchedule,
   fireKey,
+  fireTimeFor,
   normalizeRecurrence,
   parseLocal,
   snoozeUntilFromNow,
@@ -819,10 +820,21 @@ function writeSchedule(id: string, draft: ItemDraft, keepAlert: boolean) {
     return;
   }
   const prev = mapItem(existing);
+  const remind = Math.max(0, draft.remindMinutes || 0);
+  // Changing the reminder offset only moves the alert. The series keeps the
+  // occurrence it had reached, otherwise a series that had already advanced
+  // would jump back to its first date and fire for a moment that has passed.
   const scheduleChanged = prev.startAt !== schedule.startAt
-    || prev.remindMinutes !== Math.max(0, draft.remindMinutes || 0)
     || JSON.stringify(prev.recurrence) !== recurrenceJson
     || prev.allDay !== draft.allDay;
+  const occurrenceAt = scheduleChanged ? schedule.occurrenceAt : prev.occurrenceAt;
+  // A dismissed occurrence stays dismissed, it only waits for the next one.
+  const dismissed = prev.alertKey === 'dismissed' && !prev.snoozeUntil;
+  const nextFireAt = scheduleChanged
+    ? schedule.nextFireAt
+    : dismissed
+      ? prev.nextFireAt
+      : fireTimeFor(occurrenceAt, remind);
   db.run(
     `UPDATE items SET
       kind = ?, title = ?, notes = ?, all_day = ?, start_at = ?, end_at = ?, importance = ?,
@@ -832,9 +844,9 @@ function writeSchedule(id: string, draft: ItemDraft, keepAlert: boolean) {
     [
       draft.kind, draft.title.trim(), draft.notes ?? '', draft.allDay ? 1 : 0,
       schedule.startAt, schedule.endAt, draft.importance, draft.color || '', draft.groupId,
-      recurrenceJson, recurrenceDay, Math.max(0, draft.remindMinutes || 0),
-      scheduleChanged ? schedule.occurrenceAt : prev.occurrenceAt,
-      scheduleChanged ? schedule.nextFireAt : prev.nextFireAt,
+      recurrenceJson, recurrenceDay, remind,
+      occurrenceAt,
+      nextFireAt,
       scheduleChanged ? null : prev.snoozeUntil,
       scheduleChanged || !keepAlert ? null : prev.alertKey,
       now, id,
