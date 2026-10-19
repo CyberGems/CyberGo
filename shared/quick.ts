@@ -141,7 +141,10 @@ interface DayFragment {
 function extractDay(rest: string): DayFragment | null {
   const two = consume(rest, String.raw`\b(?:pasado\s+ma[nñ]ana|day\s+after\s+tomorrow)\b`);
   if (two) return { rest: two.rest, day: { kind: 'offset', days: 2 } };
-  const one = consume(rest, String.raw`\b(?<!\bde\s)(?<!\bpor\s)(?:la\s+ma[nñ]ana|ma[nñ]ana|tomorrow)\b`);
+  // "esta mañana" is this morning, not tomorrow.
+  const morning = consume(rest, String.raw`\besta\s+ma[nñ]ana\b`);
+  if (morning) return { rest: morning.rest, day: { kind: 'fixed', hour: 9, minute: 0 } };
+  const one = consume(rest, String.raw`\b(?<!\bde\s)(?<!\bpor\s)(?<!esta\s)(?:la\s+ma[nñ]ana|ma[nñ]ana|tomorrow)\b`);
   if (one) return { rest: one.rest, day: { kind: 'offset', days: 1 } };
   const zero = consume(rest, String.raw`\b(?:hoy|today)\b`);
   if (zero) return { rest: zero.rest, day: { kind: 'offset', days: 0 } };
@@ -312,11 +315,17 @@ function parseRecurrence(rest: string, now: Date): RecurrenceMatch | null {
   } else {
     const count = Math.max(1, numberValue(interval!.match[1]) ?? 1);
     const base: Recurrence = { freq: unit!, interval: count, until: until?.until ?? null };
-    const first = nextDate(now, base) ?? addDays(now, count);
+    // The anchor is the day the user asked for, not the day the first
+    // occurrence had to be shortened to. A series created on the 31st keeps
+    // the 31st, instead of settling on the 28th of a shorter month.
+    const anchored: Recurrence = base.freq === 'monthly' || base.freq === 'yearly'
+      ? { ...base, dayOfMonth: now.getDate() }
+      : base;
+    const first = nextDate(now, anchored) ?? addDays(now, count);
     start = at(first, hour, minute);
-    // A monthly rule always keeps the calendar day it lands on.
-    recurrence = base.freq === 'monthly'
-      ? (normalizeRecurrence(base, formatLocalInput(start)) ?? base)
+    // Only the monthly and the yearly rules carry a day anchor.
+    recurrence = base.freq === 'monthly' || base.freq === 'yearly'
+      ? (normalizeRecurrence(anchored, formatLocalInput(start)) ?? anchored)
       : base;
   }
   return { rest: remaining, recurrence, start };

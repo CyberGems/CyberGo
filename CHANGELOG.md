@@ -8,6 +8,8 @@
 - The command palette no longer opens on top of an open dialog, where the two fought over the keyboard and the focus.
 - Changing only the reminder of a repeating item no longer sends the series back to its first date, which made it fire for a moment that had already passed.
 - A damaged database file is now kept aside even when the data is recovered from a backup. The recovered copy used to replace it, and the original bytes were lost.
+- Quick Add keeps the day a monthly or yearly series was created on. "Cada mes" on the 31st used to settle on the 28th of a shorter month, and "cada año" lost the leap day.
+- "Esta mañana" is read as this morning instead of tomorrow, and the word no longer stays in the title.
 
 ## 0.1.0-alpha.3 - 2026-10-19
 

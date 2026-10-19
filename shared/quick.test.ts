@@ -358,3 +358,40 @@ test('the words around a monthly day stay out of the title', () => {
   assert.equal(english.title, 'Meeting');
   assert.equal(english.recurrence?.dayOfMonth, 15);
 });
+
+test('a monthly repetition keeps the day it was created on', () => {
+  // The 31st of January has no counterpart in February, but the series has
+  // to come back to the 31st instead of settling on the 28th.
+  const lastDay = new Date(2026, 0, 31, 10, 0, 0);
+  const monthly = parseQuick('Reunion cada mes', lastDay);
+  assert.equal(monthly.recurrence?.freq, 'monthly');
+  assert.equal(monthly.recurrence?.dayOfMonth, 31);
+  // The first occurrence is the shortened one, the 28th of February.
+  assert.equal(stamp(monthly.start), '2026-02-28 09:00');
+});
+
+test('a yearly repetition keeps the day it was created on', () => {
+  // The 29th of February only happens every four years, and the series has
+  // to come back to it.
+  const leapDay = new Date(2028, 1, 29, 10, 0, 0);
+  const yearly = parseQuick('Cumple cada año', leapDay);
+  assert.equal(yearly.recurrence?.freq, 'yearly');
+  assert.equal(yearly.recurrence?.dayOfMonth, 29);
+  // 2029 is not a leap year, so the first occurrence is the 28th.
+  assert.equal(stamp(yearly.start), '2029-02-28 09:00');
+});
+
+test('"this morning" is this morning and not tomorrow', () => {
+  const morning = parseQuick('Reunion esta mañana', now);
+  assert.equal(morning.title, 'Reunion');
+  assert.equal(stamp(morning.start), '2026-09-26 09:00');
+
+  const withTime = parseQuick('Reunion esta mañana a las 11', now);
+  assert.equal(withTime.title, 'Reunion');
+  assert.equal(stamp(withTime.start), '2026-09-26 11:00');
+
+  // A plain "mañana" still means tomorrow.
+  const tomorrow = parseQuick('Reunion mañana', now);
+  assert.equal(tomorrow.title, 'Reunion');
+  assert.equal(stamp(tomorrow.start), '2026-09-27 09:00');
+});
