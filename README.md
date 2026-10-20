@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.3"><img src="https://img.shields.io/badge/Download%20pre--release-0.1.0--alpha.3-0891B2?style=for-the-badge" alt="Download CyberGo 0.1.0-alpha.3" /></a>
+  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.4"><img src="https://img.shields.io/badge/Download%20pre--release-0.1.0--alpha.4-0891B2?style=for-the-badge" alt="Download CyberGo 0.1.0-alpha.4" /></a>
   <a href="https://github.com/CyberGems/CyberGo/releases"><img src="https://img.shields.io/badge/All%20releases-30363D?style=for-the-badge&logo=github&logoColor=white" alt="All releases" /></a>
 </p>
 
@@ -39,13 +39,17 @@ The interface is available in **English and Spanish**. The application is curren
 ### Notifications
 
 - Dedicated reminder window with snooze, dismiss, open-item, and sound actions.
-- Urgency states on every row, with overdue items listed first and due phrases refreshed live.
+- Reminders are grouped by day: overdue, today, tomorrow, this week and later.
+- A quick filter shows all of them, the overdue ones, the tasks, or the events.
+- Every row carries its data in one line, and the color says how late a reminder is.
 - Per-row quick actions: snooze ten minutes, mark a task as done, and dismiss.
-- Multi-selection with Ctrl+click, plus a compact inspector for the selected item.
-- Full keyboard navigation: arrows to move, Enter to open, Delete to dismiss, Ctrl+A to select all.
+- Multi-selection with Ctrl+click, by dragging a rectangle over the rows, or with Shift and the arrow keys.
+- A "select all" button, and actions that work on the whole selection.
+- Full keyboard navigation: arrows to move, Space to mark, Enter to open, Delete to dismiss, Ctrl+A to select all.
 - Optional always-on-top behavior.
 - Monitor selection, active-monitor mode, position selection, and a demo preview.
 - Main window bounds are remembered and restored on the last available monitor.
+- The reminder window remembers the size you give it.
 
 ### Security and privacy
 
@@ -70,7 +74,7 @@ The interface is available in **English and Spanish**. The application is curren
 
 ## Download
 
-Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.3).
+Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.4).
 
 The alpha installers are unsigned Windows executables. Windows SmartScreen may display a warning because the file does not yet have code-signing reputation. You can inspect the source, compare the SHA-256 value published with the release, or build the installer yourself.
 
