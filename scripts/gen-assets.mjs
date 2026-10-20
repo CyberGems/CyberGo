@@ -1,3 +1,9 @@
+/**
+ * Generates the assets that are not the icon of the application.
+ *
+ * The icon itself is a tracked file, public/icon.png, and the tray icon is
+ * derived from it, so both always show the same drawing.
+ */
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
@@ -26,60 +32,124 @@ function chunk(type, data) {
   return Buffer.concat([len, body, crc]);
 }
 
-function pngIcon(size) {
-  const raw = Buffer.alloc((size * 4 + 1) * size);
-  const mix = (a, b, amount) => Math.round(a + (b - a) * amount);
-  const distanceToSegment = (px, py, x1, y1, x2, y2) => {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const length = dx * dx + dy * dy;
-    const t = length ? Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / length)) : 0;
-    const x = x1 + t * dx;
-    const y = y1 + t * dy;
-    return Math.hypot(px - x, py - y);
-  };
-  const roundedBoxDistance = (px, py, width, height, radius) => {
-    const qx = Math.abs(px - 0.5) - width / 2 + radius;
-    const qy = Math.abs(py - 0.5) - height / 2 + radius;
-    return Math.min(Math.max(qx, qy), 0) + Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) - radius;
-  };
-  let o = 0;
-  for (let y = 0; y < size; y++) {
-    raw[o++] = 0;
-    for (let x = 0; x < size; x++) {
-      const px = (x + 0.5) / size;
-      const py = (y + 0.5) / size;
-      const box = roundedBoxDistance(px, py, 0.82, 0.82, 0.17);
-      let color = [22, 27, 38];
-      let alpha = box <= 0 ? 1 : Math.max(0, Math.min(1, 1 - box * size / 1.4));
-      if (box <= 0) {
-        const shade = Math.min(1, Math.max(0, (px + py - 0.22) * 0.62));
-        color = [mix(27, 49, shade), mix(32, 39, shade), mix(45, 76, shade)];
-        if (box > -0.018) {
-          const edge = Math.max(0, Math.min(1, (box + 0.018) / 0.018));
-          color = [mix(86, color[0], edge), mix(91, color[1], edge), mix(145, color[2], edge)];
-        }
-
-        const ring = Math.abs(Math.hypot(px - 0.5, py - 0.5) - 0.275);
-        if (ring < 0.032) {
-          const ringColor = px + py < 1 ? [165, 158, 240] : [86, 190, 210];
-          const ringAmount = Math.max(0, Math.min(1, (0.032 - ring) * size / 2.2));
-          color = color.map((value, index) => mix(value, ringColor[index], ringAmount));
-        }
-
-        const handOne = distanceToSegment(px, py, 0.5, 0.5, 0.5, 0.335);
-        const handTwo = distanceToSegment(px, py, 0.5, 0.5, 0.625, 0.5);
-        if (Math.min(handOne, handTwo) < 0.028) color = [236, 238, 245];
-        if (Math.hypot(px - 0.5, py - 0.5) < 0.045) color = [236, 238, 245];
-
-        const dot = Math.hypot(px - 0.725, py - 0.27);
-        if (dot < 0.045) color = [76, 194, 215];
-      }
-      raw[o++] = color[0];
-      raw[o++] = color[1];
-      raw[o++] = color[2];
-      raw[o++] = Math.round(255 * alpha);
+/** Reads a PNG of eight bits per channel and returns its pixels. */
+function readPng(buffer) {
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  if (!buffer.subarray(0, 8).equals(signature)) throw new Error('not a PNG file');
+  let width = 0;
+  let height = 0;
+  let colorType = 6;
+  let interlace = 0;
+  const parts = [];
+  let offset = 8;
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.toString('ascii', offset + 4, offset + 8);
+    const data = buffer.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      if (data[8] !== 8) throw new Error('the icon must have eight bits per channel');
+      colorType = data[9];
+      interlace = data[12];
+    } else if (type === 'IDAT') {
+      parts.push(data);
+    } else if (type === 'IEND') {
+      break;
     }
+    offset += 12 + length;
+  }
+  if (interlace !== 0) throw new Error('an interlaced icon cannot be read');
+  if (colorType !== 6 && colorType !== 2) throw new Error(`the icon has an unexpected color type: ${colorType}`);
+  const channels = colorType === 6 ? 4 : 3;
+  const raw = zlib.inflateSync(Buffer.concat(parts));
+  const stride = width * channels;
+  const pixels = Buffer.alloc(height * stride);
+  let previous = Buffer.alloc(stride);
+  let source = 0;
+  for (let y = 0; y < height; y++) {
+    const filter = raw[source++];
+    const line = Buffer.from(raw.subarray(source, source + stride));
+    source += stride;
+    for (let x = 0; x < stride; x++) {
+      const left = x >= channels ? line[x - channels] : 0;
+      const up = previous[x];
+      const upLeft = x >= channels ? previous[x - channels] : 0;
+      if (filter === 1) line[x] = (line[x] + left) & 0xff;
+      else if (filter === 2) line[x] = (line[x] + up) & 0xff;
+      else if (filter === 3) line[x] = (line[x] + Math.floor((left + up) / 2)) & 0xff;
+      else if (filter === 4) {
+        const p = left + up - upLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - up);
+        const pc = Math.abs(p - upLeft);
+        const nearest = pa <= pb && pa <= pc ? left : pb <= pc ? up : upLeft;
+        line[x] = (line[x] + nearest) & 0xff;
+      } else if (filter !== 0) {
+        throw new Error(`the icon uses an unknown filter: ${filter}`);
+      }
+    }
+    line.copy(pixels, y * stride);
+    previous = line;
+  }
+  if (channels === 4) return { width, height, pixels };
+  // The pixels without an alpha channel are opaque.
+  const rgba = Buffer.alloc(width * height * 4);
+  for (let i = 0; i < width * height; i++) {
+    rgba[i * 4] = pixels[i * 3];
+    rgba[i * 4 + 1] = pixels[i * 3 + 1];
+    rgba[i * 4 + 2] = pixels[i * 3 + 2];
+    rgba[i * 4 + 3] = 255;
+  }
+  return { width, height, pixels: rgba };
+}
+
+/**
+ * Reduces an image with a box filter, so every pixel is the average of the
+ * ones it covers.
+ */
+function resize(image, size) {
+  const out = Buffer.alloc(size * size * 4);
+  const ratio = image.width / size;
+  for (let y = 0; y < size; y++) {
+    const from = Math.floor(y * ratio);
+    const to = Math.max(from + 1, Math.floor((y + 1) * ratio));
+    for (let x = 0; x < size; x++) {
+      const left = Math.floor(x * ratio);
+      const right = Math.max(left + 1, Math.floor((x + 1) * ratio));
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      let count = 0;
+      for (let sy = from; sy < to; sy++) {
+        for (let sx = left; sx < right; sx++) {
+          const index = (sy * image.width + sx) * 4;
+          const alpha = image.pixels[index + 3] / 255;
+          r += image.pixels[index] * alpha;
+          g += image.pixels[index + 1] * alpha;
+          b += image.pixels[index + 2] * alpha;
+          a += image.pixels[index + 3];
+          count += 1;
+        }
+      }
+      const target = (y * size + x) * 4;
+      const weight = a / 255;
+      out[target] = weight ? Math.round(r / weight) : 0;
+      out[target + 1] = weight ? Math.round(g / weight) : 0;
+      out[target + 2] = weight ? Math.round(b / weight) : 0;
+      out[target + 3] = Math.round(a / count);
+    }
+  }
+  return out;
+}
+
+function encodePng(size, rgba) {
+  const raw = Buffer.alloc((size * 4 + 1) * size);
+  for (let y = 0; y < size; y++) {
+    const start = y * (size * 4 + 1);
+    raw[start] = 0;
+    rgba.copy(raw, start + 1, y * size * 4, (y + 1) * size * 4);
   }
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(size, 0);
@@ -95,8 +165,10 @@ function pngIcon(size) {
   ]);
 }
 
-fs.writeFileSync(path.join(pub, 'icon.png'), pngIcon(256));
-fs.writeFileSync(path.join(pub, 'tray.png'), pngIcon(32));
+const icon = readPng(fs.readFileSync(path.join(pub, 'icon.png')));
+// The tray icon is the same drawing at the size Windows asks for.
+fs.writeFileSync(path.join(pub, 'tray.png'), encodePng(32, resize(icon, 32)));
+console.log(`tray icon written from the ${icon.width}x${icon.height} icon`);
 
 const rate = 44100;
 const seconds = 1.02;

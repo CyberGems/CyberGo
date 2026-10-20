@@ -117,7 +117,7 @@ npm run dev
 | `npm run build` | Build the production renderer and Electron bundles |
 | `npm run build:electron` | Run electron-builder with the default output directory |
 | `npm run release:pre` | Run validation and build a versioned Windows NSIS installer |
-| `npm run assets` | Regenerate the provisional app assets |
+| `npm run assets` | Regenerate the tray icon and the notification sound |
 
 `npm run release:pre` places artifacts in a unique temporary directory. The command prints the exact path when it finishes.
 
@@ -175,7 +175,7 @@ Inside the reminder window:
 - This is an alpha pre-release. Features and data formats may change.
 - Keep a recent backup before importing or upgrading.
 - The installer is not digitally signed yet.
-- The provisional icon and visual identity may change before the first stable release.
+- The visual identity is not finished yet, so the icon and the colors may still change before the first stable release.
 - Bug reports and suggestions are welcome through [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
 
 ## License
