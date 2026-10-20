@@ -187,25 +187,30 @@ body.pointer-reset .settings-header-close:hover {
   opacity: 0.38;
   box-shadow: none;
 }
+/* The hint of a key, the way the rest of the suite shows it. */
 .key-hint {
-  margin-left: 8px;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  font-family: inherit;
-  line-height: 15px;
-  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  padding: 2px 5px;
   border-radius: 4px;
-  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
-  opacity: 0.55;
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: inherit;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  opacity: 0.85;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 .key-enter {
-  width: 13px;
-  height: 13px;
-  margin-left: 7px;
-  opacity: 0.62;
+  width: 9px;
+  height: 9px;
   display: block;
-  flex-shrink: 0;
 }
 .btn-danger { background: var(--danger-dim); color: var(--danger); }
 .btn-danger:hover { background: var(--danger); color: white; }
@@ -1822,6 +1827,8 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   align-items: center;
   justify-content: center;
 }
+/* The bell rings every 4.5 seconds and the waves go out twice in that
+   time, so the sound is read instead of only noticed. */
 .login-logo-wave {
   position: absolute;
   inset: 0;
@@ -1829,26 +1836,24 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   border: 1.5px solid color-mix(in srgb, var(--accent-light) 70%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--accent-glow) 90%, transparent);
   opacity: 0;
-  animation: login-wave 3s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation: login-wave 2.25s cubic-bezier(0.16, 1, 0.3, 1) infinite;
 }
-.login-logo-wave:nth-of-type(2) { animation-delay: 1s; }
-.login-logo-wave:nth-of-type(3) { animation-delay: 2s; }
+.login-logo-wave:nth-of-type(2) { animation-delay: 1.125s; }
 @keyframes login-wave {
   0% { transform: scale(0.62); opacity: 0; }
-  12% { opacity: 0.65; }
-  70% { opacity: 0; }
+  5% { opacity: 0.6; }
   100% { transform: scale(1.24); opacity: 0; }
 }
 .login-logo-image {
   width: 56px;
   height: 56px;
   display: block;
-  animation: login-logo-pulse 3s ease-in-out infinite;
+  animation: login-logo-pulse 4.5s ease-in-out infinite;
 }
 @keyframes login-logo-pulse {
   0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
-  8% { transform: scale(1.04); filter: drop-shadow(0 0 20px var(--accent-glow)); }
-  30% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
+  5% { transform: scale(1.04); filter: drop-shadow(0 0 20px var(--accent-glow)); }
+  22% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
 }
 .login-title {
   margin: 0;
@@ -1990,7 +1995,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   padding: 10px;
   font-size: 14px;
   font-weight: 600;
-  gap: 8px;
+  gap: 7px;
   background: linear-gradient(135deg, var(--accent), var(--accent-light));
   color: var(--text-on-accent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-light) 35%, transparent), 0 0 18px var(--accent-glow);
@@ -2004,24 +2009,6 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .login-submit:disabled { opacity: 0.68; box-shadow: none; transform: none; }
 .login-verifying { opacity: 0.7; }
 /* The hint of a key, the way the rest of the suite shows it. */
-.login-key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 6px;
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  color: inherit;
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-  opacity: 0.85;
-  flex-shrink: 0;
-}
-.login-key svg { width: 10px; height: 10px; display: block; }
 .login-actions { display: flex; justify-content: center; min-height: 28px; }
 .login-link {
   display: inline-flex;

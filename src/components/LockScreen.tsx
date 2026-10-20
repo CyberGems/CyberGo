@@ -1,32 +1,18 @@
-import { FormEvent, useEffect, useRef, useState, type ReactNode } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, KeyRound, Lock } from 'lucide-react';
 import type { AuthMethod, Lang } from '@shared/types';
 import type { Copy } from '../i18n';
 import TitleBar from './TitleBar';
 import Tooltip from './Tooltip';
 import { useFocusTrap } from './Dialog';
-import { useModalKeys } from './ModalKeys';
+import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import WelcomeGreeting from './WelcomeGreeting';
 
 function digits(value: string) {
   return value.replace(/\D/g, '').slice(0, 8);
 }
 
-/** The hint of a key, the way the rest of the suite shows it. */
-function KeyHint({ children }: { children: ReactNode }) {
-  return <kbd className="login-key">{children}</kbd>;
-}
 
-/** The glyph of the Enter key. */
-function EnterHint() {
-  return (
-    <KeyHint>
-      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path d="M2 10.5 L7 5.2 L4.8 9 L14.6 9 L14.6 2.5 L17.4 2.5 L17.4 9 A2.8 2.8 0 0 1 14.6 11.8 L4.8 11.8 L7 15.8 Z" fill="currentColor" stroke="none" />
-      </svg>
-    </KeyHint>
-  );
-}
 
 /**
  * The lock of the application.
@@ -122,6 +108,13 @@ export default function LockScreen({
     }
   }
 
+  // After a failed attempt the field takes the focus back, so the secret can
+  // be corrected without reaching for the mouse.
+  useEffect(() => {
+    if (!error) return;
+    loginRef.current?.focus();
+  }, [error]);
+
   useModalKeys(mode !== 'login', {
     esc: () => { setMode('login'); setError(''); },
   });
@@ -134,7 +127,6 @@ export default function LockScreen({
       aria-label={copy.loginTitle}
     >
       <div className="login-logo">
-        <span className="login-logo-wave" aria-hidden="true" />
         <span className="login-logo-wave" aria-hidden="true" />
         <span className="login-logo-wave" aria-hidden="true" />
         <img className="login-logo-image" src="/icon.png" alt="" />
@@ -167,7 +159,6 @@ export default function LockScreen({
                   placeholder={pin ? copy.authPin : copy.password}
                   onChange={(e) => setPassword(pin ? digits(e.target.value) : e.target.value)}
                   style={pin ? undefined : { textAlign: 'left' }}
-                  disabled={loading}
                 />
                 <Tooltip label={showPassword ? copy.hidePassword : copy.showPassword} placement="top">
                   <button
@@ -233,8 +224,8 @@ export default function LockScreen({
           {loading
             ? <span className="login-verifying">{copy.verifying}</span>
             : mode === 'login'
-              ? <><Lock size={15} />{copy.unlock}<EnterHint /></>
-              : <>{copy.useRecovery}<EnterHint /></>}
+              ? <><Lock size={15} />{copy.unlock}<EnterGlyph /></>
+              : <>{copy.useRecovery}<EnterGlyph /></>}
         </button>
       )}
 
@@ -247,7 +238,7 @@ export default function LockScreen({
         )}
         {mode !== 'login' && (
           <button type="button" className="login-link" onClick={() => { setMode('login'); setError(''); }}>
-            {copy.back}<KeyHint>Esc</KeyHint>
+            {copy.back}<EscHint />
           </button>
         )}
       </div>

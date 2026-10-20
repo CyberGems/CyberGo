@@ -82,8 +82,10 @@ export function EscHint() {
 
 export function EnterGlyph() {
   return (
-    <svg className="key-enter" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M1.6 8.2 L5.6 4.2 L4.1 7.1 L11.4 7.1 L11.4 2.2 L13.6 2.2 L13.6 7.1 A2.2 2.2 0 0 1 11.4 9.3 L4.1 9.3 L5.6 12.2 Z" fill="currentColor" />
-    </svg>
+    <kbd className="key-hint">
+      <svg className="key-enter" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M2 10.5 L7 5.2 L4.8 9 L14.6 9 L14.6 2.5 L17.4 2.5 L17.4 9 A2.8 2.8 0 0 1 14.6 11.8 L4.8 11.8 L7 15.8 Z" fill="currentColor" stroke="none" />
+      </svg>
+    </kbd>
   );
 }
