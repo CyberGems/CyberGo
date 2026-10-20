@@ -1707,8 +1707,15 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 
 /* Login surface */
 .login-app .titlebar {
-  background: color-mix(in srgb, var(--bg-app) 72%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--border) 52%, transparent);
+  /* The bar floats over the body, so the background of the screen runs to
+     the top edge and the two read as one surface. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  background: transparent;
+  border-bottom-color: transparent;
 }
 
 /* The lock follows the design of the other apps of the suite. */
@@ -1805,7 +1812,8 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   35% { transform: translateX(-5px); }
   70% { transform: translateX(5px); }
 }
-/* The icon, with the ring that turns behind it. */
+
+/* The icon, with the waves of sound that grow behind it. */
 .login-logo {
   position: relative;
   width: 84px;
@@ -1814,37 +1822,33 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   align-items: center;
   justify-content: center;
 }
-.login-logo-halo {
+.login-logo-wave {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  pointer-events: none;
-  background: conic-gradient(from 0deg,
-    transparent 0deg,
-    color-mix(in srgb, var(--accent-light) 60%, transparent) 55deg,
-    transparent 125deg,
-    transparent 195deg,
-    color-mix(in srgb, var(--accent) 40%, transparent) 255deg,
-    transparent 320deg);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
-  filter: drop-shadow(0 0 6px var(--accent-glow));
-  animation: login-conic-spin 24s linear infinite;
-  opacity: 0.85;
+  border: 1.5px solid color-mix(in srgb, var(--accent-light) 70%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-glow) 90%, transparent);
+  opacity: 0;
+  animation: login-wave 3s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.login-logo-wave:nth-of-type(2) { animation-delay: 1s; }
+.login-logo-wave:nth-of-type(3) { animation-delay: 2s; }
+@keyframes login-wave {
+  0% { transform: scale(0.62); opacity: 0; }
+  12% { opacity: 0.65; }
+  70% { opacity: 0; }
+  100% { transform: scale(1.24); opacity: 0; }
 }
 .login-logo-image {
   width: 56px;
   height: 56px;
   display: block;
-  animation: login-logo-pulse 2.8s ease-in-out infinite;
-}
-@keyframes login-conic-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  animation: login-logo-pulse 3s ease-in-out infinite;
 }
 @keyframes login-logo-pulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px var(--accent-glow)); }
-  50% { transform: scale(1.035); filter: drop-shadow(0 0 22px var(--accent-glow)); }
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
+  8% { transform: scale(1.04); filter: drop-shadow(0 0 20px var(--accent-glow)); }
+  30% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
 }
 .login-title {
   margin: 0;
@@ -1986,6 +1990,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   padding: 10px;
   font-size: 14px;
   font-weight: 600;
+  gap: 8px;
   background: linear-gradient(135deg, var(--accent), var(--accent-light));
   color: var(--text-on-accent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-light) 35%, transparent), 0 0 18px var(--accent-glow);
@@ -1998,7 +2003,25 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .login-submit:active:not(:disabled) { transform: translateY(0); }
 .login-submit:disabled { opacity: 0.68; box-shadow: none; transform: none; }
 .login-verifying { opacity: 0.7; }
-.login-enter { opacity: 0.55; display: inline-flex; margin-left: 2px; }
+/* The hint of a key, the way the rest of the suite shows it. */
+.login-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: inherit;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+.login-key svg { width: 10px; height: 10px; display: block; }
 .login-actions { display: flex; justify-content: center; min-height: 28px; }
 .login-link {
   display: inline-flex;
@@ -2042,7 +2065,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 @media (prefers-reduced-motion: reduce) {
   .login-card,
   .login-card.has-error,
-  .login-logo-halo,
+  .login-logo-wave,
   .login-logo-image,
   .login-greeting { animation: none; }
 }

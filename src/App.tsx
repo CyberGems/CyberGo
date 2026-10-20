@@ -251,7 +251,7 @@ function MainApp() {
       <div className="app">
       <TitleBar
         title={<><span>Cyber</span>Go</>}
-        windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, close: copy.closeWindow }}
+        windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
       >
         <div className="toolbar">
           <div className="toolbar-section">

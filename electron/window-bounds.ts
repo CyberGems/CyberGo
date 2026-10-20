@@ -1,7 +1,7 @@
 import type { Display } from 'electron';
 
-export const MAIN_MIN_WIDTH = 900;
-export const MAIN_MIN_HEIGHT = 600;
+export const MAIN_MIN_WIDTH = 840;
+export const MAIN_MIN_HEIGHT = 560;
 
 export interface SavedWindowBounds {
   x?: number | null;

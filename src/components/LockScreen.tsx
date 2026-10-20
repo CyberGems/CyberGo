@@ -1,15 +1,31 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Eye, EyeOff, KeyRound, Lock } from 'lucide-react';
 import type { AuthMethod, Lang } from '@shared/types';
 import type { Copy } from '../i18n';
 import TitleBar from './TitleBar';
 import Tooltip from './Tooltip';
 import { useFocusTrap } from './Dialog';
-import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
+import { useModalKeys } from './ModalKeys';
 import WelcomeGreeting from './WelcomeGreeting';
 
 function digits(value: string) {
   return value.replace(/\D/g, '').slice(0, 8);
+}
+
+/** The hint of a key, the way the rest of the suite shows it. */
+function KeyHint({ children }: { children: ReactNode }) {
+  return <kbd className="login-key">{children}</kbd>;
+}
+
+/** The glyph of the Enter key. */
+function EnterHint() {
+  return (
+    <KeyHint>
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M2 10.5 L7 5.2 L4.8 9 L14.6 9 L14.6 2.5 L17.4 2.5 L17.4 9 A2.8 2.8 0 0 1 14.6 11.8 L4.8 11.8 L7 15.8 Z" fill="currentColor" stroke="none" />
+      </svg>
+    </KeyHint>
+  );
 }
 
 /**
@@ -118,7 +134,9 @@ export default function LockScreen({
       aria-label={copy.loginTitle}
     >
       <div className="login-logo">
-        <div className="login-logo-halo" aria-hidden="true" />
+        <span className="login-logo-wave" aria-hidden="true" />
+        <span className="login-logo-wave" aria-hidden="true" />
+        <span className="login-logo-wave" aria-hidden="true" />
         <img className="login-logo-image" src="/icon.png" alt="" />
       </div>
 
@@ -215,8 +233,8 @@ export default function LockScreen({
           {loading
             ? <span className="login-verifying">{copy.verifying}</span>
             : mode === 'login'
-              ? <><Lock size={15} />{copy.unlock}<span className="login-enter" aria-hidden="true"><EnterGlyph /></span></>
-              : <>{copy.useRecovery}<span className="login-enter" aria-hidden="true"><EnterGlyph /></span></>}
+              ? <><Lock size={15} />{copy.unlock}<EnterHint /></>
+              : <>{copy.useRecovery}<EnterHint /></>}
         </button>
       )}
 
@@ -229,7 +247,7 @@ export default function LockScreen({
         )}
         {mode !== 'login' && (
           <button type="button" className="login-link" onClick={() => { setMode('login'); setError(''); }}>
-            {copy.back}<EscHint />
+            {copy.back}<KeyHint>Esc</KeyHint>
           </button>
         )}
       </div>
@@ -256,7 +274,8 @@ export default function LockScreen({
     <div className="app login-app">
       <TitleBar
         title={<><span>Cyber</span>Go</>}
-        windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, close: copy.closeWindow }}
+        hideBrand
+        windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
       />
       <main className="lock-screen login-screen">
         <div className="login-ambient login-ambient-one" aria-hidden="true" />
