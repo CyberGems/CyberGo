@@ -50,11 +50,32 @@ button { cursor: pointer; }
   flex-shrink: 0;
   -webkit-app-region: drag;
 }
-.drag { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; -webkit-app-region: drag; }
+.drag {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  -webkit-app-region: drag;
+  /* The area that moves the window shows that it can be dragged. */
+  cursor: grab;
+}
+.drag:active { cursor: grabbing; }
 .no-drag, .titlebar button, .titlebar input, .toolbar, .win-controls { -webkit-app-region: no-drag; }
 .brand { font-weight: 600; letter-spacing: 0.01em; font-size: 13px; }
 .brand span { color: var(--accent-light); }
 .grow { flex: 1; }
+/*
+ * Windows keeps the highlighted control of a window that was minimized and
+ * restored. The highlight of the window buttons is cleared while the pointer
+ * is still, and it comes back on its own with the next movement.
+ */
+body.pointer-reset .win-btn:hover,
+body.pointer-reset .settings-header-close:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
 .win-controls { display: flex; align-items: center; -webkit-app-region: no-drag; }
 .win-btn, .icon-btn {
   width: 36px; height: 28px; border: 0; background: transparent; color: var(--text-secondary);
@@ -1279,6 +1300,13 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   color: var(--accent-light);
 }
 .reminder-heading h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.reminder-count.is-overdue {
+  background: var(--danger-dim);
+  color: var(--danger);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
 .reminder-count {
   min-width: 22px;
   height: 20px;
@@ -1312,9 +1340,38 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   flex: 1;
   min-height: 0;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
   padding: 8px 10px 4px;
   background: var(--bg-app);
   cursor: default;
+}
+.reminder-group { display: flex; flex-direction: column; }
+.reminder-group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 5px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reminder-group:first-child .reminder-group-head { padding-top: 2px; }
+.reminder-group-count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.reminder-filter-empty {
+  margin: 24px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
 }
 /* The rectangle that is drawn while several rows are selected by dragging. */
 .reminder-marquee {
@@ -1355,6 +1412,10 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .reminder-row.urgency-overdue::before { background: var(--danger); }
 .reminder-row.urgency-today::before { background: var(--warning); }
 .reminder-row.urgency-future::before { background: var(--accent); }
+/* The longer a reminder waits, the stronger its color. */
+.reminder-row.gravity-1::before { background: color-mix(in srgb, var(--danger) 50%, var(--border-strong)); }
+.reminder-row.gravity-2::before { background: color-mix(in srgb, var(--danger) 76%, var(--border-strong)); }
+.reminder-row.gravity-3::before { background: var(--danger); }
 .reminder-row:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 .reminder-row:hover { background: color-mix(in srgb, var(--bg-surface) 76%, var(--bg-hover)); border-color: var(--border-strong); }
 .reminder-row.selected { background: var(--bg-active); border-color: color-mix(in srgb, var(--accent) 66%, var(--border)); }
@@ -1376,6 +1437,9 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   color: var(--accent-light);
 }
 .reminder-row.urgency-overdue .reminder-row-icon { background: var(--danger-dim); color: var(--danger); }
+.reminder-row.gravity-1 .reminder-row-icon { background: color-mix(in srgb, var(--danger) 10%, transparent); color: color-mix(in srgb, var(--danger) 70%, var(--text-secondary)); }
+.reminder-row.gravity-2 .reminder-row-icon { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger); }
+.reminder-row.gravity-3 .reminder-row-icon { background: color-mix(in srgb, var(--danger) 32%, transparent); color: var(--danger); }
 .reminder-row.urgency-today .reminder-row-icon { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--warning); }
 .reminder-row-title {
   flex: 1 1 auto;
@@ -1392,6 +1456,30 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   font-size: 11px;
   white-space: nowrap;
 }
+.reminder-filters {
+  display: flex;
+  gap: 5px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-app);
+}
+.reminder-filters .chip { padding: 3px 9px; font-size: 11px; }
+/* The summary sits in the room the list leaves free. */
+.reminder-summary {
+  margin-top: auto;
+  padding: 14px 4px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.reminder-summary-line strong { color: var(--text-primary); font-size: 13px; }
+.reminder-summary-overdue { color: var(--danger); }
+.reminder-summary-oldest { margin: 0; font-size: 11px; }
+.reminder-summary-actions { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.reminder-summary-actions .btn { min-height: 28px; padding: 4px 10px; font-size: 12px; }
 .reminder-row.urgency-overdue .reminder-row-due { color: var(--danger); font-weight: 600; }
 .reminder-row.urgency-today .reminder-row-due { color: var(--warning); font-weight: 600; }
 .reminder-row-actions { display: none; align-items: center; gap: 2px; flex-shrink: 0; }

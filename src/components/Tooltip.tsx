@@ -76,10 +76,16 @@ export default function Tooltip({
     window.addEventListener('scroll', hide, true);
     window.addEventListener('wheel', hide, true);
     window.addEventListener('blur', hide);
+    // A window that was minimized and restored comes back with the tooltip
+    // of the control the pointer was on, so it is closed when it comes back.
+    window.addEventListener('focus', hide);
+    document.addEventListener('visibilitychange', hide);
     return () => {
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('wheel', hide, true);
       window.removeEventListener('blur', hide);
+      window.removeEventListener('focus', hide);
+      document.removeEventListener('visibilitychange', hide);
     };
   }, [anchor]);
 

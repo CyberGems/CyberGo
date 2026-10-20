@@ -32,6 +32,18 @@
 - The reminder window shows a short wording of the moment, so the name of the item is not cut off.
 - The keyboard hints of the reminder window moved into a button, so they no longer take a whole line.
 - The reminder window selection can be extended with Shift and the arrow keys, and the focused row can be marked with the space bar.
+- The area that moves the window shows a drag cursor, so it is clear that the window can be moved.
+- The tooltip and the highlighted button of a window no longer stay when the window is minimized and restored.
+- The reminder window remembers the size the user gave it, and opens a little taller than before.
+
+### Added
+
+- The reminders are grouped by day: overdue, today, tomorrow, this week and later.
+- The reminder window has a quick filter for all of them, the overdue ones, the tasks and the events.
+- The header of the reminder window shows how many reminders are overdue.
+- The reminder window can snooze or dismiss every reminder, and the dismissal asks before it does it.
+- The color of a reminder says how late it is: the longer it waits, the stronger the red.
+- The room the list leaves free shows how many reminders there are and which one is the oldest.
 - The state column says "En 3 días" instead of a bare "3".
 - An event that already happened no longer shows as overdue. A task that is late still does, because it still waits to be done.
 - The quick capture no longer keeps an empty row under the presets.

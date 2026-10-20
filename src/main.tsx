@@ -61,6 +61,26 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('CyberGo unhandled promise rejection', event.reason);
 });
 
+/**
+ * Windows keeps the control that was pointed at highlighted when a window is
+ * minimized and restored. The highlight is cleared when the window comes
+ * back, and it is released as soon as the pointer moves, so it never stays
+ * behind and never blocks a click.
+ */
+window.addEventListener('focus', () => {
+  const body = document.body;
+  if (body.classList.contains('pointer-reset')) return;
+  body.classList.add('pointer-reset');
+  let timer = window.setTimeout(release, 1200);
+  function release() {
+    body.classList.remove('pointer-reset');
+    if (timer) window.clearTimeout(timer);
+    timer = 0;
+    window.removeEventListener('mousemove', release);
+  }
+  window.addEventListener('mousemove', release);
+});
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
