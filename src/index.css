@@ -1756,6 +1756,11 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   bottom: 5%;
   background: color-mix(in srgb, var(--accent-light) 50%, #2c8d9d);
 }
+/* The reminder window is small, so its lock does without the brand. */
+.login-card.is-compact { padding: 20px 22px 14px; gap: 12px; }
+.login-card.is-compact .login-intro { margin-top: 0; }
+.login-card.is-compact .login-intro h2 { font-size: 17px; }
+.login-card.is-compact .login-field input { height: 36px; }
 .login-card {
   position: relative;
   width: min(390px, calc(100vw - 32px));

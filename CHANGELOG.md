@@ -8,6 +8,7 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 
 ### Added
 
+- The lock has a third level, **Visible**, which shows the reminders and their content while the app is locked. The **Soft** level now lets the reminder through with its sound, but not its content, and the reminder window shows the lock so the user can unlock it there.
 - The reminders are grouped by day: overdue, today, tomorrow, this week and later.
 - The reminder window has a quick filter for all of them, the overdue ones, the tasks and the events.
 - The header of the reminder window shows how many reminders are overdue.
@@ -39,6 +40,7 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 
 ### Fixed
 
+- The content of the reminders no longer reaches the screen while the session is locked, and the native notification no longer writes the title of a reminder there.
 - The command palette and the text context menu no longer disappear behind the settings panel.
 - The command palette no longer opens on top of an open dialog, where the two fought over the keyboard and the focus.
 - Changing only the reminder of a repeating item no longer sends the series back to its first date, which made it fire for a moment that had already passed.

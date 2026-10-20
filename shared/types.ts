@@ -3,7 +3,14 @@ export type ThemeId = 'cybergo' | 'gray' | 'light';
 export type Kind = 'event' | 'task';
 export type Importance = 'low' | 'normal' | 'high';
 export type Freq = 'daily' | 'weekly' | 'monthly' | 'yearly';
-export type LockLevel = 'soft' | 'hard';
+/**
+ * What happens to the reminders while the session is locked.
+ *
+ * - visible: the reminders and their content are shown.
+ * - soft: the reminder comes through, with its sound, but not its content.
+ * - hard: nothing comes through at all.
+ */
+export type LockLevel = 'visible' | 'soft' | 'hard';
 export type AuthMethod = 'password' | 'pin';
 export type AccessLogEvent = 'success' | 'failure' | 'recovery-success' | 'recovery-failure' | 'blocked';
 export type AccessLogMethod = AuthMethod | 'recovery';

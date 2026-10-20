@@ -678,7 +678,7 @@ export function readSettings(locale: 'es' | 'en'): PublicSettings {
     language: language === 'en' || language === 'es' ? language : locale,
     soundEnabled: bool('sound_enabled', true),
     soundPath: get('sound_path') ?? '',
-    lockLevel: lockLevel === 'hard' ? 'hard' : 'soft',
+    lockLevel: lockLevel === 'hard' || lockLevel === 'visible' ? lockLevel : 'soft',
     lockOnLaunch: bool('lock_on_launch', false),
     autobackup: bool('autobackup', true),
     autobackupKeep: Math.max(1, Number(get('autobackup_keep') || '7') || 7),

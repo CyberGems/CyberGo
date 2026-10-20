@@ -68,6 +68,16 @@ function broadcast(channel: string, payload?: unknown) {
   }
 }
 
+/**
+ * Whether the reminders can be read while the session is locked.
+ *
+ * The lock exists so the agenda is not on the screen when you step away.
+ * Only the level that says so out loud lets the content through.
+ */
+function remindersReadableWhileLocked(): boolean {
+  return db.readSettings(locale()).lockLevel === 'visible';
+}
+
 function snapshot() {
   const locked = sessionLocked;
   return {
@@ -464,7 +474,9 @@ function toastFor(fresh: Item[]) {
   if (!fresh.length || !Notification.isSupported()) return;
   const settings = db.readSettings(locale());
   const es = locale() === 'es';
-  const title = fresh.length === 1
+  // The title of a reminder is part of the agenda, so it is not written
+  // where anyone can read it while the session is locked.
+  const title = fresh.length === 1 && !(sessionLocked && !remindersReadableWhileLocked())
     ? fresh[0].title
     : es ? `${fresh.length} avisos pendientes` : `${fresh.length} pending reminders`;
   const note = new Notification({
@@ -990,9 +1002,9 @@ function registerIpc() {
   // the whole point of the soft lock.
   ipcMain.handle('reminders:due', (e) => {
     if (sessionLocked) {
-      // In hard mode nothing shows at all. In soft mode only the reminder
-      // window may read the list, the main one stays behind the lock.
-      if (db.readSettings(locale()).lockLevel === 'hard') return [];
+      // The content of the reminders does not cross the bridge while the
+      // session is locked, unless the level says it may.
+      if (!remindersReadableWhileLocked()) return [];
       if (refusedByLock(e)) return [];
     }
     return db.listItems().filter((item) => isDue(item, Date.now()));

@@ -9,6 +9,7 @@ import TitleBar from './TitleBar';
 import TextContextMenu from './TextContextMenu';
 import Tooltip from './Tooltip';
 import DialogPanel from './Dialog';
+import LockScreen from './LockScreen';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import {
   BellRing, CalendarDays, CheckCircle2, CheckCheck, ChevronDown, Clock3, ExternalLink,
@@ -86,6 +87,8 @@ export default function RemindersWindow() {
   const api = window.cyberGoAPI;
   const [items, setItems] = useState<Item[]>([]);
   const [settings, setSettings] = useState<PublicSettings | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [hasPassword, setHasPassword] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pulse, setPulse] = useState<string[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
@@ -119,6 +122,8 @@ export default function RemindersWindow() {
     setItems(due);
     if (!due.length) stopAlert();
     setSettings(boot.settings);
+    setLocked(boot.locked);
+    setHasPassword(boot.hasPassword);
     applyTheme(boot.settings.theme);
     setSelectedIds((previous) => {
       const valid = previous.filter((id) => due.some((item) => item.id === id));
@@ -148,6 +153,8 @@ export default function RemindersWindow() {
       previewModeRef.current = true;
       setItems(payload.items);
       setSettings(payload.settings);
+      setLocked(false);
+      setHasPassword(true);
       setPreviewMode(true);
       setSelectedIds(payload.items[0] ? [payload.items[0].id] : []);
       setPulse([]);
@@ -448,6 +455,14 @@ export default function RemindersWindow() {
     setSnoozeFor(null);
   }
 
+  /**
+   * The content of the reminders does not show while the session is locked.
+   *
+   * The window shows the lock instead, so the reminder is announced without
+   * leaving the agenda on the screen. The user can unlock right there.
+   */
+  const showLock = locked && settings?.lockLevel !== 'visible';
+
   const filters: { id: ReminderFilter; label: string }[] = [
     { id: 'all', label: copy.filterAll },
     { id: 'overdue', label: copy.filterOverdue },
@@ -462,6 +477,16 @@ export default function RemindersWindow() {
         windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, close: copy.closeWindow }}
       />
       <div className="reminder-body">
+        {showLock ? (
+          <LockScreen
+            copy={copy}
+            hint={settings?.passwordHint ?? ''}
+            method={settings?.authMethod ?? 'password'}
+            hasPassword={hasPassword}
+            compact
+          />
+        ) : (
+        <>
         {previewMode && (
           <div className="reminder-preview-banner" role="status">
             <Info size={15} />
@@ -756,6 +781,8 @@ export default function RemindersWindow() {
               </div>
             )}
           </>
+        )}
+        </>
         )}
       </div>
 

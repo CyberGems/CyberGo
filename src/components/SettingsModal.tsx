@@ -540,6 +540,10 @@ export default function SettingsModal({
               </div>
             </div>
             <div className="themes">
+              <button className={`theme-card ${settings.lockLevel === 'visible' ? 'on' : ''}`} onClick={() => void patch({ lockLevel: 'visible' })}>
+                <strong>{copy.lockVisible}</strong>
+                <span className="hint">{copy.lockVisibleHelp}</span>
+              </button>
               <button className={`theme-card ${settings.lockLevel === 'soft' ? 'on' : ''}`} onClick={() => void patch({ lockLevel: 'soft' })}>
                 <strong>{copy.lockSoft}</strong>
                 <span className="hint">{copy.lockSoftHelp}</span>
