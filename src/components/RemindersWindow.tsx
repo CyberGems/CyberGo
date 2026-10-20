@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { Item, PublicSettings } from '@shared/types';
-import { copyOf } from '../i18n';
+import { copyOf, type Copy } from '../i18n';
 import { duePhrase, dueState, shortDuePhrase } from '../lib/format';
 import { playAlert, stopAlert } from '../lib/sound';
 import { applyTheme } from '../themes';
 import TitleBar from './TitleBar';
 import TextContextMenu from './TextContextMenu';
 import Tooltip from './Tooltip';
+import DialogPanel from './Dialog';
+import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import {
   BellRing, CalendarDays, CheckCircle2, CheckCheck, ChevronDown, Clock3, ExternalLink,
-  Info, ListChecks, ListTodo, ListX, Pin, SlidersHorizontal, Timer, Trash2, VolumeX, X, XCircle,
+  Info, ListChecks, ListTodo, ListX, MoreHorizontal, Pin, SlidersHorizontal, Timer,
+  Trash2, VolumeX, X, XCircle,
 } from 'lucide-react';
 
 /** The rectangle of a drag that selects the rows it touches. */
@@ -29,12 +33,43 @@ interface DragState {
   base: string[];
 }
 
+/** Which reminders the list shows. */
+type ReminderFilter = 'all' | 'overdue' | 'task' | 'event';
+
+/** How late a reminder is, from the least to the most. */
+type Gravity = 0 | 1 | 2 | 3;
+
 /** How far the pointer has to travel before a click turns into a drag. */
 const DRAG_THRESHOLD = 4;
 
 function dueTime(item: Item): number {
   const t = new Date(item.occurrenceAt || item.nextFireAt || '').getTime();
   return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
+}
+
+/** The day a reminder belongs to, counted from today. */
+function dayOffset(item: Item): number | null {
+  const iso = item.occurrenceAt || item.nextFireAt;
+  if (!iso) return null;
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return null;
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const day = new Date(at.getFullYear(), at.getMonth(), at.getDate());
+  return Math.round((day.getTime() - start.getTime()) / 86_400_000);
+}
+
+/** How late a reminder is. The color of the row tells it at a glance. */
+function gravityOf(item: Item): Gravity {
+  const iso = item.occurrenceAt || item.nextFireAt;
+  if (!iso) return 0;
+  const at = new Date(iso).getTime();
+  if (Number.isNaN(at)) return 0;
+  const hours = (Date.now() - at) / 3_600_000;
+  if (hours <= 0) return 0;
+  if (hours < 24) return 1;
+  if (hours < 72) return 2;
+  return 3;
 }
 
 /**
@@ -56,9 +91,12 @@ export default function RemindersWindow() {
   const [previewMode, setPreviewMode] = useState(false);
   const previewModeRef = useRef(false);
   const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [moreMenu, setMoreMenu] = useState<{ x: number; y: number } | null>(null);
+  const [confirm, setConfirm] = useState<null | 'dismiss-all' | 'snooze-all'>(null);
+  const [filter, setFilter] = useState<ReminderFilter>('all');
+  const [snoozeFor, setSnoozeFor] = useState<null | { scope: 'selection' | 'all'; anchor: HTMLElement | null }>(null);
   const [amount, setAmount] = useState(8);
   const [unit, setUnit] = useState<'minutes' | 'hours' | 'days'>('hours');
-  const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [, setNow] = useState(() => Date.now());
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const pulseTimer = useRef<number | null>(null);
@@ -129,7 +167,10 @@ export default function RemindersWindow() {
   }, []);
 
   useEffect(() => {
-    const close = () => setContextMenu(null);
+    const close = () => {
+      setContextMenu(null);
+      setMoreMenu(null);
+    };
     const escape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
     };
@@ -238,15 +279,45 @@ export default function RemindersWindow() {
     [items],
   );
 
+  const visibleItems = useMemo(() => {
+    if (filter === 'overdue') return orderedItems.filter((item) => (dayOffset(item) ?? 0) < 0);
+    if (filter === 'task') return orderedItems.filter((item) => item.kind === 'task');
+    if (filter === 'event') return orderedItems.filter((item) => item.kind === 'event');
+    return orderedItems;
+  }, [orderedItems, filter]);
+
+  const overdueCount = useMemo(
+    () => orderedItems.filter((item) => (dayOffset(item) ?? 0) < 0).length,
+    [orderedItems],
+  );
+
+  /** The visible reminders, split in the days they belong to. */
+  const groups = useMemo(() => {
+    const out: { id: string; label: string; items: Item[] }[] = [];
+    for (const item of visibleItems) {
+      const offset = dayOffset(item);
+      const id = offset == null ? 'later' : offset < 0 ? 'overdue' : offset === 0 ? 'today' : offset === 1 ? 'tomorrow' : offset <= 6 ? 'week' : 'later';
+      const label = id === 'overdue' ? copy.groupOverdue
+        : id === 'today' ? copy.groupToday
+          : id === 'tomorrow' ? copy.groupTomorrow
+            : id === 'week' ? copy.groupWeek : copy.groupLater;
+      const last = out[out.length - 1];
+      if (last && last.id === id) last.items.push(item);
+      else out.push({ id, label, items: [item] });
+    }
+    return out;
+  }, [visibleItems, copy]);
+
   const selectedItems = orderedItems.filter((item) => selectedIds.includes(item.id));
   const current = selectedItems[0] ?? null;
   const hasSingleSelection = selectedItems.length === 1;
-  const allSelected = items.length > 0 && selectedIds.length === items.length;
+  const allSelected = visibleItems.length > 0 && selectedIds.length === visibleItems.length;
   const minutes = amount * (unit === 'hours' ? 60 : unit === 'days' ? 1440 : 1);
   const allTasks = selectedItems.length > 0 && selectedItems.every((item) => item.kind === 'task');
+  const oldest = orderedItems[0] ?? null;
 
   function toggleSelectAll() {
-    setSelectedIds(allSelected ? [] : items.map((item) => item.id));
+    setSelectedIds(allSelected ? [] : visibleItems.map((item) => item.id));
   }
 
   function selectOnly(id: string) {
@@ -259,13 +330,25 @@ export default function RemindersWindow() {
       : [...previous, id]));
   }
 
+  useModalKeys(Boolean(confirm), {
+    esc: () => setConfirm(null),
+    enter: () => {
+      if (confirm === 'dismiss-all') detach(api.dismissAll(), 'dismiss every reminder');
+      if (confirm === 'snooze-all') {
+        for (const item of items) detach(api.snooze(item.id, minutes), 'snooze the reminder');
+      }
+      setConfirm(null);
+    },
+  });
+
   // Keyboard navigation: arrows move the selection, Enter opens, Delete/Backspace
   // dismisses, Ctrl+A selects everything. Ignored while typing in a field.
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      if (confirm) return;
       const tag = (event.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      const ids = orderedItems.map((item) => item.id);
+      const ids = visibleItems.map((item) => item.id);
       if (!ids.length) return;
       const index = selectedIds[0] ? ids.indexOf(selectedIds[0]) : -1;
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -308,7 +391,7 @@ export default function RemindersWindow() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [orderedItems, selectedIds, current, previewMode, selectedItems, allSelected, items]);
+  }, [visibleItems, selectedIds, current, previewMode, selectedItems, allSelected, confirm]);
 
   function showContextMenu(event: ReactMouseEvent<HTMLElement>, id: string) {
     event.preventDefault();
@@ -329,11 +412,11 @@ export default function RemindersWindow() {
     if (action === 'open') detach(api.openItem(menu.id), 'open the item');
     if (action === 'dismiss') detach(api.dismiss(menu.id), 'dismiss the reminder');
     if (action === 'delete') detach(api.deleteItem(menu.id), 'delete the item');
-    if (action === 'dismiss-all') detach(api.dismissAll(), 'dismiss every reminder');
+    if (action === 'dismiss-all') setConfirm('dismiss-all');
   }
 
   /** The actions of the footer always work on the whole selection. */
-  function actOnSelection(what: 'open' | 'dismiss' | 'complete' | 'snooze') {
+  function actOnSelection(what: 'open' | 'dismiss' | 'complete') {
     if (previewMode || !selectedItems.length) return;
     if (what === 'open') {
       if (!hasSingleSelection) return;
@@ -343,9 +426,34 @@ export default function RemindersWindow() {
     for (const item of selectedItems) {
       if (what === 'dismiss') detach(api.dismiss(item.id), 'dismiss the reminder');
       if (what === 'complete') detach(api.completeItem(item.id), 'complete the item');
-      if (what === 'snooze') detach(api.snooze(item.id, minutes), 'snooze the reminder');
     }
   }
+
+  /** The snooze menu acts on the selection, or on every reminder. */
+  function snoozeTargets(): Item[] {
+    return snoozeFor?.scope === 'all' ? items : selectedItems;
+  }
+
+  function snoozeEverything(minutesToSnooze: number) {
+    for (const item of snoozeTargets()) {
+      detach(api.snooze(item.id, minutesToSnooze), 'snooze the reminder');
+    }
+    setSnoozeFor(null);
+  }
+
+  function snoozeEverythingUntilTomorrow() {
+    for (const item of snoozeTargets()) {
+      detach(api.snoozeTomorrow(item.id), 'snooze the reminder');
+    }
+    setSnoozeFor(null);
+  }
+
+  const filters: { id: ReminderFilter; label: string }[] = [
+    { id: 'all', label: copy.filterAll },
+    { id: 'overdue', label: copy.filterOverdue },
+    { id: 'task', label: copy.filterTasks },
+    { id: 'event', label: copy.filterEvents },
+  ];
 
   return (
     <div className="reminder-app">
@@ -375,6 +483,11 @@ export default function RemindersWindow() {
                 <span className="reminder-mark"><BellRing size={15} /></span>
                 <h1>{copy.remindersTitle}</h1>
                 <span className="reminder-count">{items.length}</span>
+                {overdueCount > 0 && (
+                  <span className="reminder-count is-overdue" title={`${overdueCount} ${copy.overdueCount}`}>
+                    {overdueCount} {copy.overdueCount}
+                  </span>
+                )}
               </div>
               <div className="reminder-head-actions">
                 <Tooltip label={allSelected ? copy.clearSelection : copy.selectAll} placement="bottom">
@@ -391,8 +504,19 @@ export default function RemindersWindow() {
                 <Tooltip label={copy.stopSound} placement="bottom">
                   <button type="button" className="head-action" onClick={stopAlert} aria-label={copy.stopSound}><VolumeX size={15} /></button>
                 </Tooltip>
-                <Tooltip label={copy.dismissAll} placement="bottom">
-                  <button type="button" className="head-action" disabled={previewMode || !items.length} onClick={() => detach(api.dismissAll(), 'dismiss every reminder')} aria-label={copy.dismissAll}><XCircle size={15} /></button>
+                <Tooltip label={copy.moreActions} placement="bottom">
+                  <button
+                    type="button"
+                    className={`head-action ${moreMenu ? 'active' : ''}`}
+                    aria-label={copy.moreActions}
+                    aria-expanded={Boolean(moreMenu)}
+                    onClick={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setMoreMenu((current) => (current ? null : { x: rect.right - 180, y: rect.bottom + 6 }));
+                    }}
+                  >
+                    <MoreHorizontal size={15} />
+                  </button>
                 </Tooltip>
                 <Tooltip label={copy.alwaysOnTop} placement="bottom">
                   <button
@@ -410,6 +534,20 @@ export default function RemindersWindow() {
                 </Tooltip>
               </div>
             </header>
+
+            <div className="reminder-filters" role="group" aria-label={copy.filters}>
+              {filters.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className={`chip ${filter === entry.id ? 'on' : ''}`}
+                  aria-pressed={filter === entry.id}
+                  onClick={() => setFilter(entry.id)}
+                >
+                  {entry.label}
+                </button>
+              ))}
+            </div>
 
             <div
               className="reminder-list"
@@ -429,67 +567,76 @@ export default function RemindersWindow() {
                 };
               }}
             >
-              {orderedItems.map((item) => {
-                const state = dueState(item.occurrenceAt || item.nextFireAt) ?? 'future';
-                const selected = selectedIds.includes(item.id);
-                const inDrag = dragHitsRef.current.includes(item.id);
-                return (
-                  <div
-                    key={item.id}
-                    data-id={item.id}
-                    ref={(el) => { rowRefs.current[item.id] = el; }}
-                    role="option"
-                    aria-selected={selected}
-                    tabIndex={0}
-                    className={`reminder-row urgency-${state} ${selected ? 'selected' : ''} ${inDrag ? 'in-drag' : ''} ${pulse.includes(item.id) ? 'pulse' : ''}`}
-                    onClick={(event) => {
-                      if (skipClickRef.current) {
-                        skipClickRef.current = false;
-                        return;
-                      }
-                      if (event.ctrlKey || event.metaKey) {
-                        anchorRef.current = item.id;
-                        toggleOne(item.id);
-                      } else {
-                        anchorRef.current = item.id;
-                        selectOnly(item.id);
-                      }
-                    }}
-                    onDoubleClick={() => {
-                      // A drag that ends on a row would otherwise count as the
-                      // first click of a double click, and the item would open.
-                      if (Date.now() - lastDragRef.current < 300) return;
-                      if (!previewMode) detach(api.openItem(item.id), 'open the item');
-                    }}
-                    onContextMenu={(event) => showContextMenu(event, item.id)}
-                  >
-                    <span className="reminder-row-icon">
-                      {item.kind === 'event' ? <CalendarDays size={14} /> : <ListTodo size={14} />}
-                    </span>
-                    <span className="reminder-row-title subject">{item.title}</span>
-                    <span className="reminder-row-due">{shortDuePhrase(item.occurrenceAt || item.nextFireAt, copy)}</span>
-                    <span className="reminder-row-actions" onClick={(event) => event.stopPropagation()}>
-                      <Tooltip label={copy.min10} placement="top">
-                        <button type="button" className="row-action" disabled={previewMode} aria-label={`${copy.snoozeFor}: ${copy.min10}`} onClick={() => detach(api.snooze(item.id, 10), 'snooze the reminder')}>
-                          <Clock3 size={14} />
-                        </button>
-                      </Tooltip>
-                      {item.kind === 'task' && (
-                        <Tooltip label={copy.markComplete} placement="top">
-                          <button type="button" className="row-action" disabled={previewMode} aria-label={copy.markComplete} onClick={() => detach(api.completeItem(item.id), 'complete the item')}>
-                            <CheckCircle2 size={14} />
-                          </button>
-                        </Tooltip>
-                      )}
-                      <Tooltip label={copy.dismiss} placement="top">
-                        <button type="button" className="row-action" disabled={previewMode} aria-label={copy.dismiss} onClick={() => detach(api.dismiss(item.id), 'dismiss the reminder')}>
-                          <X size={14} />
-                        </button>
-                      </Tooltip>
-                    </span>
+              {groups.map((group) => (
+                <div className="reminder-group" key={group.id} role="group" aria-label={group.label}>
+                  <div className="reminder-group-head">
+                    <span>{group.label}</span>
+                    <span className="reminder-group-count">{group.items.length}</span>
                   </div>
-                );
-              })}
+                  {group.items.map((item) => {
+                    const state = dueState(item.occurrenceAt || item.nextFireAt) ?? 'future';
+                    const selected = selectedIds.includes(item.id);
+                    const inDrag = dragHitsRef.current.includes(item.id);
+                    const gravity = gravityOf(item);
+                    return (
+                      <div
+                        key={item.id}
+                        data-id={item.id}
+                        ref={(el) => { rowRefs.current[item.id] = el; }}
+                        role="option"
+                        aria-selected={selected}
+                        tabIndex={0}
+                        className={`reminder-row urgency-${state} gravity-${gravity} ${selected ? 'selected' : ''} ${inDrag ? 'in-drag' : ''} ${pulse.includes(item.id) ? 'pulse' : ''}`}
+                        onClick={(event) => {
+                          if (skipClickRef.current) {
+                            skipClickRef.current = false;
+                            return;
+                          }
+                          if (event.ctrlKey || event.metaKey) {
+                            anchorRef.current = item.id;
+                            toggleOne(item.id);
+                          } else {
+                            anchorRef.current = item.id;
+                            selectOnly(item.id);
+                          }
+                        }}
+                        onDoubleClick={() => {
+                          // A drag that ends on a row would otherwise count as the
+                          // first click of a double click, and the item would open.
+                          if (Date.now() - lastDragRef.current < 300) return;
+                          if (!previewMode) detach(api.openItem(item.id), 'open the item');
+                        }}
+                        onContextMenu={(event) => showContextMenu(event, item.id)}
+                      >
+                        <span className="reminder-row-icon">
+                          {item.kind === 'event' ? <CalendarDays size={14} /> : <ListTodo size={14} />}
+                        </span>
+                        <span className="reminder-row-title subject">{item.title}</span>
+                        <span className="reminder-row-due">{shortDuePhrase(item.occurrenceAt || item.nextFireAt, copy)}</span>
+                        <span className="reminder-row-actions" onClick={(event) => event.stopPropagation()}>
+                          <Tooltip label={copy.min10} placement="top">
+                            <button type="button" className="row-action" disabled={previewMode} aria-label={`${copy.snoozeFor}: ${copy.min10}`} onClick={() => detach(api.snooze(item.id, 10), 'snooze the reminder')}>
+                              <Clock3 size={14} />
+                            </button>
+                          </Tooltip>
+                          {item.kind === 'task' && (
+                            <Tooltip label={copy.markComplete} placement="top">
+                              <button type="button" className="row-action" disabled={previewMode} aria-label={copy.markComplete} onClick={() => detach(api.completeItem(item.id), 'complete the item')}>
+                                <CheckCircle2 size={14} />
+                              </button>
+                            </Tooltip>
+                          )}
+                          <Tooltip label={copy.dismiss} placement="top">
+                            <button type="button" className="row-action" disabled={previewMode} aria-label={copy.dismiss} onClick={() => detach(api.dismiss(item.id), 'dismiss the reminder')}>
+                              <X size={14} />
+                            </button>
+                          </Tooltip>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
               {marquee && (
                 <div
                   className="reminder-marquee"
@@ -497,123 +644,209 @@ export default function RemindersWindow() {
                   style={{ left: marquee.left, top: marquee.top, width: marquee.width, height: marquee.height }}
                 />
               )}
-            </div>
-
-            <div className="reminder-inspector">
-              <div className="reminder-inspector-info">
-                <span className={`reminder-inspector-icon ${current ? `urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}` : 'is-empty'}`}>
-                  {current
-                    ? (current.kind === 'event' ? <CalendarDays size={15} /> : <ListTodo size={15} />)
-                    : <BellRing size={15} />}
-                </span>
-                <span className="reminder-inspector-title">
-                  {selectedItems.length > 1
-                    ? `${selectedItems.length} ${copy.selectedItems}`
-                    : current
-                      ? current.title
-                      : copy.pickReminder}
-                </span>
-                {selectedItems.length === 1 && current && (
-                  <span className={`reminder-inspector-due urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
-                    {duePhrase(current.occurrenceAt || current.nextFireAt, copy)}
-                  </span>
+              {visibleItems.length === 0 && (
+                <p className="reminder-filter-empty">{copy.noPendingBody}</p>
+              )}
+              <div className="reminder-summary">
+                <div className="reminder-summary-line">
+                  <strong>{items.length}</strong> {copy.remindersTitle.toLowerCase()}
+                  {overdueCount > 0 && <span className="reminder-summary-overdue"> · {overdueCount} {copy.overdueCount}</span>}
+                </div>
+                {oldest && (
+                  <p className="reminder-summary-oldest">
+                    {copy.oldestReminder}: {shortDuePhrase(oldest.occurrenceAt || oldest.nextFireAt, copy)}
+                  </p>
                 )}
-              </div>
-              <div className="reminder-inspector-actions">
-                <Tooltip label={copy.openItem} placement="top">
+                <div className="reminder-summary-actions">
                   <button
                     type="button"
-                    className="inspector-action"
-                    disabled={previewMode || !hasSingleSelection}
-                    aria-label={copy.openItem}
-                    onClick={() => actOnSelection('open')}
+                    className="btn"
+                    disabled={previewMode || !items.length}
+                    onClick={(event) => setSnoozeFor({ scope: 'all', anchor: event.currentTarget })}
                   >
-                    <ExternalLink size={14} />
+                    <Timer size={13} />{copy.snoozeAll}
                   </button>
-                </Tooltip>
-                <div className="snooze-holder">
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    disabled={previewMode || !items.length}
+                    onClick={() => setConfirm('dismiss-all')}
+                  >
+                    <XCircle size={13} />{copy.dismissAll}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {selectedItems.length > 0 && (
+              <div className="reminder-inspector">
+                <div className="reminder-inspector-info">
+                  <span className={`reminder-inspector-icon ${current ? `urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}` : 'is-empty'}`}>
+                    {current
+                      ? (current.kind === 'event' ? <CalendarDays size={15} /> : <ListTodo size={15} />)
+                      : <BellRing size={15} />}
+                  </span>
+                  <span className="reminder-inspector-title">
+                    {selectedItems.length > 1
+                      ? `${selectedItems.length} ${copy.selectedItems}`
+                      : current
+                        ? current.title
+                        : copy.pickReminder}
+                  </span>
+                  {selectedItems.length === 1 && current && (
+                    <span className={`reminder-inspector-due urgency-${dueState(current.occurrenceAt || current.nextFireAt) ?? 'future'}`}>
+                      {duePhrase(current.occurrenceAt || current.nextFireAt, copy)}
+                    </span>
+                  )}
+                </div>
+                <div className="reminder-inspector-actions">
+                  <Tooltip label={copy.openItem} placement="top">
+                    <button
+                      type="button"
+                      className="inspector-action"
+                      disabled={previewMode || !hasSingleSelection}
+                      aria-label={copy.openItem}
+                      onClick={() => actOnSelection('open')}
+                    >
+                      <ExternalLink size={14} />
+                    </button>
+                  </Tooltip>
                   <Tooltip label={copy.snoozeFor} placement="top">
                     <button
                       type="button"
-                      className={`inspector-action ${snoozeOpen ? 'active' : ''}`}
+                      className={`inspector-action ${snoozeFor?.scope === 'selection' ? 'active' : ''}`}
                       disabled={previewMode || !selectedItems.length}
-                      aria-label={copy.snooze}
-                      aria-expanded={snoozeOpen}
-                      onClick={() => setSnoozeOpen((value) => !value)}
+                      aria-label={copy.snoozeFor}
+                      aria-expanded={snoozeFor?.scope === 'selection'}
+                      onClick={(event) => setSnoozeFor({ scope: 'selection', anchor: event.currentTarget })}
                     >
                       <Timer size={14} />
                       <ChevronDown size={11} />
                     </button>
                   </Tooltip>
-                  {snoozeOpen && (
-                    <div className="snooze-menu" role="menu" aria-label={copy.snoozeFor}>
-                      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snooze(item.id, 10), 'snooze the reminder'); }}>
-                        {copy.min10}
+                  {allTasks && (
+                    <Tooltip label={copy.markComplete} placement="top">
+                      <button
+                        type="button"
+                        className="inspector-action"
+                        disabled={previewMode || !selectedItems.length}
+                        aria-label={copy.markComplete}
+                        onClick={() => actOnSelection('complete')}
+                      >
+                        <CheckCircle2 size={14} />
                       </button>
-                      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snooze(item.id, 60), 'snooze the reminder'); }}>
-                        {copy.hour1}
-                      </button>
-                      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snoozeTomorrow(item.id), 'snooze the reminder'); }}>
-                        {copy.tomorrow9}
-                      </button>
-                      <div className="text-context-menu-separator" />
-                      <div className="snooze-menu-custom">
-                        <input type="number" min={1} value={amount} aria-label={copy.snoozeAmount} onChange={(e) => setAmount(Number(e.target.value))} />
-                        <select value={unit} aria-label={copy.snoozeUnit} onChange={(e) => setUnit(e.target.value as 'minutes' | 'hours' | 'days')}>
-                          <option value="minutes">{copy.minutes}</option>
-                          <option value="hours">{copy.hours}</option>
-                          <option value="days">{copy.days}</option>
-                        </select>
-                        <Tooltip label={copy.snooze} placement="top">
-                          <button
-                            type="button"
-                            className="btn btn-primary snooze-menu-apply"
-                            disabled={previewMode || !selectedItems.length}
-                            aria-label={copy.applySnooze}
-                            onClick={() => { setSnoozeOpen(false); for (const item of selectedItems) detach(api.snooze(item.id, minutes), 'snooze the reminder'); }}
-                          >
-                            <SlidersHorizontal size={13} />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
+                    </Tooltip>
                   )}
-                </div>
-                {allTasks && (
-                  <Tooltip label={copy.markComplete} placement="top">
+                  <Tooltip label={copy.dismiss} placement="top">
                     <button
                       type="button"
                       className="inspector-action"
                       disabled={previewMode || !selectedItems.length}
-                      aria-label={copy.markComplete}
-                      onClick={() => actOnSelection('complete')}
+                      aria-label={copy.dismiss}
+                      onClick={() => actOnSelection('dismiss')}
                     >
-                      <CheckCircle2 size={14} />
+                      <X size={14} />
                     </button>
                   </Tooltip>
-                )}
-                <Tooltip label={copy.dismiss} placement="top">
-                  <button
-                    type="button"
-                    className="inspector-action"
-                    disabled={previewMode || !selectedItems.length}
-                    aria-label={copy.dismiss}
-                    onClick={() => actOnSelection('dismiss')}
-                  >
-                    <X size={14} />
-                </button>
-                </Tooltip>
-                {selectedItems.length > 1 && (
                   <span className="reminder-selection-count">
                     <CheckCheck size={13} />
                     {selectedItems.length}
                   </span>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>
+
+      {snoozeFor && (
+        <SnoozeMenu
+          copy={copy}
+          anchor={snoozeFor.anchor}
+          amount={amount}
+          unit={unit}
+          onAmount={setAmount}
+          onUnit={setUnit}
+          onPreset={(value) => {
+            if (value === 'tomorrow') snoozeEverythingUntilTomorrow();
+            else snoozeEverything(value);
+          }}
+          onCustom={(value) => {
+            for (const item of snoozeTargets()) detach(api.snooze(item.id, value), 'snooze the reminder');
+            setSnoozeFor(null);
+          }}
+          onClose={() => setSnoozeFor(null)}
+        />
+      )}
+
+      {moreMenu && (
+        <div
+          className="text-context-menu reminder-more-menu"
+          role="menu"
+          aria-label={copy.moreActions}
+          style={{ left: moreMenu.x, top: moreMenu.y }}
+          onContextMenu={(event) => event.preventDefault()}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="text-context-menu-item"
+            disabled={previewMode || !items.length}
+            onClick={() => {
+              setMoreMenu(null);
+              setSnoozeFor({ scope: 'all', anchor: null });
+            }}
+          >
+            <Timer size={15} />
+            <span>{copy.snoozeAll}</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="text-context-menu-item"
+            disabled={previewMode || !items.length}
+            onClick={() => { setMoreMenu(null); setConfirm('dismiss-all'); }}
+          >
+            <XCircle size={15} />
+            <span>{copy.dismissAll}</span>
+          </button>
+        </div>
+      )}
+
+      {confirm && (
+        <DialogPanel
+          className="modal narrow"
+          labelledBy="reminder-confirm-title"
+          focusTarget="container"
+          onBackdropMouseDown={() => setConfirm(null)}
+        >
+          <h2 id="reminder-confirm-title">
+            {confirm === 'dismiss-all' ? copy.confirmDismissAllTitle : copy.confirmSnoozeAllTitle}
+          </h2>
+          <p>
+            {(confirm === 'dismiss-all' ? copy.confirmDismissAllBody : copy.confirmSnoozeAllBody)
+              .replace('{count}', String(items.length))}
+          </p>
+          <div className="row-actions">
+            <button className="btn" onClick={() => setConfirm(null)}>{copy.cancel}<EscHint /></button>
+            <button
+              className={`btn ${confirm === 'dismiss-all' ? 'btn-danger' : 'btn-primary'}`}
+              onClick={() => {
+                if (confirm === 'dismiss-all') detach(api.dismissAll(), 'dismiss every reminder');
+                if (confirm === 'snooze-all') {
+                  for (const item of items) detach(api.snooze(item.id, minutes), 'snooze the reminder');
+                }
+                setConfirm(null);
+              }}
+            >
+              {confirm === 'dismiss-all' ? copy.confirmDismissAllAction : copy.confirmSnoozeAllAction}
+              <EnterGlyph />
+            </button>
+          </div>
+        </DialogPanel>
+      )}
+
       <TextContextMenu copy={copy} />
       {contextMenu && (
         <div
@@ -645,5 +878,110 @@ export default function RemindersWindow() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The menu of the snooze, with the presets and a custom amount.
+ *
+ * It opens above the button that asked for it, and it never leaves the
+ * window.
+ */
+function SnoozeMenu({
+  copy,
+  anchor,
+  amount,
+  unit,
+  onAmount,
+  onUnit,
+  onPreset,
+  onCustom,
+  onClose,
+}: {
+  copy: Copy;
+  anchor: HTMLElement | null;
+  amount: number;
+  unit: 'minutes' | 'hours' | 'days';
+  onAmount: (value: number) => void;
+  onUnit: (value: 'minutes' | 'hours' | 'days') => void;
+  onPreset: (value: number | 'tomorrow') => void;
+  onCustom: (minutes: number) => void;
+  onClose: () => void;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ left: number; bottom: number } | null>(null);
+
+  useEffect(() => {
+    function place() {
+      const box = boxRef.current;
+      if (!box) return;
+      const width = box.getBoundingClientRect().width;
+      const rect = anchor?.getBoundingClientRect();
+      const left = rect ? Math.min(Math.max(8, rect.left), window.innerWidth - width - 8) : 8;
+      const bottom = rect ? Math.max(8, window.innerHeight - rect.top + 6) : 8;
+      setPosition({ left, bottom });
+    }
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [anchor]);
+
+  useEffect(() => {
+    function away(event: MouseEvent) {
+      if (boxRef.current?.contains(event.target as Node)) return;
+      onClose();
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+    document.addEventListener('mousedown', away);
+    window.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      window.removeEventListener('keydown', escape);
+    };
+  }, [onClose]);
+
+  const customMinutes = amount * (unit === 'hours' ? 60 : unit === 'days' ? 1440 : 1);
+
+  return createPortal(
+    <div
+      className="snooze-menu"
+      role="menu"
+      aria-label={copy.snoozeFor}
+      ref={boxRef}
+      style={{ left: position?.left ?? -9999, bottom: position?.bottom ?? -9999 }}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => onPreset(10)}>
+        {copy.min10}
+      </button>
+      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => onPreset(60)}>
+        {copy.hour1}
+      </button>
+      <button type="button" role="menuitem" className="snooze-menu-item" onClick={() => onPreset('tomorrow')}>
+        {copy.tomorrow9}
+      </button>
+      <div className="text-context-menu-separator" />
+      <div className="snooze-menu-custom">
+        <input type="number" min={1} value={amount} aria-label={copy.snoozeAmount} onChange={(e) => onAmount(Number(e.target.value))} />
+        <select value={unit} aria-label={copy.snoozeUnit} onChange={(e) => onUnit(e.target.value as 'minutes' | 'hours' | 'days')}>
+          <option value="minutes">{copy.minutes}</option>
+          <option value="hours">{copy.hours}</option>
+          <option value="days">{copy.days}</option>
+        </select>
+        <Tooltip label={copy.snooze} placement="top">
+          <button
+            type="button"
+            className="btn btn-primary snooze-menu-apply"
+            aria-label={copy.applySnooze}
+            onClick={() => onCustom(customMinutes)}
+          >
+            <SlidersHorizontal size={13} />
+          </button>
+        </Tooltip>
+      </div>
+    </div>,
+    document.body,
   );
 }
