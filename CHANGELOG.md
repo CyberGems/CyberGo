@@ -29,6 +29,7 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 
 ### Improved
 
+- The lock screen was reworked to match the other apps of the suite: the icon with the ring that turns behind it, the name, the greeting with the hour and the date, and the version at the bottom.
 - The application has its official icon, the CyberGems bell. It is the one in the installer, the window, the tray, the About dialog and the lock screen, and the documentation shows it too.
 - The reminder window was reworked. Every row carries its data in one line, the actions of the footer work on the whole selection, and the snooze presets live in a menu instead of taking two rows.
 - The text of the reminder window is no longer selected when the pointer drags over it.
