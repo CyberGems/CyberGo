@@ -35,8 +35,8 @@ let tray: Tray | null = null;
 let sessionLocked = false;
 let quitting = false;
 let pendingNavigate: string | null = null;
-const REMINDER_DEFAULT_WIDTH = 380;
-const REMINDER_DEFAULT_HEIGHT = 460;
+const REMINDER_DEFAULT_WIDTH = 420;
+const REMINDER_DEFAULT_HEIGHT = 560;
 const REMINDER_MIN_WIDTH = 340;
 const REMINDER_MIN_HEIGHT = 380;
 const REMINDER_PREVIEW_DURATION = 3_000;
@@ -323,12 +323,50 @@ function previewReminderItems(): Item[] {
   ];
 }
 
+/**
+ * The size the user chose, so the window opens the same way every time.
+ *
+ * The position does not belong here: the reminder window follows the monitor
+ * and the corner that are chosen in the settings.
+ */
+function readReminderWindowSize(): { width: number; height: number } {
+  const raw = db.getSetting('reminder_window_size');
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as { width?: number; height?: number };
+      const width = Math.round(Number(parsed?.width));
+      const height = Math.round(Number(parsed?.height));
+      if (Number.isFinite(width) && width >= REMINDER_MIN_WIDTH) {
+        return {
+          width,
+          height: Number.isFinite(height) && height >= REMINDER_MIN_HEIGHT ? height : REMINDER_DEFAULT_HEIGHT,
+        };
+      }
+    } catch {
+      // The stored size cannot be read, the default one is used.
+    }
+  }
+  return { width: REMINDER_DEFAULT_WIDTH, height: REMINDER_DEFAULT_HEIGHT };
+}
+
+function persistReminderWindowSize() {
+  if (!reminderWindow || reminderWindow.isDestroyed()) return;
+  try {
+    const bounds = reminderWindow.getBounds();
+    db.setSetting('reminder_window_size', JSON.stringify({ width: bounds.width, height: bounds.height }));
+  } catch (error) {
+    console.error('CyberGo: could not save the reminder window size.', error);
+  }
+}
+
+let reminderSizeTimer: ReturnType<typeof setTimeout> | null = null;
 let creatingReminderWindow: Promise<void> | null = null;
 
 async function createReminderWindow(alwaysOnTop: boolean) {
+  const size = readReminderWindowSize();
   const win = new BrowserWindow({
-    width: REMINDER_DEFAULT_WIDTH,
-    height: REMINDER_DEFAULT_HEIGHT,
+    width: size.width,
+    height: size.height,
     minWidth: REMINDER_MIN_WIDTH,
     minHeight: REMINDER_MIN_HEIGHT,
     show: false,
@@ -348,6 +386,14 @@ async function createReminderWindow(alwaysOnTop: boolean) {
     if (quitting) return;
     event.preventDefault();
     win.hide();
+  });
+  // The size is remembered once the drag of the border is over.
+  win.on('resize', () => {
+    if (reminderSizeTimer) clearTimeout(reminderSizeTimer);
+    reminderSizeTimer = setTimeout(() => {
+      reminderSizeTimer = null;
+      persistReminderWindowSize();
+    }, 400);
   });
   const dev = process.env.VITE_DEV_SERVER_URL;
   try {
