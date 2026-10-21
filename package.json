@@ -33,6 +33,31 @@
         "nsis"
       ]
     },
+    "nsis": {
+      "artifactName": "${productName}-${version}-setup.${ext}",
+      "shortcutName": "${productName}",
+      "uninstallDisplayName": "${productName} ${version}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "menuCategory": false,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "installerHeaderIcon": "build/icon.ico",
+      "include": "build/installer.nsh",
+      "installerLanguages": [
+        "en",
+        "es"
+      ],
+      "multiLanguageInstaller": true
+    },
     "extraResources": [
       {
         "from": "node_modules/sql.js/dist/sql-wasm.wasm",
