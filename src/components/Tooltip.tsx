@@ -80,12 +80,15 @@ export default function Tooltip({
     // of the control the pointer was on, so it is closed when it comes back.
     window.addEventListener('focus', hide);
     document.addEventListener('visibilitychange', hide);
+    // A dialog that opens over the application takes the tip away.
+    window.addEventListener('cybergo:dialog-open', hide);
     return () => {
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('wheel', hide, true);
       window.removeEventListener('blur', hide);
       window.removeEventListener('focus', hide);
       document.removeEventListener('visibilitychange', hide);
+      window.removeEventListener('cybergo:dialog-open', hide);
     };
   }, [anchor]);
 

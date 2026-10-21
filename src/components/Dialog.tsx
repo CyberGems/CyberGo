@@ -204,6 +204,12 @@ export default function DialogPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, true, focusTarget);
 
+  // A dialog opens over the application, so the tips of the controls that
+  // are under it have no business floating above the panel.
+  useEffect(() => {
+    window.dispatchEvent(new Event('cybergo:dialog-open'));
+  }, []);
+
   return (
     <div className={backdropClassName ? `backdrop ${backdropClassName}` : 'backdrop'} onMouseDown={onBackdropMouseDown}>
       <div

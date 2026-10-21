@@ -35,6 +35,8 @@
 - The handle that changes the width of a column is grabbed from both sides of the line, so the cursor does not change right next to it.
 - The lines that separate the columns go from the top to the bottom of the header, the way a file explorer draws them, and the light of a cell is now the color of the application.
 - The state column is ordered the way its wording reads: first what is late, then today, tomorrow and later, and at the end what is already over. Inside each group, the closest moment comes first.
+- The dialogs sit on a blurred background, the way the rest of the suite does, so they do not mix with what is under them.
+- A tip that was left open no longer floats above a dialog that opens over it.
 
 ### Fixed
 

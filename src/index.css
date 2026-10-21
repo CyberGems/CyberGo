@@ -369,9 +369,17 @@ body.pointer-reset .settings-header-close:hover {
   background: var(--border);
 }
 
+/*
+ * The veil behind a dialog.
+ *
+ * It is not a flat shadow: the application behind is blurred, so the dialog
+ * sits on its own and does not mix with what is under it.
+ */
 .backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
   display: flex; align-items: center; justify-content: center; z-index: var(--z-dialog);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 .modal {
   width: min(640px, calc(100% - 32px));
