@@ -18,6 +18,8 @@
   --z-menu: 400;
   --z-toast: 500;
   --z-tooltip: 600;
+  /* The gap that is between the columns of the list. */
+  --table-gap: 8px;
   color-scheme: dark;
 }
 
@@ -146,7 +148,7 @@ body.pointer-reset .settings-header-close:hover {
 .list-head, .row {
   display: grid;
   grid-template-columns: var(--table-columns);
-  gap: 8px; align-items: center; padding: 0 16px;
+  gap: var(--table-gap); align-items: center; padding: 0 16px;
   min-width: var(--table-width);
 }
 .list-head {
@@ -170,15 +172,16 @@ body.pointer-reset .settings-header-close:hover {
 .column-sort {
   position: absolute;
   /*
-   * The button reaches half of the gap that is between the columns, so the
-   * whole header can be picked and there is no dead room between the cells.
+   * The button reaches over the gap that is between the columns, so there is
+   * no strip of nothing between one cell and the next. The gap belongs to
+   * the column on the right, which is the one that lights up.
    */
-  inset: 0 -4px;
+  inset: 0 0 0 calc(-1 * var(--table-gap));
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 0 14px;
+  padding: 0 14px 0 18px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -196,7 +199,7 @@ body.pointer-reset .settings-header-close:hover {
  * no dead room on the left. The title keeps the place it had, next to the
  * dates of the rows.
  */
-.table-head-cell.spans-marker .column-sort { padding-left: calc(var(--marker-column-width, 12px) + 22px); }
+.table-head-cell.spans-marker .column-sort { padding-left: calc(var(--marker-column-width, 12px) + 26px); }
 .column-sort-arrow { display: inline-flex; flex-shrink: 0; }
 .column-sort-arrow[data-hidden="true"] { visibility: hidden; }
 /* The line that separates two columns when there is no handle to drag. */
@@ -215,15 +218,23 @@ body.pointer-reset .settings-header-close:hover {
  * catches the pointer stays inside it, so the last column does not push the
  * table out of the window.
  */
+/*
+ * The handle that changes the width of a column.
+ *
+ * It is always there, so the columns can be resized without hunting for the
+ * edge, but it is a thin line that only says something when the pointer
+ * rests on it. The area that catches the pointer is centred on the line, so
+ * grabbing it is easy from both sides.
+ */
 .column-resizer {
-  position: absolute; z-index: 2; top: 5px; right: 0; bottom: 5px;
+  position: absolute; z-index: 2; top: 5px; right: -5px; bottom: 5px;
   width: 10px; padding: 0; border: 0; background: transparent; cursor: col-resize;
   outline: none;
 }
 .column-resizer::after {
   content: '';
   position: absolute;
-  top: 0; bottom: 0; right: 0;
+  top: 0; bottom: 0; right: 5px;
   width: 1px;
   background: var(--border-strong);
   opacity: 0.45;

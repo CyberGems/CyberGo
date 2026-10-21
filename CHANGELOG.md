@@ -30,6 +30,8 @@
 - The header of the list has no dead room left. The title of the date covers the column of the dot as well, and the last column reaches the edge, so the whole header can be picked and lights up as a whole.
 - The titles of the columns reach the middle of the gap that is between them, so there is no strip of nothing between one and the other.
 - The light of a cell follows the rounded corners of the card, and it no longer sticks out of it.
+- The gap between two columns belongs to the column on its right, so the light of a cell starts right at the line that separates them and no strip of nothing is left in between.
+- The handle that changes the width of a column is grabbed from both sides of the line, so the cursor does not change right next to it.
 
 ### Fixed
 
