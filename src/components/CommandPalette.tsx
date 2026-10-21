@@ -63,6 +63,8 @@ export default function CommandPalette({
     high: copy.high,
     completed: copy.completed,
     trash: copy.trash,
+    task: copy.taskFilter,
+    event: copy.eventFilter,
   }), [copy]);
 
   const rows = useMemo<Row[]>(() => {

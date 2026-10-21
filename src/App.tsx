@@ -179,6 +179,8 @@ function MainApp() {
     high: copy.high,
     completed: copy.completed,
     trash: copy.trash,
+    task: copy.taskFilter,
+    event: copy.eventFilter,
   };
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();

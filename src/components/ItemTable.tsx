@@ -195,6 +195,7 @@ export default function ItemTable({
             // "Buy milk, , ,".
             const label = [
               item.title,
+              item.notes,
               formatDate(item.occurrenceAt || item.startAt, lang),
               formatTimeRange(item, lang, copy),
               status.label,
@@ -231,7 +232,7 @@ export default function ItemTable({
                     </span>
                   )}
                 </span>
-                <span className="subject">{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
+                <span className="subject" title={item.notes || undefined}>{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
                 <span className={`kind-tag kind-${item.kind}`}>{item.kind === 'task' ? copy.task : copy.event}</span>
               </div>
             );

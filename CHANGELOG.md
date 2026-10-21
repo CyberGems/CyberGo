@@ -34,6 +34,9 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 - The rows of the list are shorter, so three more items fit on the screen.
 - The quick capture takes two rows instead of three, and gives back the room it was taking from the list.
 - The number of items no longer appears twice, the sidebar already has it.
+- The editor of an item has the air of the lock screen: a title with a close button, the captions in small capitals, and the actions on a footer of their own.
+- The sidebar of the main window is split in sections, and it can filter by kind, the same way the reminder window does.
+- The notes of an item are read when the pointer rests on it, and they are part of what a screen reader says.
 - The list of the main window can pick several items, with the mouse, with the keyboard, or by dragging a rectangle over them. The toolbar acts on the whole selection, and deleting several asks how many there are.
 - The text of the windows is no longer picked when the pointer drags over it.
 - The lock screen was reworked to match the other apps of the suite: the icon with the waves of sound that grow behind it, the name, the greeting with the hour and the date, and the version at the bottom.

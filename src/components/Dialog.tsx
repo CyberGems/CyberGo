@@ -69,6 +69,14 @@ export function useFocusTrap<T extends HTMLElement>(ref: RefObject<T | null>, en
         focusSafely(container);
         return;
       }
+      // The control that asks for the focus wins, the way a form behaves.
+      // React does not write the autofocus attribute, so the field marks
+      // itself with data-focus.
+      const asked = container.querySelector<HTMLElement>('[data-focus], [autofocus]');
+      if (asked && !asked.hasAttribute('disabled')) {
+        focusSafely(asked);
+        return;
+      }
       const items = focusableElements(container);
       if (items.length === 0) {
         focusSafely(container);

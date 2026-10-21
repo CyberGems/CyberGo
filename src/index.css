@@ -123,6 +123,10 @@ body.pointer-reset .settings-header-close:hover {
   color: var(--text-muted); margin: 12px 8px 6px;
 }
 .group-row { cursor: pointer; }
+/* The button that removes a group only shows when the row is pointed at. */
+.group-row > .icon-btn { opacity: 0; transition: opacity var(--transition); }
+.group-row:hover > .icon-btn,
+.group-row:focus-within > .icon-btn { opacity: 1; }
 .nav-btn, .group-row {
   width: 100%; text-align: left; border: 0; background: transparent;
   color: var(--text-secondary); border-radius: var(--radius-sm);
@@ -293,6 +297,79 @@ body.pointer-reset .settings-header-close:hover {
   padding: 18px;
 }
 .modal.narrow { width: min(420px, calc(100% - 32px)); }
+
+/* The editor of an item, with the air of the lock screen. */
+.item-modal {
+  width: min(660px, calc(100% - 32px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  background: var(--bg-surface);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.5),
+    0 0 34px color-mix(in srgb, var(--accent-glow) 70%, transparent);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-head h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.modal-close {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+}
+.modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 24px 4px;
+}
+.modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-sidebar);
+}
+/* The captions of the fields, in the small capitals of the suite. */
+.item-modal .field > span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.item-modal .field > span em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: lowercase;
+  opacity: 0.7;
+}
+.item-modal .field { gap: 6px; margin-bottom: 16px; }
+.item-modal .check { margin: 2px 0 16px; }
+.item-modal .error { margin-bottom: 4px; }
 .modal h2 { margin: 0 0 14px; font-size: 16px; }
 .about-modal {
   width: min(460px, calc(100% - 32px));

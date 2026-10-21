@@ -4,11 +4,15 @@ import type { FilterId } from '../lib/view';
 import { matchesFilter } from '../lib/view';
 import { SWATCHES } from '@shared/types';
 import { useMemo, useState } from 'react';
-import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, Clock3, Flag, FolderPlus, Inbox, ListFilter, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, Clock3, Flag, FolderPlus, Inbox, ListTodo, Plus, Trash2 } from 'lucide-react';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import Tooltip from './Tooltip';
 
-const FILTERS: Exclude<FilterId, 'trash'>[] = ['all', 'today', 'next7', 'next30', 'upcoming', 'overdue', 'high', 'completed'];
+/** The filters, split in the sections of the sidebar. */
+const FILTERS: Exclude<FilterId, 'trash'>[] = ['all', 'today', 'next7', 'next30', 'upcoming', 'overdue', 'high', 'completed', 'task', 'event'];
+const WHEN_FILTERS: Exclude<FilterId, 'trash'>[] = ['today', 'next7', 'next30', 'upcoming', 'overdue'];
+const KIND_FILTERS: Exclude<FilterId, 'trash'>[] = ['task', 'event'];
+const STATE_FILTERS: Exclude<FilterId, 'trash'>[] = ['high', 'completed'];
 const FILTER_ICONS = {
   all: Inbox,
   today: CalendarDays,
@@ -18,6 +22,8 @@ const FILTER_ICONS = {
   overdue: AlertTriangle,
   high: Flag,
   completed: CheckCircle2,
+  task: ListTodo,
+  event: CalendarDays,
 } as const;
 const SWATCH_NAMES = ['violet', 'cyan', 'green', 'amber', 'red', 'pink', 'blue', 'magenta'] as const;
 
@@ -68,6 +74,8 @@ export default function Sidebar({
     high: copy.high,
     completed: copy.completed,
     trash: copy.trash,
+    task: copy.taskFilter,
+    event: copy.eventFilter,
   };
   const count = useMemo(() => {
     const counts = new Map<string, number>();
@@ -84,8 +92,34 @@ export default function Sidebar({
   return (
     <aside className="sidebar">
       <div className="side-scroll">
-        <div className="side-label"><ListFilter size={12} />{copy.filters}</div>
-        {FILTERS.map((id) => (
+        {FILTERS.map((id) => {
+          if (id !== 'all') return null;
+          return (
+            <button key={id} className={`nav-btn ${filter === id && !groupId ? 'active' : ''}`} onClick={() => onFilter(id, null)} aria-current={filter === id && !groupId ? 'page' : undefined}>
+              <Inbox size={15} />
+              {labels[id]}
+              <span className="badge">{count.get(id)}</span>
+            </button>
+          );
+        })}
+        <div className="side-label">{copy.whenSection}</div>
+        {WHEN_FILTERS.map((id) => (
+          <button key={id} className={`nav-btn ${filter === id && !groupId ? 'active' : ''}`} onClick={() => onFilter(id, null)} aria-current={filter === id && !groupId ? 'page' : undefined}>
+            {(() => { const Icon = FILTER_ICONS[id]; return <Icon size={15} />; })()}
+            {labels[id]}
+            <span className="badge">{count.get(id)}</span>
+          </button>
+        ))}
+        <div className="side-label">{copy.kindSection}</div>
+        {KIND_FILTERS.map((id) => (
+          <button key={id} className={`nav-btn ${filter === id && !groupId ? 'active' : ''}`} onClick={() => onFilter(id, null)} aria-current={filter === id && !groupId ? 'page' : undefined}>
+            {(() => { const Icon = FILTER_ICONS[id]; return <Icon size={15} />; })()}
+            {labels[id]}
+            <span className="badge">{count.get(id)}</span>
+          </button>
+        ))}
+        <div className="side-label">{copy.stateSection}</div>
+        {STATE_FILTERS.map((id) => (
           <button key={id} className={`nav-btn ${filter === id && !groupId ? 'active' : ''}`} onClick={() => onFilter(id, null)} aria-current={filter === id && !groupId ? 'page' : undefined}>
             {(() => { const Icon = FILTER_ICONS[id]; return <Icon size={15} />; })()}
             {labels[id]}

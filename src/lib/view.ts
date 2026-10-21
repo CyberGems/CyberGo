@@ -1,7 +1,7 @@
 import { dayDiff } from './format';
 import type { Item } from '@shared/types';
 
-export type FilterId = 'all' | 'today' | 'next7' | 'next30' | 'upcoming' | 'overdue' | 'high' | 'completed' | 'trash';
+export type FilterId = 'all' | 'today' | 'next7' | 'next30' | 'upcoming' | 'overdue' | 'high' | 'completed' | 'trash' | 'task' | 'event';
 
 export function whenOf(item: Item): string | null {
   return item.occurrenceAt || item.startAt;
@@ -16,6 +16,8 @@ export function matchesFilter(item: Item, filter: FilterId, groupId: string | nu
   const diff = dayDiff(whenOf(item));
   if (filter === 'all') return true;
   if (filter === 'high') return item.importance === 'high';
+  if (filter === 'task') return item.kind === 'task';
+  if (filter === 'event') return item.kind === 'event';
   if (filter === 'today') return diff === 0;
   if (filter === 'next7') return diff != null && diff >= 0 && diff <= 6;
   if (filter === 'next30') return diff != null && diff >= 0 && diff <= 29;

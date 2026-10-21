@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SWATCHES, type Group, type Item, type ItemDraft, type Lang } from '@shared/types';
+import { X } from 'lucide-react';
 import { parseLocal, toDateInput, toDateTimeInput } from '@shared/schedule';
 import type { Copy } from '../i18n';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
@@ -157,8 +158,16 @@ export default function ItemModal({
   useModalKeys(true, { esc: onClose, enter: canSave ? () => void save() : undefined });
 
   return (
-    <DialogPanel className="modal" labelledBy="item-modal-title" onBackdropMouseDown={onClose}>
-      <h2 id="item-modal-title">{item ? copy.edit : copy.newItem}</h2>
+    <DialogPanel className="modal item-modal" labelledBy="item-modal-title" onBackdropMouseDown={onClose}>
+      <div className="modal-head">
+        <h2 id="item-modal-title">{item ? copy.edit : copy.newItem}</h2>
+        <Tooltip label={copy.close} placement="left">
+          <button type="button" className="modal-close" onClick={onClose} aria-label={copy.close}>
+            <X size={16} />
+          </button>
+        </Tooltip>
+      </div>
+      <div className="modal-body">
       <div className="field">
         <span>{copy.kind}</span>
         <div className="seg">
@@ -166,7 +175,7 @@ export default function ItemModal({
           <button type="button" className={draft.kind === 'task' ? 'on' : ''} onClick={() => set({ kind: 'task' })}>{copy.task}</button>
         </div>
       </div>
-      <label className="field"><span>{copy.title}</span><input value={draft.title} onChange={(e) => set({ title: e.target.value })} autoFocus /></label>
+      <label className="field"><span>{copy.title}</span><input data-focus value={draft.title} onChange={(e) => set({ title: e.target.value })} autoFocus /></label>
       <label className="field"><span>{copy.notes}</span><textarea value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></label>
       <label className="check">
         <input type="checkbox" checked={draft.allDay} onChange={(e) => toggleAllDay(e.target.checked)} />
@@ -174,11 +183,11 @@ export default function ItemModal({
       </label>
       <div className="grid-2">
         <label className="field">
-          <span>{draft.kind === 'task' ? `${copy.due} (${copy.optional})` : copy.start}</span>
+          <span>{draft.kind === 'task' ? copy.due : copy.start} <em>{copy.optional}</em></span>
           <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.startLocal || ''} onChange={(startLocal) => setDraft((prev) => withStartDate(prev, startLocal))} />
         </label>
         <label className="field">
-          <span>{copy.end} ({copy.optional})</span>
+          <span>{copy.end} <em>{copy.optional}</em></span>
           <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.endLocal || ''} onChange={(endLocal) => set({ endLocal })} />
         </label>
       </div>
@@ -272,7 +281,8 @@ export default function ItemModal({
         </div>
       )}
       <div className="error">{endInvalid ? copy.badEnd : error}</div>
-      <div className="row-actions">
+      </div>
+      <div className="modal-foot">
         <button className="btn" onClick={onClose}>{copy.cancel}<EscHint /></button>
         <button className="btn btn-primary" disabled={!canSave} onClick={() => void save()}>{copy.save}<EnterGlyph /></button>
       </div>
