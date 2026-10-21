@@ -89,8 +89,11 @@ test('the short wording of a row keeps the room for the name', () => {
   assert.equal(shortDuePhrase(ahead, es), 'en 3 d 20 h');
   assert.equal(shortDuePhrase(ahead, en), 'in 3 d 20 h');
 
-  // A moment that is now says so, and an empty value says nothing.
-  assert.equal(shortDuePhrase(new Date().toISOString(), es), 'Ahora');
+  // A moment that is now says so, and an empty value says nothing. The
+  // moment is a few seconds ahead, because the exact same instant is read
+  // twice and the clock may tick between the two readings.
+  const now = new Date(Date.now() + 30_000).toISOString();
+  assert.equal(shortDuePhrase(now, es), 'Ahora');
   assert.equal(shortDuePhrase(null, es), '');
 });
 

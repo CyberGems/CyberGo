@@ -18,6 +18,15 @@ const SUBJECT_COLUMN = 4;
 const TABLE_WIDTHS = [12, 96, 80, 96, 200, 48];
 const TABLE_MIN_WIDTHS = [10, 76, 68, 84, 180, 44];
 const TABLE_MAX_WIDTHS = [40, 200, 180, 260, 900, 120];
+/**
+ * The last column holds the kind of the item, and its width is fixed.
+ *
+ * The right edge of the last column is the right edge of the table, and
+ * that edge never moves: the subject takes the room that is left. A handle
+ * there would be dragged without anything moving, so there is none.
+ */
+const LAST_COLUMN = TABLE_WIDTHS.length - 1;
+const LAST_COLUMN_WIDTH = 60;
 const TABLE_WIDTH_STORAGE = 'cybergo-table-column-widths-v1';
 
 function initialTableWidths(): number[] {
@@ -97,9 +106,13 @@ export default function ItemTable({
 
   const tableStyle = {
     '--table-columns': widths
-      .map((width, index) => (index === SUBJECT_COLUMN ? `minmax(${width}px, 1fr)` : `${width}px`))
+      .map((width, index) => {
+        if (index === SUBJECT_COLUMN) return `minmax(${width}px, 1fr)`;
+        if (index === LAST_COLUMN) return `${LAST_COLUMN_WIDTH}px`;
+        return `${width}px`;
+      })
       .join(' '),
-    '--table-width': `${widths.reduce((sum, width) => sum + width, 0) + (widths.length - 1) * 8 + 28}px`,
+    '--table-width': `${widths.reduce((sum, width, index) => sum + (index === LAST_COLUMN ? LAST_COLUMN_WIDTH : width), 0) + (widths.length - 1) * 8 + 28}px`,
   } as CSSProperties;
 
   function resizeColumn(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
@@ -178,9 +191,9 @@ export default function ItemTable({
       >
         <div className="list-head" style={tableStyle}>
           {headers.map((label, index) => (
-            <span className="table-head-cell" key={label || 'marker'}>
+            <span className={`table-head-cell ${index === LAST_COLUMN ? 'last' : ''}`} key={label || 'marker'}>
               {label}
-              {index !== SUBJECT_COLUMN && (
+              {index !== SUBJECT_COLUMN && index !== LAST_COLUMN && (
                 <Tooltip label={`${copy.resizeColumn}: ${label || copy.colMarker}`} placement="top" delay={350}>
                   <button
                     type="button"

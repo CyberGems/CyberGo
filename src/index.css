@@ -158,6 +158,8 @@ body.pointer-reset .settings-header-close:hover {
   position: relative; min-width: 0; height: 100%;
   display: flex; align-items: center; padding-right: 8px;
 }
+/* The last column holds the kind of the item, and it is at the right. */
+.table-head-cell.last { justify-content: flex-end; padding-right: 0; }
 /*
  * The handle that changes the width of a column.
  *
@@ -1495,12 +1497,12 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .row.in-drag {
-  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
   box-shadow: inset 3px 0 0 var(--accent-light);
 }
 .row:hover { background: color-mix(in srgb, var(--bg-hover) 80%, var(--bg-list)); }
 .row.selected:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
-.row.in-drag:hover { background: color-mix(in srgb, var(--accent) 34%, transparent); }
+.row.in-drag:hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
 .date-cell, .time-cell, .row-status { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .date-value { font-variant-numeric: tabular-nums; font-weight: 600; }
 .date-relative, .time-cell span { color: var(--text-muted); font-size: 11px; }
@@ -1695,12 +1697,20 @@ button, input, select, textarea { transition: border-color var(--transition), ba
  * It is drawn over the screen, with the measures of the screen, so it is
  * always under the pointer and never moves with the list.
  */
+/*
+ * The rectangle of a drag that picks the rows it touches.
+ *
+ * It is drawn over the screen, with the measures of the screen, so it is
+ * always under the pointer and never moves with the list. It has almost no
+ * color of its own: the rows it touches are the ones that say what is going
+ * to be picked, and two colors on top of each other only confuse.
+ */
 .drag-marquee {
   position: fixed;
   z-index: 5;
   border: 1px solid var(--accent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
   pointer-events: none;
 }
 .reminder-row {
@@ -1740,7 +1750,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .reminder-row:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 .reminder-row:hover { background: color-mix(in srgb, var(--bg-surface) 76%, var(--bg-hover)); border-color: var(--border-strong); }
 .reminder-row.selected { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: color-mix(in srgb, var(--accent) 66%, var(--border)); }
-.reminder-row.in-drag { background: color-mix(in srgb, var(--accent) 32%, transparent); border-color: color-mix(in srgb, var(--accent-light) 70%, var(--border)); }
+.reminder-row.in-drag { background: color-mix(in srgb, var(--accent) 26%, transparent); border-color: color-mix(in srgb, var(--accent-light) 70%, var(--border)); }
 .reminder-row.pulse { animation: reminder-pulse 1.6s ease; }
 @keyframes reminder-pulse {
   0% { box-shadow: 0 0 0 0 var(--accent-glow); }

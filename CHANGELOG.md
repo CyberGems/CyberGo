@@ -20,6 +20,8 @@
 - The handle that changes the width of a column is always there, as a thin line at the edge of the header, and it only says something when the pointer rests on it.
 - The menu of the right button of the reminder window works on the whole selection, the same way the one of the main window does, and it can mark the picked tasks as done.
 - The picked rows say it better. The color of the accent is stronger, and the rows that the rectangle of the drag is touching are painted even stronger, so it is clear at every moment what is going to be picked.
+- The rows of the drag and the picked ones carry almost the same color, so nothing changes when the drag is over, and the rectangle of the drag no longer paints over the rows it touches.
+- The last column of the list, the one of the kind, has a fixed width and its title sits at the right, in line with the tag of every item.
 
 ### Fixed
 
@@ -27,7 +29,7 @@
 - Dragging the edge of a column no longer leaves a rectangle on the screen nor picks the rows that are under it.
 - The selection of the list is no longer taken away the moment a drag ends, when the drag is let go on the empty room of the list.
 - The handle of a column no longer paints a bar over it when the pointer rests on it. Only the line on the edge lights up.
-- The handle of the last column stays inside the table, so it no longer pushes the list and breaks the layout on the right.
+- The handle of the last column is gone. Its edge is the edge of the table, and that edge never moves, so it was dragged without anything happening.
 
 ## 0.1.0-alpha.5 - 2026-10-20
 
