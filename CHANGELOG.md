@@ -22,6 +22,7 @@
 
 - The rectangle of the drag in the list of the main window is drawn under the pointer, and not far away from it, and it no longer stays on the screen when the drag is over.
 - Dragging the edge of a column no longer leaves a rectangle on the screen nor picks the rows that are under it.
+- The selection of the list is no longer taken away the moment a drag ends, when the drag is let go on the empty room of the list.
 
 ## 0.1.0-alpha.5 - 2026-10-20
 

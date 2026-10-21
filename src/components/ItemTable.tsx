@@ -166,6 +166,8 @@ export default function ItemTable({
           selection.onPointerDown(event);
         }}
         onClick={(event) => {
+          // The click that ends a drag is not a click on the room of the list.
+          if (selection.consumeClick()) return;
           // A click on the empty room of the list takes the selection away.
           const target = event.target as HTMLElement;
           if (target.closest('[data-id]')) return;
