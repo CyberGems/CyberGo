@@ -512,7 +512,7 @@ export default function RemindersWindow() {
               ))}
               {selection.marquee && (
                 <div
-                  className="reminder-marquee"
+                  className="drag-marquee"
                   aria-hidden="true"
                   style={{
                     left: selection.marquee.left,

@@ -1465,6 +1465,11 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   background: var(--bg-active);
   box-shadow: inset 3px 0 0 var(--accent);
 }
+/* A row the rectangle of the drag is touching, before the drag is over. */
+.row.in-drag {
+  background: var(--bg-active);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 .row:hover { background: color-mix(in srgb, var(--bg-hover) 80%, var(--bg-list)); }
 .row.selected:hover { background: color-mix(in srgb, var(--bg-active) 84%, var(--bg-hover)); }
 .date-cell, .time-cell, .row-status { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -1655,9 +1660,15 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   text-align: center;
 }
 /* The rectangle that is drawn while several rows are selected by dragging. */
-.reminder-marquee {
-  position: absolute;
-  z-index: 2;
+/*
+ * The rectangle of a drag that picks the rows it touches.
+ *
+ * It is drawn over the screen, with the measures of the screen, so it is
+ * always under the pointer and never moves with the list.
+ */
+.drag-marquee {
+  position: fixed;
+  z-index: 5;
   border: 1px solid var(--accent);
   border-radius: 6px;
   background: color-mix(in srgb, var(--accent) 18%, transparent);

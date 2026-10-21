@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type RefObject } from 'react';
 
-/** The rectangle of a drag that selects the rows it touches. */
+/**
+ * The rectangle of a drag that selects the rows it touches.
+ *
+ * The measures are the ones of the screen, so the rectangle is always drawn
+ * under the pointer, no matter which list it belongs to.
+ */
 export interface MarqueeRect {
   left: number;
   top: number;
@@ -62,26 +67,37 @@ export function useListSelection<T extends { id: string }>({
   const hitsRef = useRef<string[]>([]);
   const skipClickRef = useRef(false);
   const anchorRef = useRef<string | null>(null);
+  /** The place of the rows, measured once per drag. */
+  const rowRectsRef = useRef<{ id: string; rect: DOMRect }[]>([]);
+  /** The scroll of the list when the rows were measured. */
+  const scrollRef = useRef(-1);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
 
-  /** The rows a rectangle of the list touches, in the coordinates of the list. */
+  /**
+   * The rows a rectangle of the screen touches.
+   *
+   * The place of the rows is measured once per drag, and again when the list
+   * is scrolled, so a long list does not pay for a measure on every move of
+   * the pointer.
+   */
   const rowsInRect = useCallback((rect: MarqueeRect): string[] => {
     const list = listRef.current;
     if (!list) return [];
-    const listRect = list.getBoundingClientRect();
+    if (!rowRectsRef.current.length || scrollRef.current !== list.scrollTop) {
+      scrollRef.current = list.scrollTop;
+      rowRectsRef.current = Array.from(list.querySelectorAll<HTMLElement>('[data-id]')).flatMap((row) => {
+        const id = row.getAttribute('data-id');
+        return id ? [{ id, rect: row.getBoundingClientRect() }] : [];
+      });
+    }
     const found: string[] = [];
-    for (const row of Array.from(list.querySelectorAll<HTMLElement>('[data-id]'))) {
-      const rowRect = row.getBoundingClientRect();
-      const top = rowRect.top - listRect.top + list.scrollTop;
-      const left = rowRect.left - listRect.left + list.scrollLeft;
-      const inside = top + rowRect.height > rect.top
-        && top < rect.top + rect.height
-        && left + rowRect.width > rect.left
-        && left < rect.left + rect.width;
-      if (!inside) continue;
-      const id = row.getAttribute('data-id');
-      if (id) found.push(id);
+    for (const { id, rect: rowRect } of rowRectsRef.current) {
+      const inside = rowRect.bottom > rect.top
+        && rowRect.top < rect.top + rect.height
+        && rowRect.right > rect.left
+        && rowRect.left < rect.left + rect.width;
+      if (inside) found.push(id);
     }
     return found;
   }, [listRef]);
@@ -98,16 +114,11 @@ export function useListSelection<T extends { id: string }>({
         if (travelled < DRAG_THRESHOLD) return;
         drag.moved = true;
       }
-      const listRect = list.getBoundingClientRect();
-      const startLeft = drag.startX - listRect.left + list.scrollLeft;
-      const startTop = drag.startY - listRect.top + list.scrollTop;
-      const left = event.clientX - listRect.left + list.scrollLeft;
-      const top = event.clientY - listRect.top + list.scrollTop;
       const rect: MarqueeRect = {
-        left: Math.min(startLeft, left),
-        top: Math.min(startTop, top),
-        width: Math.abs(left - startLeft),
-        height: Math.abs(top - startTop),
+        left: Math.min(drag.startX, event.clientX),
+        top: Math.min(drag.startY, event.clientY),
+        width: Math.abs(event.clientX - drag.startX),
+        height: Math.abs(event.clientY - drag.startY),
       };
       const found = rowsInRect(rect);
       hitsRef.current = found;
@@ -118,6 +129,8 @@ export function useListSelection<T extends { id: string }>({
     function up() {
       const drag = dragRef.current;
       dragRef.current = null;
+      rowRectsRef.current = [];
+      scrollRef.current = -1;
       setMarquee(null);
       setHits([]);
       if (!drag || !drag.moved) return;
@@ -215,6 +228,9 @@ export function useListSelection<T extends { id: string }>({
   const onPointerDown = useCallback((event: ReactMouseEvent<HTMLElement>) => {
     if (event.button !== 0) return;
     skipClickRef.current = false;
+    // Every drag measures the rows again, because the list may have changed.
+    rowRectsRef.current = [];
+    scrollRef.current = -1;
     dragRef.current = {
       startX: event.clientX,
       startY: event.clientY,

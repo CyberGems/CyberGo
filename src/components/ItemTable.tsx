@@ -155,7 +155,15 @@ export default function ItemTable({
   const headers = [null, copy.colWhen, copy.colTime, copy.colLeft, copy.colSubject, copy.kind];
   return (
     <>
-      <div className="table-scroll" ref={listRef} onMouseDown={selection.onPointerDown}>
+      <div
+        className="table-scroll"
+        ref={listRef}
+        onMouseDown={(event) => {
+          // Dragging the edge of a column is not a selection.
+          if ((event.target as HTMLElement).closest('.column-resizer')) return;
+          selection.onPointerDown(event);
+        }}
+      >
         <div className="list-head" style={tableStyle}>
           {headers.map((label, index) => (
             <span className="table-head-cell" key={label || 'marker'}>
@@ -204,7 +212,7 @@ export default function ItemTable({
               <div
                 key={item.id}
                 data-id={item.id}
-                className={`row ${selectedIds.includes(item.id) ? 'selected' : ''}`}
+                className={`row ${selectedIds.includes(item.id) ? 'selected' : ''} ${selection.hits.includes(item.id) ? 'in-drag' : ''}`}
                 onClick={(event) => {
                   if (selection.consumeClick()) return;
                   selection.select(item.id, event.ctrlKey || event.metaKey, event.shiftKey);
@@ -214,7 +222,7 @@ export default function ItemTable({
                 tabIndex={0}
                 aria-current={selectedIds.includes(item.id) ? 'true' : undefined}
                 aria-label={label}
-                style={tint && !selectedIds.includes(item.id) ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
+                style={tint && !selectedIds.includes(item.id) && !selection.hits.includes(item.id) ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
               >
                 <i className="dot" style={{ background: tint || 'transparent', border: tint ? 'none' : '1px solid var(--border)' }} />
                 <span className="date-cell">
@@ -240,7 +248,7 @@ export default function ItemTable({
         </div>
         {selection.marquee && (
           <div
-            className="reminder-marquee"
+            className="drag-marquee"
             aria-hidden="true"
             style={{
               left: selection.marquee.left,

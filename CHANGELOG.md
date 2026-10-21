@@ -12,6 +12,12 @@
 - The calendar is now a panel of the application, the way the list of items is: a month ruled like a paper calendar, the days of the week on a header, the items of each day in the color of their group, and the day that is today marked with a circle.
 - A day of the calendar opens with a click on its number, and the month that owns it is the one that is shown when the day is closed.
 - The items of the calendar show their hour, and the ones that do not fit are counted next to the number of the day.
+- The list of the main window can pick several items by dragging a rectangle over them, the same way the reminder window does. The rows the rectangle touches are marked while the drag lasts, so it is clear what is going to be picked.
+
+### Fixed
+
+- The rectangle of the drag in the list of the main window is drawn under the pointer, and not far away from it, and it no longer stays on the screen when the drag is over.
+- Dragging the edge of a column no longer leaves a rectangle on the screen nor picks the rows that are under it.
 
 ## 0.1.0-alpha.5 - 2026-10-20
 
