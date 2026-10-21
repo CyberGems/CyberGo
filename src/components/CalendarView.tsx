@@ -176,6 +176,19 @@ export default function CalendarView({
     setCursor(new Date(today.getFullYear(), today.getMonth(), 1));
   }
 
+  /**
+   * Opens a day in detail.
+   *
+   * A day of the month next to the one that is shown belongs to another
+   * month, and that month is the one that is shown when the day is closed.
+   */
+  function openDayDetail(day: Date) {
+    if (day.getMonth() !== cursor.getMonth() || day.getFullYear() !== cursor.getFullYear()) {
+      setCursor(new Date(day.getFullYear(), day.getMonth(), 1));
+    }
+    setOpenDay(day);
+  }
+
   // Only the first letter is raised, so "octubre de 2026" reads correctly.
   const monthTitle = cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   const monthLabel = capitalize(monthTitle, locale);
@@ -328,7 +341,7 @@ export default function CalendarView({
                       type="button"
                       className="cal-daynum-value"
                       tabIndex={-1}
-                      onClick={(e) => { e.stopPropagation(); setOpenDay(day); }}
+                      onClick={(e) => { e.stopPropagation(); openDayDetail(day); }}
                       onDoubleClick={(e) => { e.stopPropagation(); }}
                       aria-label={`${day.toLocaleDateString(locale, { dateStyle: 'full' })}. ${copy.calOpenDay}`}
                     >
@@ -338,7 +351,7 @@ export default function CalendarView({
                       <button
                         type="button"
                         className="cal-more"
-                        onClick={(e) => { e.stopPropagation(); setOpenDay(day); }}
+                        onClick={(e) => { e.stopPropagation(); openDayDetail(day); }}
                         aria-label={copy.calShowMore.replace('{n}', String(hidden))}
                       >
                         +{hidden} {copy.calMore}

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- The reminder window is as tall as the reminders it shows. A size the user gives it by dragging the border is remembered, and from that moment the window never changes it on its own.
+- The calendar opens a day in detail, with every item of that day and a way to add one more, when a day has more items than it can show.
+
+### Improved
+
+- The calendar is now a panel of the application, the way the list of items is: a month ruled like a paper calendar, the days of the week on a header, the items of each day in the color of their group, and the day that is today marked with a circle.
+- A day of the calendar opens with a click on its number, and the month that owns it is the one that is shown when the day is closed.
+- The items of the calendar show their hour, and the ones that do not fit are counted next to the number of the day.
+
 ## 0.1.0-alpha.5 - 2026-10-20
 
 Fifth public pre-release of CyberGo. The lock screen was rebuilt to match the other apps of the suite, the application has its official icon, and the main window finally behaves like the reminder window: the list fits the space it has, several items can be picked at once, and the editor of an item has the same air as the lock.
