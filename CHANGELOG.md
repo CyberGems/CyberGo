@@ -17,6 +17,8 @@
 - A day of the calendar opens with a click on its number, and the month that owns it is the one that is shown when the day is closed.
 - The items of the calendar show their hour, and the ones that do not fit are counted next to the number of the day.
 - The list of the main window can pick several items by dragging a rectangle over them, the same way the reminder window does. The rows the rectangle touches are marked while the drag lasts, so it is clear what is going to be picked.
+- The handle that changes the width of a column is always there, as a thin line at the edge of the header, and it only says something when the pointer rests on it.
+- The menu of the right button of the reminder window works on the whole selection, the same way the one of the main window does, and it can mark the picked tasks as done.
 
 ### Fixed
 

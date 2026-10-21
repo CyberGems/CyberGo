@@ -13,7 +13,7 @@ import LockScreen from './LockScreen';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import { useListSelection } from '../hooks/useListSelection';
 import {
-  BellRing, CalendarDays, CheckCircle2, CheckCheck, ChevronDown, Clock3, ExternalLink,
+  BellRing, CalendarDays, Check, CheckCircle2, CheckCheck, ChevronDown, Clock3, ExternalLink,
   Info, ListChecks, ListTodo, ListX, MoreHorizontal, Pin, SlidersHorizontal, Timer,
   Trash2, VolumeX, X, XCircle,
 } from 'lucide-react';
@@ -74,7 +74,7 @@ export default function RemindersWindow() {
   const [pulse, setPulse] = useState<string[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
   const previewModeRef = useRef(false);
-  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ ids: string[]; x: number; y: number } | null>(null);
   const [moreMenu, setMoreMenu] = useState<{ x: number; y: number } | null>(null);
   const [confirm, setConfirm] = useState<null | 'dismiss-all' | 'snooze-all'>(null);
   const [filter, setFilter] = useState<ReminderFilter>('all');
@@ -270,26 +270,52 @@ export default function RemindersWindow() {
     },
   });
 
+  /**
+   * The menu of the right button.
+   *
+   * A right click on a reminder that is not picked picks it. On one that is
+   * already picked, the whole selection is what the menu acts on.
+   */
   function showContextMenu(event: ReactMouseEvent<HTMLElement>, id: string) {
     event.preventDefault();
     event.stopPropagation();
-    const width = 190;
-    const height = 190;
+    const ids = selectedIds.includes(id) ? selectedIds : [id];
+    if (!selectedIds.includes(id)) setSelectedIds([id]);
+    const width = 220;
+    const height = 220;
     setContextMenu({
-      id,
+      ids,
       x: Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8)),
       y: Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8)),
     });
   }
 
-  function runContextAction(action: 'open' | 'dismiss' | 'delete' | 'dismiss-all') {
+  function runContextAction(action: 'open' | 'complete' | 'dismiss' | 'delete' | 'dismiss-all') {
     const menu = contextMenu;
     setContextMenu(null);
     if (!menu) return;
-    if (action === 'open') detach(api.openItem(menu.id), 'open the item');
-    if (action === 'dismiss') detach(api.dismiss(menu.id), 'dismiss the reminder');
-    if (action === 'delete') detach(api.deleteItem(menu.id), 'delete the item');
-    if (action === 'dismiss-all') setConfirm('dismiss-all');
+    if (action === 'dismiss-all') {
+      setConfirm('dismiss-all');
+      return;
+    }
+    const picked = items.filter((item) => menu.ids.includes(item.id));
+    if (!picked.length) return;
+    if (action === 'open') {
+      if (picked.length !== 1) return;
+      detach(api.openItem(picked[0].id), 'open the item');
+      return;
+    }
+    for (const item of picked) {
+      if (action === 'complete') detach(api.completeItem(item.id), 'complete the item');
+      if (action === 'dismiss') detach(api.dismiss(item.id), 'dismiss the reminder');
+      if (action === 'delete') detach(api.deleteItem(item.id), 'delete the item');
+    }
+  }
+
+  /** The picked reminders can only be marked as done when all of them are tasks. */
+  function canCompleteContext(ids: string[]): boolean {
+    const picked = items.filter((item) => ids.includes(item.id));
+    return picked.length > 0 && picked.every((item) => item.kind === 'task' && !item.completedAt);
   }
 
   /** The actions of the footer always work on the whole selection. */
@@ -737,18 +763,28 @@ export default function RemindersWindow() {
           onContextMenu={(event) => event.preventDefault()}
           onMouseDown={(event) => event.stopPropagation()}
         >
-          <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('open')}>
-            <ExternalLink size={15} />
-            <span>{copy.openItem}</span>
-          </button>
+          {contextMenu.ids.length === 1 && (
+            <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('open')}>
+              <ExternalLink size={15} />
+              <span>{copy.openItem}</span>
+            </button>
+          )}
+          {canCompleteContext(contextMenu.ids) && (
+            <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('complete')}>
+              <Check size={15} />
+              <span>{contextMenu.ids.length === 1
+                ? copy.markDone
+                : copy.markDoneMany.replace('{n}', String(contextMenu.ids.length))}</span>
+            </button>
+          )}
           <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('dismiss')}>
             <X size={15} />
-            <span>{copy.dismiss}</span>
+            <span>{contextMenu.ids.length === 1 ? copy.dismiss : copy.dismissMany.replace('{n}', String(contextMenu.ids.length))}</span>
           </button>
           <div className="text-context-menu-separator" />
           <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('delete')}>
             <Trash2 size={15} />
-            <span>{copy.delete}</span>
+            <span>{contextMenu.ids.length === 1 ? copy.delete : copy.deleteMany.replace('{count}', String(contextMenu.ids.length))}</span>
           </button>
           <div className="text-context-menu-separator" />
           <button type="button" role="menuitem" className="text-context-menu-item" disabled={previewMode} onClick={() => runContextAction('dismiss-all')}>

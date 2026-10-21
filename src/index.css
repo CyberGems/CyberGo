@@ -158,14 +158,25 @@ body.pointer-reset .settings-header-close:hover {
   position: relative; min-width: 0; height: 100%;
   display: flex; align-items: center; padding-right: 8px;
 }
+/*
+ * The handle that changes the width of a column.
+ *
+ * It is always there, so the columns can be resized without hunting for the
+ * edge, but it is a thin line that only says something when the pointer
+ * rests on it.
+ */
 .column-resizer {
-  position: absolute; z-index: 2; top: 6px; right: -5px; bottom: 6px;
-  width: 10px; padding: 0; border: 0; border-left: 1px solid transparent;
+  position: absolute; z-index: 2; top: 5px; right: -5px; bottom: 5px;
+  width: 10px; padding: 0; border: 0; border-left: 1px solid var(--border-strong);
   background: transparent; cursor: col-resize;
+  opacity: 0.5;
+  transition: opacity var(--transition), border-color var(--transition), background var(--transition);
 }
+.table-head-cell:hover .column-resizer { opacity: 0.9; }
 .column-resizer:hover, .column-resizer:focus-visible {
   border-left-color: var(--accent);
   background: var(--accent-dim);
+  opacity: 1;
   outline: none;
 }
 .is-resizing-column, .is-resizing-column * { cursor: col-resize !important; user-select: none !important; }
