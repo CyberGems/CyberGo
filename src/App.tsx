@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, CalendarDays, Command, Flame, Info, List, Lock, Pencil, Plus, Search, Settings, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { Bell, CalendarDays, Check, Command, Flame, Info, List, ListChecks, ListX, Lock, Pencil, Plus, Search, Settings, Trash2, X } from 'lucide-react';
 import type { AppInfo, Bootstrap, Item, ItemDraft, RecoveryNotice } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf, type Copy } from './i18n';
@@ -63,6 +63,8 @@ function MainApp() {
     localStorage.getItem('cybergo-view') === 'calendar' ? 'calendar' : 'list'
   ));
   const [confirm, setConfirm] = useState<null | { title: string; body: string; action: string; danger?: boolean; run: () => void }>(null);
+  /** The menu of the right button, with the items it acts on. */
+  const [contextMenu, setContextMenu] = useState<null | { ids: string[]; x: number; y: number }>(null);
   const lastTheme = useRef<string | null>(null);
   /**
    * Whether a dialog is already open. The command palette is a launcher, so
@@ -199,6 +201,8 @@ function MainApp() {
   }, [visible]);
   const selectedItems = items.filter((item) => selectedIds.includes(item.id));
   const selected = selectedItems[0] ?? null;
+  /** True when everything that is on screen is already picked. */
+  const allSelected = visible.length > 0 && selectedIds.length === visible.length;
   const stats = useMemo(() => computeStats(items.map((item) => item.completedAt)), [items]);
 
   useModalKeys(!!confirm, {
@@ -231,7 +235,11 @@ function MainApp() {
 
   /** The delete of everything that is picked, with a confirmation. */
   function askDeleteSelection() {
-    const picked = selectedItems;
+    askDeleteItems(selectedItems);
+  }
+
+  /** The delete of the given items, with a confirmation. */
+  function askDeleteItems(picked: Item[]) {
     if (!picked.length) return;
     const permanent = picked.filter((item) => item.deletedAt);
     const soft = picked.filter((item) => !item.deletedAt);
@@ -251,6 +259,76 @@ function MainApp() {
       },
     });
   }
+
+  /**
+   * The menu of the right button.
+   *
+   * A right click on a row that is not picked picks it. On a row that is
+   * already picked, the whole selection is what the menu acts on.
+   */
+  function showContextMenu(event: ReactMouseEvent<HTMLElement>, id: string) {
+    event.preventDefault();
+    event.stopPropagation();
+    const ids = selectedIds.includes(id) ? selectedIds : [id];
+    if (!selectedIds.includes(id)) setSelectedIds([id]);
+    const width = 220;
+    const height = 160;
+    setContextMenu({
+      ids,
+      x: Math.max(8, Math.min(event.clientX, window.innerWidth - width - 8)),
+      y: Math.max(8, Math.min(event.clientY, window.innerHeight - height - 8)),
+    });
+  }
+
+  /**
+   * Whether the given items can be marked as done.
+   *
+   * Only a task that is still pending can be, and the group is marked only
+   * when every one of its items can be.
+   */
+  function canComplete(ids: string[]): boolean {
+    if (!ids.length || filter === 'trash') return false;
+    const picked = items.filter((item) => ids.includes(item.id));
+    return picked.length > 0 && picked.every((item) => item.kind === 'task' && !item.completedAt);
+  }
+
+  function runContextAction(action: 'edit' | 'complete' | 'delete') {    const menu = contextMenu;
+    setContextMenu(null);
+    if (!menu) return;
+    const picked = items.filter((item) => menu.ids.includes(item.id));
+    if (!picked.length) return;
+    if (action === 'edit') {
+      if (picked.length !== 1) return;
+      setSelectedIds([picked[0].id]);
+      setEditing(picked[0]);
+      return;
+    }
+    if (action === 'complete') {
+      for (const item of picked) detach(api.completeItem(item.id), 'complete the item');
+      setSelectedIds([]);
+      return;
+    }
+    askDeleteItems(picked);
+  }
+
+  // The menu of the right button closes as soon as the pointer goes away.
+  useEffect(() => {
+    if (!contextMenu) return;
+    function away(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (target.closest('.item-context-menu')) return;
+      setContextMenu(null);
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setContextMenu(null);
+    }
+    document.addEventListener('mousedown', away);
+    window.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      window.removeEventListener('keydown', escape);
+    };
+  }, [contextMenu]);
 
   if (!boot) {
     if (loadError) {
@@ -290,6 +368,18 @@ function MainApp() {
           </div>
           <span className="toolbar-divider" />
           <div className="selection-actions">
+            <Tooltip label={allSelected ? copy.clearSelection : copy.selectAll} placement="bottom">
+              <button
+                type="button"
+                className={`icon-btn ${allSelected ? 'on' : ''}`}
+                aria-label={allSelected ? copy.clearSelection : copy.selectAll}
+                aria-pressed={allSelected}
+                disabled={!visible.length}
+                onClick={() => setSelectedIds(allSelected ? [] : visible.map((item) => item.id))}
+              >
+                {allSelected ? <ListX size={15} /> : <ListChecks size={15} />}
+              </button>
+            </Tooltip>
             <button className="btn" disabled={selectedItems.length !== 1 || filter === 'trash'} onClick={() => selected && setEditing(selected)}>
               <Pencil size={14} /><span className="toolbar-label">{copy.edit}</span>
             </button>
@@ -404,6 +494,7 @@ function MainApp() {
               onSelect={setSelectedIds}
               onOpen={(item) => { setSelectedIds([item.id]); setEditing(item); }}
               onNewDay={newOnDay}
+              onContextMenu={showContextMenu}
             />
           ) : (
             <ItemTable
@@ -415,6 +506,7 @@ function MainApp() {
               onSelect={setSelectedIds}
               onOpen={(item) => { setSelectedIds([item.id]); if (filter !== 'trash') setEditing(item); }}
               onDelete={askDeleteSelection}
+              onContextMenu={showContextMenu}
             />
           )}
           {filter === 'trash' && items.some((item) => item.deletedAt) && (
@@ -492,6 +584,38 @@ function MainApp() {
       )}
       </div>
       <TextContextMenu copy={copy} />
+      {contextMenu && (
+        <div
+          className="text-context-menu item-context-menu"
+          role="menu"
+          aria-label={copy.itemContextMenu}
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onContextMenu={(event) => event.preventDefault()}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          {contextMenu.ids.length === 1 && (
+            <button type="button" role="menuitem" className="text-context-menu-item" onClick={() => runContextAction('edit')}>
+              <Pencil size={15} />
+              <span>{copy.edit}</span>
+            </button>
+          )}
+          {canComplete(contextMenu.ids) && (
+            <button type="button" role="menuitem" className="text-context-menu-item" onClick={() => runContextAction('complete')}>
+              <Check size={15} />
+              <span>{contextMenu.ids.length === 1
+                ? copy.markDone
+                : copy.markDoneMany.replace('{n}', String(contextMenu.ids.length))}</span>
+            </button>
+          )}
+          {contextMenu.ids.length === 1 && canComplete(contextMenu.ids) && (
+            <div className="text-context-menu-separator" />
+          )}
+          <button type="button" role="menuitem" className="text-context-menu-item" onClick={() => runContextAction('delete')}>
+            <Trash2 size={15} />
+            <span>{contextMenu.ids.length === 1 ? copy.delete : copy.deleteMany.replace('{count}', String(contextMenu.ids.length))}</span>
+          </button>
+        </div>
+      )}
     </>
   );
 }

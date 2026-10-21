@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Flag } from 'lucide-react';
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
+import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Copy } from '../i18n';
 import type { Group, Item, Lang } from '@shared/types';
 import { formatDate, formatTimeRange, itemStatus } from '../lib/format';
@@ -49,6 +49,7 @@ export default function ItemTable({
   onSelect,
   onOpen,
   onDelete,
+  onContextMenu,
 }: {
   copy: Copy;
   lang: Lang;
@@ -58,6 +59,7 @@ export default function ItemTable({
   onSelect: (ids: string[]) => void;
   onOpen: (item: Item) => void;
   onDelete?: () => void;
+  onContextMenu?: (event: ReactMouseEvent<HTMLElement>, id: string) => void;
 }) {
   const [widths, setWidths] = useState(initialTableWidths);
   const widthsRef = useRef(widths);
@@ -163,6 +165,14 @@ export default function ItemTable({
           if ((event.target as HTMLElement).closest('.column-resizer')) return;
           selection.onPointerDown(event);
         }}
+        onClick={(event) => {
+          // A click on the empty room of the list takes the selection away.
+          const target = event.target as HTMLElement;
+          if (target.closest('[data-id]')) return;
+          if (target.classList.contains('table-scroll') || target.classList.contains('rows')) {
+            onSelect([]);
+          }
+        }}
       >
         <div className="list-head" style={tableStyle}>
           {headers.map((label, index) => (
@@ -218,6 +228,7 @@ export default function ItemTable({
                   selection.select(item.id, event.ctrlKey || event.metaKey, event.shiftKey);
                 }}
                 onDoubleClick={() => onOpen(item)}
+                onContextMenu={(event) => onContextMenu?.(event, item.id)}
                 role="button"
                 tabIndex={0}
                 aria-current={selectedIds.includes(item.id) ? 'true' : undefined}

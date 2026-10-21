@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import type { Group, Item, Lang } from '@shared/types';
 import type { Copy } from '../i18n';
@@ -61,6 +61,7 @@ export default function CalendarView({
   onSelect,
   onOpen,
   onNewDay,
+  onContextMenu,
 }: {
   copy: Copy;
   lang: Lang;
@@ -70,6 +71,7 @@ export default function CalendarView({
   onSelect: (ids: string[]) => void;
   onOpen: (item: Item) => void;
   onNewDay: (day: Date) => void;
+  onContextMenu?: (event: ReactMouseEvent<HTMLElement>, id: string) => void;
 }) {
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -268,6 +270,7 @@ export default function CalendarView({
                       style={chipStyle(item)}
                       onClick={() => onSelect([item.id])}
                       onDoubleClick={() => onOpen(item)}
+                      onContextMenu={(event) => onContextMenu?.(event, item.id)}
                       aria-label={chipLabel(item)}
                     >
                       <span className="cal-day-time">
@@ -368,6 +371,7 @@ export default function CalendarView({
                         style={chipStyle(item)}
                         onClick={(e) => { e.stopPropagation(); onSelect([item.id]); }}
                         onDoubleClick={(e) => { e.stopPropagation(); onOpen(item); }}
+                        onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e, item.id); }}
                         aria-label={chipLabel(item)}
                       >
                         {when && !item.allDay && <span className="cal-chip-time">{formatClock(when.toISOString(), lang)}</span>}
@@ -393,6 +397,7 @@ export default function CalendarView({
                     className={`chip ${selectedIds.includes(item.id) ? 'on' : ''}`}
                     onClick={() => onSelect([item.id])}
                     onDoubleClick={() => onOpen(item)}
+                    onContextMenu={(event) => onContextMenu?.(event, item.id)}
                   >
                     {item.title}
                   </button>

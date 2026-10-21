@@ -531,6 +531,8 @@ body.pointer-reset .settings-header-close:hover {
 }
 .seg button { padding: 6px 10px; }
 .seg button.on, .theme-card.on { border-color: var(--accent); color: var(--accent-light); background: var(--accent-dim); }
+/* The button of the toolbar that shows that everything is picked. */
+.icon-btn.on { background: var(--accent-dim); color: var(--accent-light); }
 .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
 .swatch { width: 22px; height: 22px; padding: 0; }
 .swatch.on { outline: 2px solid var(--text-primary); outline-offset: 1px; }

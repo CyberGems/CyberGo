@@ -6,9 +6,13 @@
 
 - The reminder window is as tall as the reminders it shows. A size the user gives it by dragging the border is remembered, and from that moment the window never changes it on its own.
 - The calendar opens a day in detail, with every item of that day and a way to add one more, when a day has more items than it can show.
+- The items of the list and of the calendar have a menu of their own, with the right button of the mouse. It edits the item, marks it as done and deletes it, and when several items are picked it acts on all of them.
+- The toolbar of the main window has a button that picks everything at once, the same one the reminder window has, and it turns into the one that takes the selection away.
+- A click on the empty room of the list takes the selection away.
 
 ### Improved
 
+- The button "Más" of the quick capture opens a menu with the other ways of creating what is written: the full editor, and an event. It is no longer the same thing as the button "New" of the title bar.
 - The calendar is now a panel of the application, the way the list of items is: a month ruled like a paper calendar, the days of the week on a header, the items of each day in the color of their group, and the day that is today marked with a circle.
 - A day of the calendar opens with a click on its number, and the month that owns it is the one that is shown when the day is closed.
 - The items of the calendar show their hour, and the ones that do not fit are counted next to the number of the day.
