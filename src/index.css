@@ -191,7 +191,10 @@ body.pointer-reset .settings-header-close:hover {
   text-align: left;
   transition: background var(--transition), color var(--transition);
 }
-.column-sort:hover { background: var(--bg-hover); color: var(--text-primary); }
+.column-sort:hover {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text-primary);
+}
 .column-sort.sorted { color: var(--accent-light); }
 .table-head-cell.last .column-sort { justify-content: flex-end; }
 /*
@@ -203,8 +206,14 @@ body.pointer-reset .settings-header-close:hover {
 .column-sort-arrow { display: inline-flex; flex-shrink: 0; }
 .column-sort-arrow[data-hidden="true"] { visibility: hidden; }
 /* The line that separates two columns when there is no handle to drag. */
+/*
+ * The line that separates two columns.
+ *
+ * It goes from the top to the bottom of the header, the way the separators
+ * of a file explorer do, and not as a little mark that hangs in the middle.
+ */
 .column-divider {
-  position: absolute; z-index: 2; top: 5px; right: 0; bottom: 5px;
+  position: absolute; z-index: 2; top: 0; right: 0; bottom: 0;
   width: 1px;
   background: var(--border-strong);
   opacity: 0.45;
@@ -227,7 +236,7 @@ body.pointer-reset .settings-header-close:hover {
  * grabbing it is easy from both sides.
  */
 .column-resizer {
-  position: absolute; z-index: 2; top: 5px; right: -5px; bottom: 5px;
+  position: absolute; z-index: 2; top: 0; right: -5px; bottom: 0;
   width: 10px; padding: 0; border: 0; background: transparent; cursor: col-resize;
   outline: none;
 }

@@ -32,6 +32,8 @@
 - The light of a cell follows the rounded corners of the card, and it no longer sticks out of it.
 - The gap between two columns belongs to the column on its right, so the light of a cell starts right at the line that separates them and no strip of nothing is left in between.
 - The handle that changes the width of a column is grabbed from both sides of the line, so the cursor does not change right next to it.
+- The lines that separate the columns go from the top to the bottom of the header, the way a file explorer draws them, and the light of a cell is now the color of the application.
+- The state column is ordered the way its wording reads: first what is late, then today, tomorrow and later, and at the end what is already over. Inside each group, the closest moment comes first.
 
 ### Fixed
 

@@ -48,15 +48,20 @@ export type SortColumn = 'date' | 'time' | 'state' | 'subject' | 'kind';
 export type SortDirection = 'asc' | 'desc';
 
 /**
- * How urgent an item is.
+ * The group of the state of an item.
  *
- * The state of the list says it in words, and this is the same order in
- * numbers: what is late, what is today, what is tomorrow and what is later.
+ * It follows the wording of the column, so the order of the list is the
+ * order of the words that are read in it: what is late, what is today, what
+ * is tomorrow, what is later, and what is already over.
  */
-function urgency(item: Item): number {
+function stateGroup(item: Item): number {
   const iso = whenOf(item);
   if (!iso) return 4;
-  if (new Date(iso).getTime() < Date.now()) return 0;
+  if (new Date(iso).getTime() < Date.now()) {
+    // A late task still waits to be done. An event that already happened is
+    // over, and it goes with the rest.
+    return item.kind === 'task' ? 0 : 4;
+  }
   const diff = dayDiff(iso);
   if (diff === 0) return 1;
   if (diff === 1) return 2;
@@ -95,9 +100,9 @@ export function sortByColumn(items: Item[], column: SortColumn, direction: SortD
       return sign * (da.getTime() - db.getTime());
     }
     if (column === 'state') {
-      const ua = urgency(a);
-      const ub = urgency(b);
-      if (ua !== ub) return sign * (ua - ub);
+      const ga = stateGroup(a);
+      const gb = stateGroup(b);
+      if (ga !== gb) return sign * (ga - gb);
       return sign * (new Date(av).getTime() - new Date(bv).getTime());
     }
     return sign * (new Date(av).getTime() - new Date(bv).getTime());

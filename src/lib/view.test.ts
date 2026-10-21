@@ -64,8 +64,10 @@ test('the kind is ordered with the tasks first', () => {
   assert.equal(byKind[byKind.length - 1].kind, 'event');
 });
 
-test('the state is ordered with what is late first', () => {
-  const byState = sortByColumn(items, 'state', 'asc');
-  const first = byState[0];
-  assert.ok(new Date(first.startAt!).getTime() < Date.now(), 'the first one is late');
+test('the state is ordered with what is late first, and what is over at the end', () => {
+  const late = item('late', { kind: 'task', startAt: '2020-01-01T10:00:00.000Z' });
+  const over = item('over', { kind: 'event', startAt: '2020-01-02T10:00:00.000Z' });
+  const today = item('today', { startAt: new Date().toISOString() });
+  const byState = sortByColumn([over, today, late], 'state', 'asc');
+  assert.deepEqual(titles(byState), ['late', 'today', 'over']);
 });
