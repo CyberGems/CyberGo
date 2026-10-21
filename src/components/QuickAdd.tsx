@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ItemDraft, Lang } from '@shared/types';
 import { formatLocalInput, parseLocal } from '@shared/schedule';
 import { parseQuick, presetStart, type QuickPreset } from '@shared/quick';
@@ -6,7 +7,7 @@ import type { Copy } from '../i18n';
 import { duePhrase, formatClock } from '../lib/format';
 import { EnterGlyph } from './ModalKeys';
 import Tooltip from './Tooltip';
-import { ChevronDown, ChevronUp, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, SlidersHorizontal, Sparkles } from 'lucide-react';
 
 const PRESETS: QuickPreset[] = ['10m', '1h', 'tonight', 'tomorrow9'];
 
@@ -63,6 +64,10 @@ export default function QuickAdd({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('cybergo-quick-collapsed') === '1');
+  /** The menu of the button that offers the rest of the options. */
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreBox, setMoreBox] = useState<{ left: number; top: number } | null>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const parsed = parseQuick(text);
   const previewDraft = draftFrom(text, armed, groupId, null);
@@ -109,8 +114,8 @@ export default function QuickAdd({
     parsed.recurrence ? recurrenceSummary(copy, parsed.recurrence) : '',
   ].filter(Boolean).join(' · ');
 
-  async function commit(force: Date | null) {
-    const draft = draftFrom(text, armed, groupId, force);
+  async function commit(force: Date | null, kind: ItemDraft['kind'] = 'task') {
+    const draft = { ...draftFrom(text, armed, groupId, force), kind };
     if (!draft.title || busy) return;
     setBusy(true);
     setError('');
@@ -133,6 +138,41 @@ export default function QuickAdd({
     setArmed((current) => (current === preset ? null : preset));
     inputRef.current?.focus();
   }
+
+  /**
+   * The menu of the button that offers the rest of the options.
+   *
+   * The capture creates a task and nothing else. The menu is where the other
+   * two ways of creating it live: the full editor, and an event.
+   */
+  function openMore() {
+    const rect = moreRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const width = 220;
+    setMoreBox({
+      left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)),
+      top: Math.min(rect.bottom + 6, Math.max(8, window.innerHeight - 100)),
+    });
+    setMoreOpen(true);
+  }
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    function away(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (target.closest('.quick-more-menu') || target.closest('.quick-more-button')) return;
+      setMoreOpen(false);
+    }
+    function escape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMoreOpen(false);
+    }
+    document.addEventListener('mousedown', away);
+    window.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('mousedown', away);
+      window.removeEventListener('keydown', escape);
+    };
+  }, [moreOpen]);
 
   return (
     <div className={`quick ${collapsed ? 'collapsed' : ''}`}>
@@ -198,7 +238,16 @@ export default function QuickAdd({
             <button type="button" className="btn btn-primary" disabled={!canSave} onClick={() => void commit(null)}>
               {copy.create}<EnterGlyph />
             </button>
-            <button type="button" className="btn" onClick={() => onMore(draftFrom(text, armed, groupId, null))}><SlidersHorizontal size={14} />{copy.more}</button>
+            <button
+              type="button"
+              className="btn quick-more-button"
+              ref={moreRef}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              onClick={() => (moreOpen ? setMoreOpen(false) : openMore())}
+            >
+              <SlidersHorizontal size={14} />{copy.more}
+            </button>
           </div>
           <div className="quick-presets">
             <span className={`quick-when ${text.trim() ? 'on' : ''}`}>{copy.quickWhen}</span>
@@ -239,6 +288,37 @@ export default function QuickAdd({
           )}
           {error && <div className="quick-error" role="alert">{error}</div>}
         </div>
+      )}
+      {moreOpen && moreBox && createPortal(
+        <div
+          className="text-context-menu quick-more-menu"
+          role="menu"
+          aria-label={copy.more}
+          style={{ left: moreBox.left, top: moreBox.top }}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="text-context-menu-item"
+            disabled={!parsed.title}
+            onClick={() => { setMoreOpen(false); onMore(draftFrom(text, armed, groupId, null)); }}
+          >
+            <SlidersHorizontal size={15} />
+            <span>{copy.quickOpenEditor}</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="text-context-menu-item"
+            disabled={!parsed.title}
+            onClick={() => { setMoreOpen(false); void commit(null, 'event'); }}
+          >
+            <CalendarDays size={15} />
+            <span>{copy.quickAsEvent}</span>
+          </button>
+        </div>,
+        document.body,
       )}
     </div>
   );
