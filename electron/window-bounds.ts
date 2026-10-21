@@ -3,6 +3,61 @@ import type { Display } from 'electron';
 export const MAIN_MIN_WIDTH = 840;
 export const MAIN_MIN_HEIGHT = 560;
 
+/**
+ * The size of the reminder window.
+ *
+ * The window fits the reminders it shows, but only until the user gives it a
+ * size of their own. From that moment the size they chose is the one that is
+ * used, and it is kept for good.
+ */
+export interface ReminderWindowSize {
+  width: number;
+  height: number;
+  /** True when the size is the one the user chose, and not the fitted one. */
+  manual: boolean;
+}
+
+export interface ReminderWindowLimits {
+  defaultWidth: number;
+  defaultHeight: number;
+  minWidth: number;
+  minHeight: number;
+}
+
+/**
+ * Reads the size the reminder window is opened with.
+ *
+ * A size that was not chosen by the user is not kept: the window fits the
+ * reminders again, as many as it shows.
+ */
+export function resolveReminderWindowSize(
+  raw: string | null | undefined,
+  limits: ReminderWindowLimits,
+): ReminderWindowSize {
+  const fallback: ReminderWindowSize = {
+    width: limits.defaultWidth,
+    height: limits.defaultHeight,
+    manual: false,
+  };
+  if (!raw) return fallback;
+  let parsed: { width?: number; height?: number; manual?: boolean } | null = null;
+  try {
+    parsed = JSON.parse(raw) as { width?: number; height?: number; manual?: boolean };
+  } catch {
+    // The stored size cannot be read, the default one is used.
+    return fallback;
+  }
+  if (parsed?.manual !== true) return fallback;
+  const width = Math.round(Number(parsed.width));
+  const height = Math.round(Number(parsed.height));
+  if (!Number.isFinite(width) || width < limits.minWidth) return fallback;
+  return {
+    width,
+    height: Number.isFinite(height) && height >= limits.minHeight ? height : limits.defaultHeight,
+    manual: true,
+  };
+}
+
 export interface SavedWindowBounds {
   x?: number | null;
   y?: number | null;

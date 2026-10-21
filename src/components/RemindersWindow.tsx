@@ -85,6 +85,7 @@ export default function RemindersWindow() {
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const pulseTimer = useRef<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const copy = copyOf(settings?.language || 'es');
 
   async function reload(pulseIds: string[] = []) {
@@ -186,6 +187,31 @@ export default function RemindersWindow() {
     if (filter === 'event') return orderedItems.filter((item) => item.kind === 'event');
     return orderedItems;
   }, [orderedItems, filter]);
+
+  /**
+   * The window is as tall as the reminders it shows, until the user gives it
+   * a size of their own. From that moment the size they chose is the one
+   * that is used.
+   */
+  useEffect(() => {
+    if (!api.fitReminderWindow) return;
+    const frame = window.requestAnimationFrame(() => {
+      const body = bodyRef.current;
+      const list = listRef.current;
+      if (!body || !list) return;
+      const chrome = Array.from(body.children).reduce((total, child) => {
+        if (child === list) return total;
+        const height = (child as HTMLElement).offsetHeight;
+        return total + (height || 0);
+      }, 0);
+      const wanted = chrome + list.scrollHeight + 10;
+      // The bar of the window is above the body, and it is part of the height.
+      const app = body.parentElement;
+      const bar = app ? app.offsetHeight - body.offsetHeight : 0;
+      if (wanted > 0) void api.fitReminderWindow(bar + wanted);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [visibleItems.length, items.length]);
 
   const overdueCount = useMemo(
     () => orderedItems.filter((item) => (dayOffset(item) ?? 0) < 0).length,
@@ -320,7 +346,7 @@ export default function RemindersWindow() {
         title={copy.remindersTitle}
         windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
       />
-      <div className="reminder-body">
+      <div className="reminder-body" ref={bodyRef}>
         {showLock ? (
           <LockScreen
             copy={copy}

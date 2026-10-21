@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Display } from 'electron';
-import { resolveWindowBounds } from './window-bounds';
+import { resolveReminderWindowSize, resolveWindowBounds } from './window-bounds';
 
 function display(id: number, x: number, y: number, width: number, height: number): Display {
   const bounds = { x, y, width, height };
@@ -57,4 +57,51 @@ test('clamps oversized or stale bounds instead of spilling across displays', () 
   assert.ok(result.height <= primary.bounds.height);
   assert.ok(result.x >= primary.bounds.x);
   assert.ok(result.y >= primary.bounds.y);
+});
+
+const reminderLimits = {
+  defaultWidth: 420,
+  defaultHeight: 560,
+  minWidth: 340,
+  minHeight: 380,
+};
+
+test('the reminder window uses the default size when nothing was stored', () => {
+  const result = resolveReminderWindowSize(null, reminderLimits);
+  assert.equal(result.width, 420);
+  assert.equal(result.height, 560);
+  assert.equal(result.manual, false);
+});
+
+test('the reminder window keeps the size the user chose', () => {
+  const stored = JSON.stringify({ width: 500, height: 700, manual: true });
+  const result = resolveReminderWindowSize(stored, reminderLimits);
+  assert.equal(result.width, 500);
+  assert.equal(result.height, 700);
+  assert.equal(result.manual, true);
+});
+
+test('a size that was not chosen by the user does not survive the restart', () => {
+  const stored = JSON.stringify({ width: 500, height: 700, manual: false });
+  const result = resolveReminderWindowSize(stored, reminderLimits);
+  assert.equal(result.width, 420);
+  assert.equal(result.height, 560);
+  assert.equal(result.manual, false);
+});
+
+test('a damaged or impossible size falls back to the default one', () => {
+  assert.equal(resolveReminderWindowSize('not a size', reminderLimits).manual, false);
+  const tooSmall = JSON.stringify({ width: 100, height: 100, manual: true });
+  const result = resolveReminderWindowSize(tooSmall, reminderLimits);
+  assert.equal(result.width, 420);
+  assert.equal(result.height, 560);
+  assert.equal(result.manual, false);
+});
+
+test('a height below the minimum falls back to the default height', () => {
+  const stored = JSON.stringify({ width: 500, height: 120, manual: true });
+  const result = resolveReminderWindowSize(stored, reminderLimits);
+  assert.equal(result.width, 500);
+  assert.equal(result.height, 560);
+  assert.equal(result.manual, true);
 });

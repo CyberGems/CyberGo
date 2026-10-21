@@ -12,7 +12,7 @@ import { hashSecret, normalizeAuthSecret, verifySecret as verifyStoredSecret } f
 import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition } from '../shared/types';
 import * as db from './db';
 import { asDraft, asId, asIsoDate, asNumber, asText, methodOf, presented } from './validate';
-import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
+import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verify = process.env.CYBERGO_VERIFY === '1';
@@ -39,6 +39,7 @@ const REMINDER_DEFAULT_WIDTH = 420;
 const REMINDER_DEFAULT_HEIGHT = 560;
 const REMINDER_MIN_WIDTH = 340;
 const REMINDER_MIN_HEIGHT = 380;
+const REMINDER_MAX_HEIGHT = 900;
 const REMINDER_PREVIEW_DURATION = 3_000;
 const locale = () => (app.getLocale().toLowerCase().startsWith('es') ? 'es' : 'en') as 'es' | 'en';
 
@@ -339,41 +340,47 @@ function previewReminderItems(): Item[] {
  * The position does not belong here: the reminder window follows the monitor
  * and the corner that are chosen in the settings.
  */
-function readReminderWindowSize(): { width: number; height: number } {
-  const raw = db.getSetting('reminder_window_size');
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as { width?: number; height?: number };
-      const width = Math.round(Number(parsed?.width));
-      const height = Math.round(Number(parsed?.height));
-      if (Number.isFinite(width) && width >= REMINDER_MIN_WIDTH) {
-        return {
-          width,
-          height: Number.isFinite(height) && height >= REMINDER_MIN_HEIGHT ? height : REMINDER_DEFAULT_HEIGHT,
-        };
-      }
-    } catch {
-      // The stored size cannot be read, the default one is used.
-    }
-  }
-  return { width: REMINDER_DEFAULT_WIDTH, height: REMINDER_DEFAULT_HEIGHT };
+/**
+ * The size of the reminder window.
+ *
+ * The window fits the reminders it shows, but only until the user gives it
+ * a size of their own. After that the size they chose is the one that is
+ * used, and it is kept for good.
+ */
+function readReminderWindowSize(): { width: number; height: number; manual: boolean } {
+  return resolveReminderWindowSize(db.getSetting('reminder_window_size'), {
+    defaultWidth: REMINDER_DEFAULT_WIDTH,
+    defaultHeight: REMINDER_DEFAULT_HEIGHT,
+    minWidth: REMINDER_MIN_WIDTH,
+    minHeight: REMINDER_MIN_HEIGHT,
+  });
 }
 
+/** Saves the size the user chose with the drag of the border. */
 function persistReminderWindowSize() {
   if (!reminderWindow || reminderWindow.isDestroyed()) return;
   try {
     const bounds = reminderWindow.getBounds();
-    db.setSetting('reminder_window_size', JSON.stringify({ width: bounds.width, height: bounds.height }));
+    db.setSetting('reminder_window_size', JSON.stringify({
+      width: bounds.width,
+      height: bounds.height,
+      manual: true,
+    }));
   } catch (error) {
     console.error('CyberGo: could not save the reminder window size.', error);
   }
 }
 
 let reminderSizeTimer: ReturnType<typeof setTimeout> | null = null;
+/** True once the user has given the window a size of their own. */
+let reminderSizeIsManual = false;
+/** The last size the process gave to the window, to tell it from a drag. */
+let lastProgrammaticSize: { width: number; height: number } | null = null;
 let creatingReminderWindow: Promise<void> | null = null;
 
 async function createReminderWindow(alwaysOnTop: boolean) {
   const size = readReminderWindowSize();
+  reminderSizeIsManual = size.manual;
   const win = new BrowserWindow({
     width: size.width,
     height: size.height,
@@ -391,6 +398,9 @@ async function createReminderWindow(alwaysOnTop: boolean) {
     },
   });
   reminderWindow = win;
+  // The window opens with this size, so the first resize that the system
+  // may report is not taken for a size of the user.
+  lastProgrammaticSize = { width: size.width, height: size.height };
   lockNavigation(win);
   win.on('close', (event) => {
     if (quitting) return;
@@ -399,6 +409,13 @@ async function createReminderWindow(alwaysOnTop: boolean) {
   });
   // The size is remembered once the drag of the border is over.
   win.on('resize', () => {
+    // Only a drag of the border is a size of the user's own. The rest is
+    // the window fitting the reminders, and it must not be remembered.
+    const bounds = win.getBounds();
+    if (lastProgrammaticSize
+      && bounds.width === lastProgrammaticSize.width
+      && bounds.height === lastProgrammaticSize.height) return;
+    reminderSizeIsManual = true;
     if (reminderSizeTimer) clearTimeout(reminderSizeTimer);
     reminderSizeTimer = setTimeout(() => {
       reminderSizeTimer = null;
@@ -1010,6 +1027,25 @@ function registerIpc() {
     return db.listItems().filter((item) => isDue(item, Date.now()));
   });
   ipcMain.handle('reminders:show', () => evaluateReminders('show'));
+  ipcMain.handle('reminders:fit-window', (_e, height: unknown) => {
+    if (!reminderWindow || reminderWindow.isDestroyed()) return false;
+    // El tamaño que eligió el usuario no se toca nunca.
+    if (reminderSizeIsManual) return false;
+    const wanted = Math.round(Number(height));
+    if (!Number.isFinite(wanted) || wanted <= 0) return false;
+    const settings = db.readSettings(locale());
+    const display = resolveReminderDisplay(settings);
+    const area = display.workArea || display.bounds;
+    // The window cannot be taller than the screen it lives on.
+    const ceiling = Math.max(REMINDER_MIN_HEIGHT, Math.min(REMINDER_MAX_HEIGHT, area.height - 32));
+    const next = Math.max(REMINDER_MIN_HEIGHT, Math.min(ceiling, wanted));
+    const bounds = reminderWindow.getBounds();
+    if (Math.abs(bounds.height - next) < 2) return false;
+    reminderWindow.setSize(bounds.width, next);
+    lastProgrammaticSize = { width: bounds.width, height: next };
+    positionReminderWindow(reminderWindow, settings);
+    return true;
+  });
   ipcMain.handle('reminders:snooze', (_e, id: unknown, minutes: unknown) => {
     const clean = asId(id);
     const amount = asNumber(minutes);
