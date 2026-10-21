@@ -173,7 +173,8 @@ body.pointer-reset .settings-header-close:hover {
 
 .btn {
   border: 0; border-radius: var(--radius-sm); padding: 6px 12px; font-weight: 500; font-size: 13px;
-  display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--text-secondary);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: transparent; color: var(--text-secondary);
 }
 .btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .btn:disabled { opacity: 0.4; cursor: default; }
@@ -1827,8 +1828,12 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   align-items: center;
   justify-content: center;
 }
-/* The bell rings every 4.5 seconds and the waves go out twice in that
-   time, so the sound is read instead of only noticed. */
+/*
+ * The bell rings every six seconds and a wave goes out twice in that time:
+ * one that leaves with the ring and another that follows half a second
+ * later. Each wave takes three seconds to open and fade, so the sound is
+ * read instead of only noticed.
+ */
 .login-logo-wave {
   position: absolute;
   inset: 0;
@@ -1836,24 +1841,24 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   border: 1.5px solid color-mix(in srgb, var(--accent-light) 70%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, var(--accent-glow) 90%, transparent);
   opacity: 0;
-  animation: login-wave 2.25s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation: login-wave 3s linear infinite;
 }
-.login-logo-wave:nth-of-type(2) { animation-delay: 1.125s; }
+.login-logo-wave:nth-of-type(2) { animation-delay: 3s; }
 @keyframes login-wave {
   0% { transform: scale(0.62); opacity: 0; }
-  5% { opacity: 0.6; }
+  8% { opacity: 0.55; }
   100% { transform: scale(1.24); opacity: 0; }
 }
 .login-logo-image {
   width: 56px;
   height: 56px;
   display: block;
-  animation: login-logo-pulse 4.5s ease-in-out infinite;
+  animation: login-logo-pulse 6s ease-in-out infinite;
 }
 @keyframes login-logo-pulse {
   0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
-  5% { transform: scale(1.04); filter: drop-shadow(0 0 20px var(--accent-glow)); }
-  22% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
+  3% { transform: scale(1.045); filter: drop-shadow(0 0 22px var(--accent-glow)); }
+  14% { transform: scale(1); filter: drop-shadow(0 0 10px var(--accent-glow)); }
 }
 .login-title {
   margin: 0;
