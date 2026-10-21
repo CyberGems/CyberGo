@@ -169,12 +169,16 @@ body.pointer-reset .settings-header-close:hover {
  */
 .column-sort {
   position: absolute;
-  inset: 0;
+  /*
+   * The button reaches half of the gap that is between the columns, so the
+   * whole header can be picked and there is no dead room between the cells.
+   */
+  inset: 0 -4px;
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 0 10px;
+  padding: 0 14px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -192,7 +196,7 @@ body.pointer-reset .settings-header-close:hover {
  * no dead room on the left. The title keeps the place it had, next to the
  * dates of the rows.
  */
-.table-head-cell.spans-marker .column-sort { padding-left: calc(var(--marker-column-width, 12px) + 18px); }
+.table-head-cell.spans-marker .column-sort { padding-left: calc(var(--marker-column-width, 12px) + 22px); }
 .column-sort-arrow { display: inline-flex; flex-shrink: 0; }
 .column-sort-arrow[data-hidden="true"] { visibility: hidden; }
 /* The line that separates two columns when there is no handle to drag. */
@@ -1496,6 +1500,9 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   margin: 18px 20px 0;
   /* The cells of the header reach the edges, so there is no dead room. */
   padding-inline: 0;
+  /* The corners of the card are rounded, and the light of a cell follows
+     them instead of sticking out of the card. */
+  overflow: hidden;
   border: 1px solid var(--border);
   border-bottom: 0;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
