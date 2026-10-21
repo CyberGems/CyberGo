@@ -329,7 +329,6 @@ function MainApp() {
             <div className="workspace-head-copy">
               <p className="workspace-kicker">{copy.workspace}</p>
               <h1 className="workspace-title">{groupId ? groups.find((group) => group.id === groupId)?.name ?? copy.workspace : filterLabels[filter]}</h1>
-              <p className="workspace-meta">{visible.length} {visible.length === 1 ? copy.itemOne : copy.itemMany}</p>
             </div>
             <span className="seg" role="group" aria-label={`${copy.viewList} / ${copy.viewCalendar}`}>
               <Tooltip label={copy.viewList} placement="bottom">

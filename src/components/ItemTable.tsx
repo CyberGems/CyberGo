@@ -6,9 +6,17 @@ import type { Group, Item, Lang } from '@shared/types';
 import { formatDate, formatTimeRange, itemStatus } from '../lib/format';
 import Tooltip from './Tooltip';
 
-const TABLE_WIDTHS = [14, 132, 126, 180, 340, 76];
-const TABLE_MIN_WIDTHS = [10, 80, 80, 110, 160, 56];
-const TABLE_MAX_WIDTHS = [64, 320, 320, 360, 900, 180];
+/**
+ * The columns of the list: the marker, the date, the time, the state, the
+ * subject and the kind.
+ *
+ * The subject is the flexible one: it takes the room that is left, so the
+ * name is never cut and the table always fits the space it has.
+ */
+const SUBJECT_COLUMN = 4;
+const TABLE_WIDTHS = [12, 96, 80, 96, 200, 48];
+const TABLE_MIN_WIDTHS = [10, 76, 68, 84, 180, 44];
+const TABLE_MAX_WIDTHS = [40, 200, 180, 260, 900, 120];
 const TABLE_WIDTH_STORAGE = 'cybergo-table-column-widths-v1';
 
 function initialTableWidths(): number[] {
@@ -74,7 +82,9 @@ export default function ItemTable({
   if (!items.length) return null;
 
   const tableStyle = {
-    '--table-columns': widths.map((width) => `${width}px`).join(' '),
+    '--table-columns': widths
+      .map((width, index) => (index === SUBJECT_COLUMN ? `minmax(${width}px, 1fr)` : `${width}px`))
+      .join(' '),
     '--table-width': `${widths.reduce((sum, width) => sum + width, 0) + (widths.length - 1) * 8 + 28}px`,
   } as CSSProperties;
 
@@ -138,26 +148,28 @@ export default function ItemTable({
           {headers.map((label, index) => (
             <span className="table-head-cell" key={label || 'marker'}>
               {label}
-              <Tooltip label={`${copy.resizeColumn}: ${label || copy.colMarker}`} placement="top" delay={350}>
-                <button
-                  type="button"
-                  className="column-resizer"
-                  role="separator"
-                  aria-orientation="vertical"
-                  aria-label={`${copy.resizeColumn}: ${label || copy.colMarker}`}
-                  aria-valuemin={TABLE_MIN_WIDTHS[index]}
-                  aria-valuemax={TABLE_MAX_WIDTHS[index]}
-                  aria-valuenow={widths[index]}
-                  onPointerDown={(event) => resizeColumn(index, event)}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-                    event.preventDefault();
-                    const delta = event.key === 'ArrowRight' ? 12 : -12;
-                    setColumnWidth(index, widthsRef.current[index] + delta);
-                  }}
-                  onDoubleClick={() => setColumnWidth(index, TABLE_WIDTHS[index])}
-                />
-              </Tooltip>
+              {index !== SUBJECT_COLUMN && (
+                <Tooltip label={`${copy.resizeColumn}: ${label || copy.colMarker}`} placement="top" delay={350}>
+                  <button
+                    type="button"
+                    className="column-resizer"
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label={`${copy.resizeColumn}: ${label || copy.colMarker}`}
+                    aria-valuemin={TABLE_MIN_WIDTHS[index]}
+                    aria-valuemax={TABLE_MAX_WIDTHS[index]}
+                    aria-valuenow={widths[index]}
+                    onPointerDown={(event) => resizeColumn(index, event)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                      event.preventDefault();
+                      const delta = event.key === 'ArrowRight' ? 12 : -12;
+                      setColumnWidth(index, widthsRef.current[index] + delta);
+                    }}
+                    onDoubleClick={() => setColumnWidth(index, TABLE_WIDTHS[index])}
+                  />
+                </Tooltip>
+              )}
             </span>
           ))}
         </div>
@@ -165,7 +177,8 @@ export default function ItemTable({
           {items.map((item) => {
             const group = groups.find((g) => g.id === item.groupId);
             const tint = safeTint(item.color || group?.color || '');
-            const status = itemStatus(item, copy);
+            const status = itemStatus(item, copy, true);
+            const fullStatus = itemStatus(item, copy).label;
             // The empty parts are left out, so the label does not read
             // "Buy milk, , ,".
             const label = [
@@ -203,7 +216,11 @@ export default function ItemTable({
                   <span>{formatTimeRange(item, lang, copy)}</span>
                 </span>
                 <span className="row-status">
-                  {status.label && <span className={`status-pill ${status.tone}`}>{status.label}</span>}
+                  {status.label && (
+                    <span className={`status-pill ${status.tone}`} title={fullStatus || undefined}>
+                      {status.label}
+                    </span>
+                  )}
                 </span>
                 <span className="subject">{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
                 <span className={`kind-tag kind-${item.kind}`}>{item.kind === 'task' ? copy.task : copy.event}</span>

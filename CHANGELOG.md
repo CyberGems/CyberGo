@@ -29,6 +29,11 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 
 ### Improved
 
+- The list of the main window no longer needs a horizontal scroll, and the last column is no longer cut. The subject takes the room that is left, so the names are whole.
+- The state of an item in the list uses the short wording, with the full one in the description.
+- The rows of the list are shorter, so three more items fit on the screen.
+- The quick capture takes two rows instead of three, and gives back the room it was taking from the list.
+- The number of items no longer appears twice, the sidebar already has it.
 - The lock screen was reworked to match the other apps of the suite: the icon with the waves of sound that grow behind it, the name, the greeting with the hour and the date, and the version at the bottom.
 - The title bar of the lock screen no longer repeats the name of the app, and it floats over the body so both read as one surface.
 - The button that maximizes the window now shows the same arrows as the rest of the suite, and it turns into the restore icon when the window fills the screen.

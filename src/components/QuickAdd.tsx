@@ -136,39 +136,43 @@ export default function QuickAdd({
 
   return (
     <div className={`quick ${collapsed ? 'collapsed' : ''}`}>
-      <div className="quick-heading">
-        <button
-          type="button"
-          className="quick-heading-toggle"
-          aria-expanded={!collapsed}
-          aria-controls="quick-add-content"
-          onClick={() => setCollapsed((current) => !current)}
-        >
-          <span className="quick-title-mark"><Sparkles size={15} /></span>
-          <span className="quick-title-copy">
-            <strong>{copy.quickAddLabel}</strong>
-            <span id="quick-add-hint">{copy.quickHint}</span>
-          </span>
-        </button>
-        <div className="quick-heading-actions">
-          <kbd className="quick-shortcut">{copy.quickShortcut}</kbd>
-          <Tooltip label={collapsed ? copy.quickExpand : copy.quickCollapse} placement="top">
-            <button
-              type="button"
-              className="icon-btn quick-collapse"
-              aria-label={collapsed ? copy.quickExpand : copy.quickCollapse}
-              aria-expanded={!collapsed}
-              aria-controls="quick-add-content"
-              onClick={() => setCollapsed((current) => !current)}
-            >
-              {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-            </button>
-          </Tooltip>
+      {collapsed ? (
+        <div className="quick-heading">
+          <button
+            type="button"
+            className="quick-heading-toggle"
+            aria-expanded={false}
+            aria-controls="quick-add-content"
+            onClick={() => setCollapsed(false)}
+          >
+            <span className="quick-title-mark"><Sparkles size={15} /></span>
+            <span className="quick-title-copy">
+              <strong>{copy.quickAddLabel}</strong>
+            </span>
+          </button>
+          <div className="quick-heading-actions">
+            <Tooltip label={copy.quickExpand} placement="top">
+              <button
+                type="button"
+                className="icon-btn quick-collapse"
+                aria-label={copy.quickExpand}
+                aria-expanded={false}
+                aria-controls="quick-add-content"
+                onClick={() => setCollapsed(false)}
+              >
+                <ChevronDown size={16} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
-      </div>
-      {!collapsed && (
+      ) : (
         <div className="quick-content" id="quick-add-content">
+          <span id="quick-add-hint" className="visually-hidden">{copy.quickHint}</span>
           <div className="quick-row">
+            <Tooltip label={copy.quickHint} placement="bottom">
+              <span className="quick-title-mark" aria-hidden="true"><Sparkles size={15} /></span>
+            </Tooltip>
+            <span className="quick-title-label">{copy.quickAddLabel}</span>
             <div className="quick-field">
               <input
                 ref={inputRef}
@@ -209,6 +213,20 @@ export default function QuickAdd({
                 {preset === '10m' ? copy.preset10 : preset === '1h' ? copy.preset1h : preset === 'tonight' ? copy.presetTonight : copy.presetTomorrow9}
               </button>
             ))}
+            <span className="grow" />
+            <kbd className="quick-shortcut">{copy.quickShortcut}</kbd>
+            <Tooltip label={copy.quickCollapse} placement="top">
+              <button
+                type="button"
+                className="icon-btn quick-collapse"
+                aria-label={copy.quickCollapse}
+                aria-expanded
+                aria-controls="quick-add-content"
+                onClick={() => setCollapsed(true)}
+              >
+                <ChevronUp size={16} />
+              </button>
+            </Tooltip>
           </div>
           {/* The hint already sits in the heading, so this line only shows
               what the phrase is going to become. It is not drawn when there

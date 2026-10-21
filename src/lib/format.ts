@@ -109,7 +109,7 @@ export function dueState(iso: string | null): 'overdue' | 'today' | 'future' | n
  * event that already happened is not late, it simply passed, so it gets no
  * state at all. An item in the trash is not pending either.
  */
-export function itemStatus(item: Item, copy: Copy): { label: string; tone: string } {
+export function itemStatus(item: Item, copy: Copy, short = false): { label: string; tone: string } {
   if (item.deletedAt) return { label: '', tone: '' };
   const iso = item.occurrenceAt || item.startAt;
   if (!iso) return { label: '', tone: '' };
@@ -117,12 +117,20 @@ export function itemStatus(item: Item, copy: Copy): { label: string; tone: strin
   if (Number.isNaN(at)) return { label: '', tone: '' };
   if (at < Date.now()) {
     if (item.kind === 'event') return { label: '', tone: '' };
-    return { label: overduePhrase(iso, copy), tone: 'overdue' };
+    return { label: short ? shortOverduePhrase(iso, copy) : overduePhrase(iso, copy), tone: 'overdue' };
   }
   const diff = dayDiff(iso);
   if (diff === 0) return { label: copy.todayWord, tone: 'today' };
   if (diff === 1) return { label: copy.tomorrowWord, tone: 'future' };
   return { label: copy.inDays.replace('{days}', String(diff)), tone: 'future' };
+}
+
+/** How late a reminder is, in the short wording of a narrow column. */
+function shortOverduePhrase(iso: string, copy: Copy): string {
+  const at = new Date(iso).getTime();
+  if (Number.isNaN(at)) return '';
+  const minutes = Math.max(1, Math.round((Date.now() - at) / 60_000));
+  return copy.overdueShort.replace('{duration}', formatDurationShort(minutes, copy));
 }
 
 export function duePhrase(iso: string | null, copy: Copy): string {
