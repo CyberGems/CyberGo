@@ -232,6 +232,14 @@ export default function ItemTable({
                     </span>
                   </button>
                 )}
+                {index === SUBJECT_COLUMN && (
+                  /**
+                   * The subject takes the room that is left, so its edge
+                   * cannot be dragged. The line is still drawn, so the last
+                   * column does not look like a part of it.
+                   */
+                  <span className="column-divider" aria-hidden="true" />
+                )}
                 {index !== SUBJECT_COLUMN && index !== LAST_COLUMN && index !== MARKER_COLUMN && (
                   <Tooltip label={`${copy.resizeColumn}: ${label}`} placement="top" delay={350}>
                     <button

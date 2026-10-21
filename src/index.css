@@ -156,22 +156,25 @@ body.pointer-reset .settings-header-close:hover {
 .table-scroll { flex: 1; min-height: 0; overflow: auto; }
 .table-head-cell {
   position: relative; min-width: 0; height: 100%;
-  display: flex; align-items: center; padding-right: 8px;
+  display: flex; align-items: center;
 }
 /* The last column holds the kind of the item, and it is at the right. */
-.table-head-cell.last { justify-content: flex-end; padding-right: 0; }
+.table-head-cell.last { justify-content: flex-end; }
 /*
  * The title of a column orders the list by it.
  *
- * The arrow is always there, so the title does not jump when the order
- * changes. It is only seen on the column that is ordering.
+ * It covers the whole cell, so the pointer anywhere in the column picks it
+ * and the cell lights up as a whole. The arrow is always there, so the
+ * title does not jump when the order changes.
  */
 .column-sort {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 0;
+  padding: 0 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -179,11 +182,20 @@ body.pointer-reset .settings-header-close:hover {
   letter-spacing: inherit;
   text-transform: inherit;
   text-align: left;
+  transition: background var(--transition), color var(--transition);
 }
-.column-sort:hover { color: var(--text-primary); }
+.column-sort:hover { background: var(--bg-hover); color: var(--text-primary); }
 .column-sort.sorted { color: var(--accent-light); }
+.table-head-cell.last .column-sort { justify-content: flex-end; }
 .column-sort-arrow { display: inline-flex; flex-shrink: 0; }
 .column-sort-arrow[data-hidden="true"] { visibility: hidden; }
+/* The line that separates two columns when there is no handle to drag. */
+.column-divider {
+  position: absolute; z-index: 2; top: 5px; right: 0; bottom: 5px;
+  width: 1px;
+  background: var(--border-strong);
+  opacity: 0.45;
+}
 /*
  * The handle that changes the width of a column.
  *

@@ -25,6 +25,8 @@
 - The last column of the list, the one of the kind, has a fixed width and its title sits at the right, in line with the tag of every item.
 - The handle that changes the width of a column is now at the right of the title of that column, and the first column, the one of the dot, has no handle, because where it was it did not mean anything.
 - The table never grows past the window. When a column is made wider, the subject of the item gives up the room it has, and the list keeps its shape.
+- The title of a column is picked anywhere in the cell, and the cell lights up as a whole when the pointer rests on it, the way a file explorer does.
+- The column of the subject now has a line that separates it from the last one, so the two do not look like a single block.
 
 ### Fixed
 
