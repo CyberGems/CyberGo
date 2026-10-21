@@ -4,6 +4,7 @@
 
 ### Added
 
+- Closing the window asks what to do, the same way the rest of the suite does: keep CyberGo in the tray and in the background, or quit for good. The answer can be remembered, and until it is, the question is asked again.
 - The reminder window is as tall as the reminders it shows. A size the user gives it by dragging the border is remembered, and from that moment the window never changes it on its own.
 - The calendar opens a day in detail, with every item of that day and a way to add one more, when a day has more items than it can show.
 - The items of the list and of the calendar have a menu of their own, with the right button of the mouse. It edits the item, marks it as done and deletes it, and when several items are picked it acts on all of them.

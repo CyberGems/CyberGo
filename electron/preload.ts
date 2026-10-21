@@ -54,6 +54,8 @@ export interface CyberGoAPI {
   onReminderPreview: (cb: (payload: { items: Item[]; settings: PublicSettings }) => void) => () => void;
   onOpenItem: (cb: (id: string) => void) => () => void;
   onMaximized: (cb: (value: boolean) => void) => () => void;
+  onConfirmFirstClose: (cb: () => void) => () => void;
+  respondFirstClose: (action: 'tray' | 'quit', remember: boolean) => Promise<boolean>;
 }
 
 const api: CyberGoAPI = {
@@ -133,6 +135,12 @@ const api: CyberGoAPI = {
     ipcRenderer.on('window:maximized', listener);
     return () => ipcRenderer.removeListener('window:maximized', listener);
   },
+  onConfirmFirstClose: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on('confirm-first-close', listener);
+    return () => ipcRenderer.removeListener('confirm-first-close', listener);
+  },
+  respondFirstClose: (action, remember) => ipcRenderer.invoke('first-close-choice', action, remember),
 };
 
 contextBridge.exposeInMainWorld('cyberGoAPI', api);

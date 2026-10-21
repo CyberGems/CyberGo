@@ -707,8 +707,29 @@ function createMain() {
     if (persistTimer) clearTimeout(persistTimer);
     persistMainWindowState();
     if (quitting) return;
+    // The first time, the user is asked what to do when the window is
+    // closed, the same way the rest of the suite does it. From then on the
+    // answer is remembered and the window closes without asking again.
+    if (db.getSetting('close_choice_remembered') === 'true') {
+      if (db.getSetting('close_to_tray') !== 'false') {
+        event.preventDefault();
+        mainWindow?.hide();
+        return;
+      }
+      // The user chose to quit, so the app goes away for good.
+      quitting = true;
+      setImmediate(() => app.quit());
+      return;
+    }
     event.preventDefault();
-    mainWindow?.hide();
+    // With the session locked there is nobody to answer the question, so the
+    // window just goes to the tray.
+    if (sessionLocked) {
+      mainWindow?.hide();
+      return;
+    }
+    showMain();
+    mainWindow?.webContents.send('confirm-first-close');
   });
   mainWindow.on('move', schedulePersist);
   mainWindow.on('resize', schedulePersist);
@@ -824,6 +845,28 @@ function registerIpc() {
     changed();
   });
   ipcMain.handle('items:empty-trash', (e) => { refuseWhenLocked(e); db.emptyTrash(); changed(); });
+  /**
+   * What the user chose when the window was closed.
+   *
+   * The window can go to the tray and stay in the background, or the app can
+   * quit for good. The choice is only remembered when the user asks for it.
+   */
+  ipcMain.handle('first-close-choice', (e, action: unknown, remember: unknown) => {
+    refuseWhenLocked(e);
+    const choice = action === 'tray' ? 'tray' : action === 'quit' ? 'quit' : null;
+    if (!choice) return false;
+    if (remember === true) {
+      db.setSetting('close_choice_remembered', 'true');
+      db.setSetting('close_to_tray', choice === 'tray' ? 'true' : 'false');
+    }
+    if (choice === 'tray') {
+      mainWindow?.hide();
+      return true;
+    }
+    quitting = true;
+    app.quit();
+    return true;
+  });
   ipcMain.handle('items:complete', (e, id: unknown) => {
     refuseWhenLocked(e);
     const clean = asId(id);

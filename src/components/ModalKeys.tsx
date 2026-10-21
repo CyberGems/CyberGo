@@ -80,6 +80,11 @@ export function EscHint() {
   return <kbd className="key-hint">Esc</kbd>;
 }
 
+/** A chip with the name of a key, the way the suite shows them. */
+export function KeyHint({ label }: { label: string }) {
+  return <kbd className="key-hint">{label}</kbd>;
+}
+
 export function EnterGlyph() {
   return (
     <kbd className="key-hint">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { Bell, CalendarDays, Check, Command, Flame, Info, List, ListChecks, ListX, Lock, Pencil, Plus, Search, Settings, Trash2, X } from 'lucide-react';
+import { Bell, CalendarDays, Check, Command, Download, Flame, Info, List, ListChecks, ListX, Lock, Pencil, Plus, Power, Search, Settings, Trash2, X } from 'lucide-react';
 import type { AppInfo, Bootstrap, Item, ItemDraft, RecoveryNotice } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf, type Copy } from './i18n';
@@ -20,7 +20,7 @@ import RemindersWindow from './components/RemindersWindow';
 import TextContextMenu from './components/TextContextMenu';
 import Tooltip from './components/Tooltip';
 import DialogPanel from './components/Dialog';
-import { EnterGlyph, EscHint, useModalKeys } from './components/ModalKeys';
+import { EnterGlyph, EscHint, KeyHint, useModalKeys } from './components/ModalKeys';
 
 export default function App() {
   if (!window.cyberGoAPI) {
@@ -65,6 +65,9 @@ function MainApp() {
   const [confirm, setConfirm] = useState<null | { title: string; body: string; action: string; danger?: boolean; run: () => void }>(null);
   /** The menu of the right button, with the items it acts on. */
   const [contextMenu, setContextMenu] = useState<null | { ids: string[]; x: number; y: number }>(null);
+  /** The dialog that asks what to do when the window is closed. */
+  const [closeDialog, setCloseDialog] = useState(false);
+  const [closeRemember, setCloseRemember] = useState(false);
   const lastTheme = useRef<string | null>(null);
   /**
    * Whether a dialog is already open. The command palette is a launcher, so
@@ -113,8 +116,18 @@ function MainApp() {
     const focusQuick = api.onQuickAddFocus(() => {
       window.dispatchEvent(new Event('cybergo:focus-quick'));
     });
-    return () => { off(); open(); focusQuick(); };
+    const confirmClose = api.onConfirmFirstClose(() => {
+      setCloseRemember(false);
+      setCloseDialog(true);
+    });
+    return () => { off(); open(); focusQuick(); confirmClose(); };
   }, []);
+
+  /** The answer to the question of what to do when the window is closed. */
+  function chooseClose(action: 'tray' | 'quit') {
+    setCloseDialog(false);
+    void api.respondFirstClose(action, closeRemember);
+  }
 
   useEffect(() => {
     function keys(event: KeyboardEvent) {
@@ -215,13 +228,40 @@ function MainApp() {
   const allSelected = visible.length > 0 && selectedIds.length === visible.length;
   const stats = useMemo(() => computeStats(items.map((item) => item.completedAt)), [items]);
 
-  useModalKeys(!!confirm, {
-    esc: () => setConfirm(null),
+  useModalKeys(!!confirm || closeDialog, {
+    esc: () => {
+      if (closeDialog) setCloseDialog(false);
+      else setConfirm(null);
+    },
     enter: () => {
+      if (closeDialog) {
+        chooseClose('tray');
+        return;
+      }
       confirm?.run();
       setConfirm(null);
     },
   });
+
+  /**
+   * What the user chose when the window was closed.
+   *
+   * Enter keeps the app in the tray and Space quits it, the same keys the
+   * rest of the suite uses. The space is left out when the focus is on a
+   * control, so the checkbox and the buttons keep their own behaviour.
+   */
+  useEffect(() => {
+    if (!closeDialog) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== ' ' && event.code !== 'Space') return;
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
+      event.preventDefault();
+      chooseClose('quit');
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [closeDialog]);
 
   function askDelete(item: Item) {
     if (item.deletedAt) {
@@ -583,6 +623,45 @@ function MainApp() {
           onLock={() => detach(api.lock(), 'lock the app')}
           onOpenSettings={() => setSettingsOpen(true)}
         />
+      )}
+      {closeDialog && (
+        <DialogPanel className="modal close-window-modal" labelledBy="close-window-title" focusTarget="container" onBackdropMouseDown={() => setCloseDialog(false)}>
+          <div className="modal-head">
+            <h2 id="close-window-title">{copy.closeWindowTitle}</h2>
+            <Tooltip label={copy.close} placement="left">
+              <button type="button" className="modal-close" onClick={() => setCloseDialog(false)} aria-label={copy.close}>
+                <X size={16} />
+              </button>
+            </Tooltip>
+          </div>
+          <div className="modal-body">
+            <p className="close-window-text">{copy.closeWindowBody}</p>
+            <button type="button" className="close-choice" onClick={() => chooseClose('tray')}>
+              <span className="close-choice-icon"><Download size={17} /></span>
+              <span className="close-choice-copy">
+                <strong>{copy.closeToTray}</strong>
+                <span>{copy.closeToTrayHint}</span>
+              </span>
+              <EnterGlyph />
+            </button>
+            <button type="button" className="close-choice is-quit" onClick={() => chooseClose('quit')}>
+              <span className="close-choice-icon"><Power size={17} /></span>
+              <span className="close-choice-copy">
+                <strong>{copy.quitApp}</strong>
+                <span>{copy.quitAppHint}</span>
+              </span>
+              <KeyHint label={copy.spaceKey} />
+            </button>
+            <label className="close-remember">
+              <input
+                type="checkbox"
+                checked={closeRemember}
+                onChange={(event) => setCloseRemember(event.target.checked)}
+              />
+              <span>{copy.rememberCloseChoice}</span>
+            </label>
+          </div>
+        </DialogPanel>
       )}
       {confirm && (
         <DialogPanel className="modal narrow" labelledBy="confirm-title" focusTarget="container" onBackdropMouseDown={() => setConfirm(null)}>
