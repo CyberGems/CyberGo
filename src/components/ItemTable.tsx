@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Flag } from 'lucide-react';
+import { ChevronDown, ChevronUp, Flag } from 'lucide-react';
 import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Copy } from '../i18n';
 import type { Group, Item, Lang } from '@shared/types';
 import { formatDate, formatTimeRange, itemStatus } from '../lib/format';
+import type { SortColumn, SortDirection } from '../lib/view';
 import Tooltip from './Tooltip';
 import { useListSelection } from '../hooks/useListSelection';
 
@@ -15,6 +16,7 @@ import { useListSelection } from '../hooks/useListSelection';
  * name is never cut and the table always fits the space it has.
  */
 const SUBJECT_COLUMN = 4;
+const MARKER_COLUMN = 0;
 const TABLE_WIDTHS = [12, 96, 80, 96, 200, 48];
 const TABLE_MIN_WIDTHS = [10, 76, 68, 84, 180, 44];
 const TABLE_MAX_WIDTHS = [40, 200, 180, 260, 900, 120];
@@ -59,6 +61,8 @@ export default function ItemTable({
   onOpen,
   onDelete,
   onContextMenu,
+  sort,
+  onSort,
 }: {
   copy: Copy;
   lang: Lang;
@@ -69,6 +73,8 @@ export default function ItemTable({
   onOpen: (item: Item) => void;
   onDelete?: () => void;
   onContextMenu?: (event: ReactMouseEvent<HTMLElement>, id: string) => void;
+  sort: { column: SortColumn; direction: SortDirection } | null;
+  onSort: (column: SortColumn) => void;
 }) {
   const [widths, setWidths] = useState(initialTableWidths);
   const widthsRef = useRef(widths);
@@ -107,12 +113,16 @@ export default function ItemTable({
   const tableStyle = {
     '--table-columns': widths
       .map((width, index) => {
-        if (index === SUBJECT_COLUMN) return `minmax(${width}px, 1fr)`;
+        // The subject takes the room that is left, and it can give all of it
+        // away, so the table never grows past the window.
+        if (index === SUBJECT_COLUMN) return 'minmax(0px, 1fr)';
         if (index === LAST_COLUMN) return `${LAST_COLUMN_WIDTH}px`;
         return `${width}px`;
       })
       .join(' '),
-    '--table-width': `${widths.reduce((sum, width, index) => sum + (index === LAST_COLUMN ? LAST_COLUMN_WIDTH : width), 0) + (widths.length - 1) * 8 + 28}px`,
+    // The smallest the table can be. It is made of the smallest width of
+    // every column, so widening one of them does not push the table out.
+    '--table-width': `${TABLE_MIN_WIDTHS.reduce((sum, width) => sum + width, 0) + (widths.length - 1) * 8 + 28}px`,
   } as CSSProperties;
 
   function resizeColumn(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
@@ -167,7 +177,14 @@ export default function ItemTable({
     persistWidths(next);
   }
 
-  const headers = [null, copy.colWhen, copy.colTime, copy.colLeft, copy.colSubject, copy.kind];
+  const headers: { key: SortColumn | null; label: string }[] = [
+    { key: null, label: '' },
+    { key: 'date', label: copy.colWhen },
+    { key: 'time', label: copy.colTime },
+    { key: 'state', label: copy.colLeft },
+    { key: 'subject', label: copy.colSubject },
+    { key: 'kind', label: copy.kind },
+  ];
   return (
     <>
       <div
@@ -190,33 +207,56 @@ export default function ItemTable({
         }}
       >
         <div className="list-head" style={tableStyle}>
-          {headers.map((label, index) => (
-            <span className={`table-head-cell ${index === LAST_COLUMN ? 'last' : ''}`} key={label || 'marker'}>
-              {label}
-              {index !== SUBJECT_COLUMN && index !== LAST_COLUMN && (
-                <Tooltip label={`${copy.resizeColumn}: ${label || copy.colMarker}`} placement="top" delay={350}>
+          {headers.map((column, index) => {
+            const label = column.label;
+            const sorted = sort?.column === column.key;
+            const direction = sorted ? sort.direction : null;
+            return (
+              <span
+                className={`table-head-cell ${index === LAST_COLUMN ? 'last' : ''}`}
+                key={column.key || 'marker'}
+                aria-sort={column.key ? (sorted ? (direction === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
+              >
+                {column.key && (
                   <button
                     type="button"
-                    className="column-resizer"
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label={`${copy.resizeColumn}: ${label || copy.colMarker}`}
-                    aria-valuemin={TABLE_MIN_WIDTHS[index]}
-                    aria-valuemax={TABLE_MAX_WIDTHS[index]}
-                    aria-valuenow={widths[index]}
-                    onPointerDown={(event) => resizeColumn(index, event)}
-                    onKeyDown={(event) => {
-                      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-                      event.preventDefault();
-                      const delta = event.key === 'ArrowRight' ? 12 : -12;
-                      setColumnWidth(index, widthsRef.current[index] + delta);
-                    }}
-                    onDoubleClick={() => setColumnWidth(index, TABLE_WIDTHS[index])}
-                  />
-                </Tooltip>
-              )}
-            </span>
-          ))}
+                    className={`column-sort ${sorted ? 'sorted' : ''}`}
+                    onClick={() => onSort(column.key as SortColumn)}
+                    aria-label={sorted
+                      ? `${copy.sortBy.replace('{column}', label)} · ${direction === 'asc' ? copy.sortAsc : copy.sortDesc}`
+                      : copy.sortBy.replace('{column}', label)}
+                  >
+                    <span>{label}</span>
+                    <span className="column-sort-arrow" data-hidden={!sorted} aria-hidden="true">
+                      {direction === 'desc' ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+                    </span>
+                  </button>
+                )}
+                {index !== SUBJECT_COLUMN && index !== LAST_COLUMN && index !== MARKER_COLUMN && (
+                  <Tooltip label={`${copy.resizeColumn}: ${label}`} placement="top" delay={350}>
+                    <button
+                      type="button"
+                      className="column-resizer"
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label={`${copy.resizeColumn}: ${label}`}
+                      aria-valuemin={TABLE_MIN_WIDTHS[index]}
+                      aria-valuemax={TABLE_MAX_WIDTHS[index]}
+                      aria-valuenow={widths[index]}
+                      onPointerDown={(event) => resizeColumn(index, event)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+                        event.preventDefault();
+                        const delta = event.key === 'ArrowRight' ? 12 : -12;
+                        setColumnWidth(index, widthsRef.current[index] + delta);
+                      }}
+                      onDoubleClick={() => setColumnWidth(index, TABLE_WIDTHS[index])}
+                    />
+                  </Tooltip>
+                )}
+              </span>
+            );
+          })}
         </div>
         <div className="rows" style={tableStyle}>
           {items.map((item) => {

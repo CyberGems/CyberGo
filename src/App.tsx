@@ -3,7 +3,7 @@ import { Bell, CalendarDays, Check, Command, Flame, Info, List, ListChecks, List
 import type { AppInfo, Bootstrap, Item, ItemDraft, RecoveryNotice } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf, type Copy } from './i18n';
-import { matchesFilter, sortItems, type FilterId } from './lib/view';
+import { matchesFilter, sortByColumn, sortItems, type FilterId, type SortColumn, type SortDirection } from './lib/view';
 import { computeStats } from './lib/stats';
 import { applyTheme } from './themes';
 import TitleBar from './components/TitleBar';
@@ -193,6 +193,16 @@ function MainApp() {
     });
     return sortItems(filtered, filter);
   }, [items, filter, groupId, query]);
+  /** The column the list is ordered by, and the way it is ordered. */
+  const [sort, setSort] = useState<{ column: SortColumn; direction: SortDirection } | null>(null);
+  const ordered = useMemo(() => (sort ? sortByColumn(visible, sort.column, sort.direction) : visible), [visible, sort]);
+  /** Clicking a column orders by it, and clicking it again turns the order around. */
+  function orderBy(column: SortColumn) {
+    setSort((current) => {
+      if (!current || current.column !== column) return { column, direction: 'asc' };
+      return { column, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+    });
+  }
   useEffect(() => {
     setSelectedIds((previous) => {
       const valid = previous.filter((id) => visible.some((item) => item.id === id));
@@ -500,13 +510,15 @@ function MainApp() {
             <ItemTable
               copy={copy}
               lang={boot.settings.language}
-              items={visible}
+              items={ordered}
               groups={groups}
               selectedIds={selectedIds}
               onSelect={setSelectedIds}
               onOpen={(item) => { setSelectedIds([item.id]); if (filter !== 'trash') setEditing(item); }}
               onDelete={askDeleteSelection}
               onContextMenu={showContextMenu}
+              sort={sort}
+              onSort={orderBy}
             />
           )}
           {filter === 'trash' && items.some((item) => item.deletedAt) && (

@@ -9,6 +9,7 @@
 - The items of the list and of the calendar have a menu of their own, with the right button of the mouse. It edits the item, marks it as done and deletes it, and when several items are picked it acts on all of them.
 - The toolbar of the main window has a button that picks everything at once, the same one the reminder window has, and it turns into the one that takes the selection away.
 - A click on the empty room of the list takes the selection away.
+- The list can be ordered by any of its columns, the way a file explorer does. Clicking the title of a column orders by it, and clicking it again turns the order around. A chevron says which column is ordering and in which way.
 
 ### Improved
 
@@ -22,6 +23,8 @@
 - The picked rows say it better. The color of the accent is stronger, and the rows that the rectangle of the drag is touching are painted even stronger, so it is clear at every moment what is going to be picked.
 - The rows of the drag and the picked ones carry almost the same color, so nothing changes when the drag is over, and the rectangle of the drag no longer paints over the rows it touches.
 - The last column of the list, the one of the kind, has a fixed width and its title sits at the right, in line with the tag of every item.
+- The handle that changes the width of a column is now at the right of the title of that column, and the first column, the one of the dot, has no handle, because where it was it did not mean anything.
+- The table never grows past the window. When a column is made wider, the subject of the item gives up the room it has, and the list keeps its shape.
 
 ### Fixed
 

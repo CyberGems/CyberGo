@@ -42,3 +42,65 @@ export function sortItems(items: Item[], filter: FilterId): Item[] {
   });
   return copy;
 }
+
+/** The columns of the list that can be ordered. */
+export type SortColumn = 'date' | 'time' | 'state' | 'subject' | 'kind';
+export type SortDirection = 'asc' | 'desc';
+
+/**
+ * How urgent an item is.
+ *
+ * The state of the list says it in words, and this is the same order in
+ * numbers: what is late, what is today, what is tomorrow and what is later.
+ */
+function urgency(item: Item): number {
+  const iso = whenOf(item);
+  if (!iso) return 4;
+  if (new Date(iso).getTime() < Date.now()) return 0;
+  const diff = dayDiff(iso);
+  if (diff === 0) return 1;
+  if (diff === 1) return 2;
+  return 3;
+}
+
+/**
+ * Orders the items by one of the columns of the list.
+ *
+ * The items that have no date are always at the end, in both directions,
+ * because they have no place in the order of a date.
+ */
+export function sortByColumn(items: Item[], column: SortColumn, direction: SortDirection): Item[] {
+  const copy = [...items];
+  const sign = direction === 'asc' ? 1 : -1;
+  const byTitle = (a: Item, b: Item) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' });
+  copy.sort((a, b) => {
+    if (column === 'subject') return sign * byTitle(a, b);
+    if (column === 'kind') {
+      const ka = a.kind === 'task' ? 0 : 1;
+      const kb = b.kind === 'task' ? 0 : 1;
+      if (ka !== kb) return sign * (ka - kb);
+      return sign * byTitle(a, b);
+    }
+    const av = whenOf(a);
+    const bv = whenOf(b);
+    if (!av && !bv) return byTitle(a, b);
+    if (!av) return 1;
+    if (!bv) return -1;
+    if (column === 'time') {
+      const da = new Date(av);
+      const db = new Date(bv);
+      const ma = da.getHours() * 60 + da.getMinutes();
+      const mb = db.getHours() * 60 + db.getMinutes();
+      if (ma !== mb) return sign * (ma - mb);
+      return sign * (da.getTime() - db.getTime());
+    }
+    if (column === 'state') {
+      const ua = urgency(a);
+      const ub = urgency(b);
+      if (ua !== ub) return sign * (ua - ub);
+      return sign * (new Date(av).getTime() - new Date(bv).getTime());
+    }
+    return sign * (new Date(av).getTime() - new Date(bv).getTime());
+  });
+  return copy;
+}

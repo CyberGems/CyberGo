@@ -161,6 +161,30 @@ body.pointer-reset .settings-header-close:hover {
 /* The last column holds the kind of the item, and it is at the right. */
 .table-head-cell.last { justify-content: flex-end; padding-right: 0; }
 /*
+ * The title of a column orders the list by it.
+ *
+ * The arrow is always there, so the title does not jump when the order
+ * changes. It is only seen on the column that is ordering.
+ */
+.column-sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+}
+.column-sort:hover { color: var(--text-primary); }
+.column-sort.sorted { color: var(--accent-light); }
+.column-sort-arrow { display: inline-flex; flex-shrink: 0; }
+.column-sort-arrow[data-hidden="true"] { visibility: hidden; }
+/*
  * The handle that changes the width of a column.
  *
  * It is always there, so the columns can be resized without hunting for the

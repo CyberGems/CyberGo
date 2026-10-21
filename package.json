@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "release:pre": "npm run lint && npm test && npm run build && node scripts/build-release.mjs",
     "lint": "tsc --noEmit",
-    "test": "tsx --test shared/schedule.test.ts shared/csv.test.ts shared/quick.test.ts shared/auth.test.ts shared/ics.test.ts src/lib/stats.test.ts src/lib/format.test.ts src/components/ModalKeys.test.ts electron/db.test.ts electron/validate.test.ts electron/window-bounds.test.ts",
+    "test": "tsx --test shared/schedule.test.ts shared/csv.test.ts shared/quick.test.ts shared/auth.test.ts shared/ics.test.ts src/lib/stats.test.ts src/lib/format.test.ts src/lib/view.test.ts src/components/ModalKeys.test.ts electron/db.test.ts electron/validate.test.ts electron/window-bounds.test.ts",
     "assets": "node scripts/gen-assets.mjs"
   },
   "build": {
