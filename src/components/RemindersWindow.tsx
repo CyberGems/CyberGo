@@ -11,37 +11,18 @@ import Tooltip from './Tooltip';
 import DialogPanel from './Dialog';
 import LockScreen from './LockScreen';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
+import { useListSelection } from '../hooks/useListSelection';
 import {
   BellRing, CalendarDays, CheckCircle2, CheckCheck, ChevronDown, Clock3, ExternalLink,
   Info, ListChecks, ListTodo, ListX, MoreHorizontal, Pin, SlidersHorizontal, Timer,
   Trash2, VolumeX, X, XCircle,
 } from 'lucide-react';
 
-/** The rectangle of a drag that selects the rows it touches. */
-interface MarqueeRect {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-/** What a drag is doing, kept outside the state so the move is cheap. */
-interface DragState {
-  startX: number;
-  startY: number;
-  moved: boolean;
-  additive: boolean;
-  base: string[];
-}
-
 /** Which reminders the list shows. */
 type ReminderFilter = 'all' | 'overdue' | 'task' | 'event';
 
 /** How late a reminder is, from the least to the most. */
 type Gravity = 0 | 1 | 2 | 3;
-
-/** How far the pointer has to travel before a click turns into a drag. */
-const DRAG_THRESHOLD = 4;
 
 function dueTime(item: Item): number {
   const t = new Date(item.occurrenceAt || item.nextFireAt || '').getTime();
@@ -104,13 +85,6 @@ export default function RemindersWindow() {
   const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const pulseTimer = useRef<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const [marquee, setMarquee] = useState<MarqueeRect | null>(null);
-  const dragRef = useRef<DragState | null>(null);
-  const dragHitsRef = useRef<string[]>([]);
-  const skipClickRef = useRef(false);
-  const lastDragRef = useRef(0);
-  /** The row the selection started from, so Shift can extend it. */
-  const anchorRef = useRef<string | null>(null);
   const copy = copyOf(settings?.language || 'es');
 
   async function reload(pulseIds: string[] = []) {
@@ -199,86 +173,6 @@ export default function RemindersWindow() {
     return () => window.clearInterval(id);
   }, [items.length, previewMode]);
 
-  /**
-   * The rows a rectangle of the list touches.
-   *
-   * The rectangle lives in the coordinates of the list content, so a drag
-   * keeps working while the list is scrolled.
-   */
-  function rowsInRect(rect: MarqueeRect): string[] {
-    const list = listRef.current;
-    if (!list) return [];
-    const listRect = list.getBoundingClientRect();
-    const hits: string[] = [];
-    for (const row of Array.from(list.querySelectorAll<HTMLElement>('.reminder-row'))) {
-      const rowRect = row.getBoundingClientRect();
-      const top = rowRect.top - listRect.top + list.scrollTop;
-      const left = rowRect.left - listRect.left + list.scrollLeft;
-      const inside = top + rowRect.height > rect.top
-        && top < rect.top + rect.height
-        && left + rowRect.width > rect.left
-        && left < rect.left + rect.width;
-      if (!inside) continue;
-      const id = row.getAttribute('data-id');
-      if (id) hits.push(id);
-    }
-    return hits;
-  }
-
-  // The drag is followed on the document, because the pointer usually ends
-  // outside the row it started on.
-  useEffect(() => {
-    function move(event: MouseEvent) {
-      const drag = dragRef.current;
-      const list = listRef.current;
-      if (!drag || !list) return;
-      if (!drag.moved) {
-        const travelled = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
-        if (travelled < DRAG_THRESHOLD) return;
-        drag.moved = true;
-      }
-      const listRect = list.getBoundingClientRect();
-      const startLeft = drag.startX - listRect.left + list.scrollLeft;
-      const startTop = drag.startY - listRect.top + list.scrollTop;
-      const left = event.clientX - listRect.left + list.scrollLeft;
-      const top = event.clientY - listRect.top + list.scrollTop;
-      const rect: MarqueeRect = {
-        left: Math.min(startLeft, left),
-        top: Math.min(startTop, top),
-        width: Math.abs(left - startLeft),
-        height: Math.abs(top - startTop),
-      };
-      dragHitsRef.current = rowsInRect(rect);
-      setMarquee(rect);
-    }
-
-    function up() {
-      const drag = dragRef.current;
-      dragRef.current = null;
-      setMarquee(null);
-      if (!drag || !drag.moved) return;
-      // The click that ends the drag must not select the row under the pointer.
-      skipClickRef.current = true;
-      lastDragRef.current = Date.now();
-      const hits = dragHitsRef.current;
-      dragHitsRef.current = [];
-      setSelectedIds((previous) => {
-        if (!drag.additive) return hits;
-        const merged = new Set([...drag.base, ...hits]);
-        return previous.filter((id) => merged.has(id)).length === merged.size
-          ? previous.filter((id) => !hits.includes(id))
-          : [...merged];
-      });
-    }
-
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
-    return () => {
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', up);
-    };
-  }, []);
-
   // Most urgent first: overdue items lead (oldest overdue at the top), then the
   // nearest upcoming ones. Items without a resolvable date sink to the bottom.
   const orderedItems = useMemo(
@@ -327,16 +221,6 @@ export default function RemindersWindow() {
     setSelectedIds(allSelected ? [] : visibleItems.map((item) => item.id));
   }
 
-  function selectOnly(id: string) {
-    setSelectedIds([id]);
-  }
-
-  function toggleOne(id: string) {
-    setSelectedIds((previous) => (previous.includes(id)
-      ? previous.filter((value) => value !== id)
-      : [...previous, id]));
-  }
-
   useModalKeys(Boolean(confirm), {
     esc: () => setConfirm(null),
     enter: () => {
@@ -348,57 +232,17 @@ export default function RemindersWindow() {
     },
   });
 
-  // Keyboard navigation: arrows move the selection, Enter opens, Delete/Backspace
-  // dismisses, Ctrl+A selects everything. Ignored while typing in a field.
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (confirm) return;
-      const tag = (event.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      const ids = visibleItems.map((item) => item.id);
-      if (!ids.length) return;
-      const index = selectedIds[0] ? ids.indexOf(selectedIds[0]) : -1;
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        const delta = event.key === 'ArrowDown' ? 1 : -1;
-        const base = index < 0 ? (delta > 0 ? -1 : 0) : index;
-        const next = ids[Math.max(0, Math.min(ids.length - 1, base + delta))];
-        // Shift extends the selection from the row it started on.
-        const anchor = anchorRef.current ? ids.indexOf(anchorRef.current) : -1;
-        const target = ids.indexOf(next);
-        if (event.shiftKey && anchor >= 0 && target >= 0) {
-          const [from, to] = anchor <= target ? [anchor, target] : [target, anchor];
-          setSelectedIds(ids.slice(from, to + 1));
-        } else {
-          anchorRef.current = next;
-          setSelectedIds([next]);
-        }
-        rowRefs.current[next]?.focus();
-      } else if (event.key === ' ') {
-        // Space marks the focused row, the way a checkbox does.
-        event.preventDefault();
-        const focused = document.activeElement?.getAttribute('data-id');
-        if (!focused) return;
-        anchorRef.current = focused;
-        setSelectedIds((previous) => (previous.includes(focused)
-          ? previous.filter((id) => id !== focused)
-          : [...previous, focused]));
-      } else if (event.key === 'Enter') {
-        if (previewMode || !current) return;
-        event.preventDefault();
-        detach(api.openItem(current.id), 'open the item');
-      } else if (event.key === 'Delete' || event.key === 'Backspace') {
-        if (previewMode || !current) return;
-        event.preventDefault();
-        for (const item of selectedItems) detach(api.dismiss(item.id), 'dismiss the reminder');
-      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
-        event.preventDefault();
-        toggleSelectAll();
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [visibleItems, selectedIds, current, previewMode, selectedItems, allSelected, confirm]);
+  const selection = useListSelection({
+    listRef,
+    rows: visibleItems,
+    selected: selectedIds,
+    disabled: previewMode,
+    onChange: setSelectedIds,
+    onActivate: (item) => detach(api.openItem(item.id), 'open the item'),
+    onDelete: () => {
+      for (const item of selectedItems) detach(api.dismiss(item.id), 'dismiss the reminder');
+    },
+  });
 
   function showContextMenu(event: ReactMouseEvent<HTMLElement>, id: string) {
     event.preventDefault();
@@ -580,17 +424,7 @@ export default function RemindersWindow() {
               aria-multiselectable="true"
               aria-label={copy.remindersTitle}
               ref={listRef}
-              onMouseDown={(event) => {
-                if (event.button !== 0) return;
-                skipClickRef.current = false;
-                dragRef.current = {
-                  startX: event.clientX,
-                  startY: event.clientY,
-                  moved: false,
-                  additive: event.ctrlKey || event.metaKey || event.shiftKey,
-                  base: selectedIds,
-                };
-              }}
+              onMouseDown={selection.onPointerDown}
             >
               {groups.map((group) => (
                 <div className="reminder-group" key={group.id} role="group" aria-label={group.label}>
@@ -601,7 +435,7 @@ export default function RemindersWindow() {
                   {group.items.map((item) => {
                     const state = dueState(item.occurrenceAt || item.nextFireAt) ?? 'future';
                     const selected = selectedIds.includes(item.id);
-                    const inDrag = dragHitsRef.current.includes(item.id);
+                    const inDrag = selection.hits.includes(item.id);
                     const gravity = gravityOf(item);
                     return (
                       <div
@@ -613,22 +447,10 @@ export default function RemindersWindow() {
                         tabIndex={0}
                         className={`reminder-row urgency-${state} gravity-${gravity} ${selected ? 'selected' : ''} ${inDrag ? 'in-drag' : ''} ${pulse.includes(item.id) ? 'pulse' : ''}`}
                         onClick={(event) => {
-                          if (skipClickRef.current) {
-                            skipClickRef.current = false;
-                            return;
-                          }
-                          if (event.ctrlKey || event.metaKey) {
-                            anchorRef.current = item.id;
-                            toggleOne(item.id);
-                          } else {
-                            anchorRef.current = item.id;
-                            selectOnly(item.id);
-                          }
+                          if (selection.consumeClick()) return;
+                          selection.select(item.id, event.ctrlKey || event.metaKey, event.shiftKey);
                         }}
                         onDoubleClick={() => {
-                          // A drag that ends on a row would otherwise count as the
-                          // first click of a double click, and the item would open.
-                          if (Date.now() - lastDragRef.current < 300) return;
                           if (!previewMode) detach(api.openItem(item.id), 'open the item');
                         }}
                         onContextMenu={(event) => showContextMenu(event, item.id)}
@@ -662,11 +484,16 @@ export default function RemindersWindow() {
                   })}
                 </div>
               ))}
-              {marquee && (
+              {selection.marquee && (
                 <div
                   className="reminder-marquee"
                   aria-hidden="true"
-                  style={{ left: marquee.left, top: marquee.top, width: marquee.width, height: marquee.height }}
+                  style={{
+                    left: selection.marquee.left,
+                    top: selection.marquee.top,
+                    width: selection.marquee.width,
+                    height: selection.marquee.height,
+                  }}
                 />
               )}
               {visibleItems.length === 0 && (

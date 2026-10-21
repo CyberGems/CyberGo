@@ -5,6 +5,7 @@ import type { Copy } from '../i18n';
 import type { Group, Item, Lang } from '@shared/types';
 import { formatDate, formatTimeRange, itemStatus } from '../lib/format';
 import Tooltip from './Tooltip';
+import { useListSelection } from '../hooks/useListSelection';
 
 /**
  * The columns of the list: the marker, the date, the time, the state, the
@@ -44,21 +45,32 @@ export default function ItemTable({
   lang,
   items,
   groups,
-  selectedId,
+  selectedIds,
   onSelect,
   onOpen,
+  onDelete,
 }: {
   copy: Copy;
   lang: Lang;
   items: Item[];
   groups: Group[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
+  selectedIds: string[];
+  onSelect: (ids: string[]) => void;
   onOpen: (item: Item) => void;
+  onDelete?: () => void;
 }) {
   const [widths, setWidths] = useState(initialTableWidths);
   const widthsRef = useRef(widths);
   const stopResizeRef = useRef<(() => void) | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const selection = useListSelection({
+    listRef,
+    rows: items,
+    selected: selectedIds,
+    onChange: onSelect,
+    onActivate: onOpen,
+    onDelete,
+  });
 
   const applyWidths = useCallback((next: number[]) => {
     widthsRef.current = next;
@@ -143,7 +155,7 @@ export default function ItemTable({
   const headers = [null, copy.colWhen, copy.colTime, copy.colLeft, copy.colSubject, copy.kind];
   return (
     <>
-      <div className="table-scroll">
+      <div className="table-scroll" ref={listRef} onMouseDown={selection.onPointerDown}>
         <div className="list-head" style={tableStyle}>
           {headers.map((label, index) => (
             <span className="table-head-cell" key={label || 'marker'}>
@@ -190,21 +202,18 @@ export default function ItemTable({
             return (
               <div
                 key={item.id}
-                className={`row ${selectedId === item.id ? 'selected' : ''}`}
-                onClick={() => onSelect(item.id)}
-                onDoubleClick={() => onOpen(item)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') onOpen(item);
-                  if (event.key === ' ') {
-                    event.preventDefault();
-                    onSelect(item.id);
-                  }
+                data-id={item.id}
+                className={`row ${selectedIds.includes(item.id) ? 'selected' : ''}`}
+                onClick={(event) => {
+                  if (selection.consumeClick()) return;
+                  selection.select(item.id, event.ctrlKey || event.metaKey, event.shiftKey);
                 }}
+                onDoubleClick={() => onOpen(item)}
                 role="button"
                 tabIndex={0}
-                aria-current={selectedId === item.id ? 'true' : undefined}
+                aria-current={selectedIds.includes(item.id) ? 'true' : undefined}
                 aria-label={label}
-                style={tint && selectedId !== item.id ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
+                style={tint && !selectedIds.includes(item.id) ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
               >
                 <i className="dot" style={{ background: tint || 'transparent', border: tint ? 'none' : '1px solid var(--border)' }} />
                 <span className="date-cell">
@@ -228,6 +237,18 @@ export default function ItemTable({
             );
           })}
         </div>
+        {selection.marquee && (
+          <div
+            className="reminder-marquee"
+            aria-hidden="true"
+            style={{
+              left: selection.marquee.left,
+              top: selection.marquee.top,
+              width: selection.marquee.width,
+              height: selection.marquee.height,
+            }}
+          />
+        )}
       </div>
     </>
   );

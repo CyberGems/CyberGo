@@ -43,7 +43,7 @@ export default function CalendarView({
   lang,
   items,
   groups,
-  selectedId,
+  selectedIds,
   onSelect,
   onOpen,
   onNewDay,
@@ -52,8 +52,8 @@ export default function CalendarView({
   lang: Lang;
   items: Item[];
   groups: Group[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
+  selectedIds: string[];
+  onSelect: (ids: string[]) => void;
   onOpen: (item: Item) => void;
   onNewDay: (day: Date) => void;
 }) {
@@ -162,8 +162,8 @@ export default function CalendarView({
                 <button
                   key={item.id}
                   type="button"
-                  className={`cal-chip ${selectedId === item.id ? 'selected' : ''} ${item.completedAt ? 'done' : ''} kind-${item.kind}`}
-                  onClick={(e) => { e.stopPropagation(); onSelect(item.id); }}
+                  className={`cal-chip ${selectedIds.includes(item.id) ? 'selected' : ''} ${item.completedAt ? 'done' : ''} kind-${item.kind}`}
+                  onClick={(e) => { e.stopPropagation(); onSelect([item.id]); }}
                   onDoubleClick={(e) => { e.stopPropagation(); onOpen(item); }}
                   aria-label={`${item.title}, ${item.kind === 'task' ? copy.task : copy.event}`}
                 >
@@ -183,7 +183,7 @@ export default function CalendarView({
         <div className="cal-undated">
           <span className="hint">{copy.cmdItems} · {copy.quickNone}:</span>
           {undated.slice(0, 12).map((item) => (
-            <button key={item.id} type="button" className={`chip ${selectedId === item.id ? 'on' : ''}`} onClick={() => onSelect(item.id)} onDoubleClick={() => onOpen(item)}>
+            <button key={item.id} type="button" className={`chip ${selectedIds.includes(item.id) ? 'on' : ''}`} onClick={() => onSelect([item.id])} onDoubleClick={() => onOpen(item)}>
               {item.title}
             </button>
           ))}

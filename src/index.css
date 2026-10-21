@@ -38,6 +38,17 @@ button { cursor: pointer; }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; }
 
 .app, .reminder-app { height: 100%; display: flex; flex-direction: column; background: var(--bg-app); }
+/*
+ * The windows are panels of the application, not a document. The text is
+ * not picked when the pointer drags over it, which is what makes the
+ * selection by rectangle possible.
+ */
+.app, .reminder-app { user-select: none; -webkit-user-select: none; }
+.app input, .app textarea, .app select,
+.reminder-app input, .reminder-app textarea, .reminder-app select {
+  user-select: text;
+  -webkit-user-select: text;
+}
 .titlebar {
   height: var(--titlebar-height);
   display: flex;

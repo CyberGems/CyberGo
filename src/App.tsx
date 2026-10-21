@@ -51,7 +51,7 @@ function MainApp() {
   const [filter, setFilter] = useState<FilterId>('all');
   const [groupId, setGroupId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editing, setEditing] = useState<Item | null | 'new'>(null);
   const [seed, setSeed] = useState<ItemDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -97,7 +97,7 @@ function MainApp() {
     void api.getAppInfo().then(setAppInfo).catch(() => setAppInfo(null));
     const off = api.onDataChanged(() => void reload());
     const open = api.onOpenItem((id) => {
-      setSelectedId(id);
+      setSelectedIds([id]);
       void api.getBootstrap().then((next) => {
         setBoot(next);
         if (lastTheme.current !== next.settings.theme) {
@@ -190,9 +190,13 @@ function MainApp() {
     return sortItems(filtered, filter);
   }, [items, filter, groupId, query]);
   useEffect(() => {
-    if (selectedId && !visible.some((item) => item.id === selectedId)) setSelectedId(null);
-  }, [selectedId, visible]);
-  const selected = items.find((item) => item.id === selectedId) ?? null;
+    setSelectedIds((previous) => {
+      const valid = previous.filter((id) => visible.some((item) => item.id === id));
+      return valid.length === previous.length ? previous : valid;
+    });
+  }, [visible]);
+  const selectedItems = items.filter((item) => selectedIds.includes(item.id));
+  const selected = selectedItems[0] ?? null;
   const stats = useMemo(() => computeStats(items.map((item) => item.completedAt)), [items]);
 
   useModalKeys(!!confirm, {
@@ -220,6 +224,29 @@ function MainApp() {
       action: copy.actionConfirm,
       danger: true,
       run: () => detach(api.deleteItem(item.id), 'move the item to the recycle bin'),
+    });
+  }
+
+  /** The delete of everything that is picked, with a confirmation. */
+  function askDeleteSelection() {
+    const picked = selectedItems;
+    if (!picked.length) return;
+    const permanent = picked.filter((item) => item.deletedAt);
+    const soft = picked.filter((item) => !item.deletedAt);
+    setConfirm({
+      title: picked.length === 1
+        ? (picked[0].deletedAt ? copy.confirmPurge : copy.confirmDelete)
+        : copy.confirmDeleteMany.replace('{count}', String(picked.length)),
+      body: picked.length === 1
+        ? (picked[0].deletedAt ? copy.confirmPurgeBody : copy.confirmDeleteBody)
+        : copy.confirmDeleteManyBody.replace('{count}', String(picked.length)),
+      action: copy.actionConfirm,
+      danger: true,
+      run: () => {
+        for (const item of permanent) detach(api.purgeItem(item.id), 'delete the item permanently');
+        for (const item of soft) detach(api.deleteItem(item.id), 'move the item to the recycle bin');
+        setSelectedIds([]);
+      },
     });
   }
 
@@ -261,13 +288,20 @@ function MainApp() {
           </div>
           <span className="toolbar-divider" />
           <div className="selection-actions">
-            <button className="btn" disabled={!selected || filter === 'trash'} onClick={() => selected && setEditing(selected)}>
+            <button className="btn" disabled={selectedItems.length !== 1 || filter === 'trash'} onClick={() => selected && setEditing(selected)}>
               <Pencil size={14} /><span className="toolbar-label">{copy.edit}</span>
             </button>
-            <button className="btn" disabled={!selected} onClick={() => selected && askDelete(selected)}>
+            <button className="btn" disabled={!selectedItems.length} onClick={() => askDeleteSelection()}>
               <Trash2 size={14} /><span className="toolbar-label">{copy.delete}</span>
             </button>
-            <button className="btn" disabled={!selected || selected.kind !== 'task' || !!selected.completedAt || filter === 'trash'} onClick={() => selected && detach(api.completeItem(selected.id), 'complete the item')}>
+            <button
+              className="btn"
+              disabled={!selectedItems.length || selectedItems.some((item) => item.kind !== 'task' || item.completedAt) || filter === 'trash'}
+              onClick={() => {
+                for (const item of selectedItems) detach(api.completeItem(item.id), 'complete the item');
+                setSelectedIds([]);
+              }}
+            >
               <span className="toolbar-label">{copy.done}</span>
             </button>
           </div>
@@ -364,9 +398,9 @@ function MainApp() {
               lang={boot.settings.language}
               items={visible}
               groups={groups}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onOpen={(item) => { setSelectedId(item.id); setEditing(item); }}
+              selectedIds={selectedIds}
+              onSelect={setSelectedIds}
+              onOpen={(item) => { setSelectedIds([item.id]); setEditing(item); }}
               onNewDay={newOnDay}
             />
           ) : (
@@ -375,9 +409,10 @@ function MainApp() {
               lang={boot.settings.language}
               items={visible}
               groups={groups}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onOpen={(item) => { setSelectedId(item.id); if (filter !== 'trash') setEditing(item); }}
+              selectedIds={selectedIds}
+              onSelect={setSelectedIds}
+              onOpen={(item) => { setSelectedIds([item.id]); if (filter !== 'trash') setEditing(item); }}
+              onDelete={askDeleteSelection}
             />
           )}
           {filter === 'trash' && items.some((item) => item.deletedAt) && (
@@ -435,7 +470,7 @@ function MainApp() {
           lang={boot.settings.language}
           items={items}
           onClose={() => setPaletteOpen(false)}
-          onOpenItem={(item) => { setSelectedId(item.id); setEditing(item); }}
+          onOpenItem={(item) => { setSelectedIds([item.id]); setEditing(item); }}
           onNew={newFromPalette}
           onGoFilter={(next) => { setFilter(next); setGroupId(null); }}
           onShowReminders={() => detach(api.showReminders(), 'show the reminders')}
