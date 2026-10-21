@@ -2,30 +2,13 @@
 
 ## Unreleased
 
-## 0.1.0-alpha.4 - 2026-10-20
+## 0.1.0-alpha.5 - 2026-10-20
 
-Fourth public pre-release of CyberGo. The reminder window is the heart of the app, and it was reworked from the ground up: the reminders are grouped by day, every row carries its data in one line, and several of them can be picked at once with the mouse or with the keyboard. Underneath, the local data is harder to lose: the lock is enforced by the process and not only by the window, a damaged database keeps its bytes, and a repeating item no longer jumps back to its first date when only its reminder changes.
+Fifth public pre-release of CyberGo. The lock screen was rebuilt to match the other apps of the suite, the application has its official icon, and the main window finally behaves like the reminder window: the list fits the space it has, several items can be picked at once, and the editor of an item has the same air as the lock.
 
 ### Added
 
 - The lock has a third level, **Visible**, which shows the reminders and their content while the app is locked. The **Soft** level now lets the reminder through with its sound, but not its content, and the reminder window shows the lock so the user can unlock it there.
-- The reminders are grouped by day: overdue, today, tomorrow, this week and later.
-- The reminder window has a quick filter for all of them, the overdue ones, the tasks and the events.
-- The header of the reminder window shows how many reminders are overdue.
-- The reminder window can snooze or dismiss every reminder, and the dismissal asks before it does it.
-- The color of a reminder says how late it is: the longer it waits, the stronger the red.
-- The room the list leaves free shows how many reminders there are and which one is the oldest.
-- The reminder window has a "select all" button, and several reminders can be selected by dragging a rectangle over them.
-- The state column says "En 3 días" instead of a bare "3".
-- An event that already happened no longer shows as overdue. A task that is late still does, because it still waits to be done.
-- The quick capture no longer keeps an empty row under the presets.
-- The number of items is shown once, under the workspace title, instead of twice.
-- The date picker and the calendar use the same three-letter weekday names.
-- The calendar keeps a single stop in the tab order, and the arrow keys move the focus from there.
-- The filter names stay on one line at the narrowest window width.
-- A row without a date no longer reads "Buy milk, , ,".
-- An item in the trash no longer shows an overdue badge.
-- The reminder window reports a failed request instead of losing it.
 
 ### Improved
 
@@ -49,6 +32,37 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 - The field of the lock screen keeps the focus when the secret is wrong, so it can be corrected without reaching for the mouse.
 - The window can be made as small as 840 by 560, the same as the other apps of the suite.
 - The application has its official icon, the CyberGems bell. It is the one in the installer, the window, the tray, the About dialog and the lock screen, and the documentation shows it too.
+
+### Fixed
+
+- The content of the reminders no longer reaches the screen while the session is locked, and the native notification no longer writes the title of a reminder there.
+
+## 0.1.0-alpha.4 - 2026-10-20
+
+Fourth public pre-release of CyberGo. The reminder window is the heart of the app, and it was reworked from the ground up: the reminders are grouped by day, every row carries its data in one line, and several of them can be picked at once with the mouse or with the keyboard. Underneath, the local data is harder to lose: the lock is enforced by the process and not only by the window, a damaged database keeps its bytes, and a repeating item no longer jumps back to its first date when only its reminder changes.
+
+### Added
+
+- The reminders are grouped by day: overdue, today, tomorrow, this week and later.
+- The reminder window has a quick filter for all of them, the overdue ones, the tasks and the events.
+- The header of the reminder window shows how many reminders are overdue.
+- The reminder window can snooze or dismiss every reminder, and the dismissal asks before it does it.
+- The color of a reminder says how late it is: the longer it waits, the stronger the red.
+- The room the list leaves free shows how many reminders there are and which one is the oldest.
+- The reminder window has a "select all" button, and several reminders can be selected by dragging a rectangle over them.
+- The state column says "En 3 días" instead of a bare "3".
+- An event that already happened no longer shows as overdue. A task that is late still does, because it still waits to be done.
+- The quick capture no longer keeps an empty row under the presets.
+- The number of items is shown once, under the workspace title, instead of twice.
+- The date picker and the calendar use the same three-letter weekday names.
+- The calendar keeps a single stop in the tab order, and the arrow keys move the focus from there.
+- The filter names stay on one line at the narrowest window width.
+- A row without a date no longer reads "Buy milk, , ,".
+- An item in the trash no longer shows an overdue badge.
+- The reminder window reports a failed request instead of losing it.
+
+### Improved
+
 - The reminder window was reworked. Every row carries its data in one line, the actions of the footer work on the whole selection, and the snooze presets live in a menu instead of taking two rows.
 - The text of the reminder window is no longer selected when the pointer drags over it.
 - The reminder window shows a short wording of the moment, so the name of the item is not cut off.
@@ -60,7 +74,6 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 
 ### Fixed
 
-- The content of the reminders no longer reaches the screen while the session is locked, and the native notification no longer writes the title of a reminder there.
 - The command palette and the text context menu no longer disappear behind the settings panel.
 - The command palette no longer opens on top of an open dialog, where the two fought over the keyboard and the focus.
 - Changing only the reminder of a repeating item no longer sends the series back to its first date, which made it fire for a moment that had already passed.
@@ -80,7 +93,6 @@ Fourth public pre-release of CyberGo. The reminder window is the heart of the ap
 - An identifier that is refused is reported, instead of creating a second copy of the item.
 - The errors of a calendar import now point at the same event as the errors of the reader.
 - The About dialog no longer links to a page that does not exist yet.
-
 ## 0.1.0-alpha.3 - 2026-10-19
 
 Third public pre-release of CyberGo. This round is about trust in the local data: the database records its own version, writes once per burst of changes instead of once per change, and survives a damaged file. Dates, repetitions and imports were reworked, and every dialog now behaves like a real dialog, with the focus and the keyboard under control.
