@@ -3,7 +3,7 @@ import { Bell, CalendarDays, Check, Command, Download, Flame, Info, List, ListCh
 import type { AppInfo, Bootstrap, Item, ItemDraft, RecoveryNotice } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf, type Copy } from './i18n';
-import { matchesFilter, sortByColumn, sortItems, type FilterId, type SortColumn, type SortDirection } from './lib/view';
+import { matchesFilter, readStoredSort, sortByColumn, sortItems, writeStoredSort, type FilterId, type SortColumn, type SortDirection } from './lib/view';
 import { computeStats } from './lib/stats';
 import { applyTheme } from './themes';
 import TitleBar from './components/TitleBar';
@@ -207,8 +207,11 @@ function MainApp() {
     return sortItems(filtered, filter);
   }, [items, filter, groupId, query]);
   /** The column the list is ordered by, and the way it is ordered. */
-  const [sort, setSort] = useState<{ column: SortColumn; direction: SortDirection } | null>(null);
+  const [sort, setSort] = useState<{ column: SortColumn; direction: SortDirection } | null>(readStoredSort);
   const ordered = useMemo(() => (sort ? sortByColumn(visible, sort.column, sort.direction) : visible), [visible, sort]);
+  // The order the user chose is kept, so the list opens the same way it was
+  // left.
+  useEffect(() => { writeStoredSort(sort); }, [sort]);
   /** Clicking a column orders by it, and clicking it again turns the order around. */
   function orderBy(column: SortColumn) {
     setSort((current) => {

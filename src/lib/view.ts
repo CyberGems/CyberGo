@@ -47,6 +47,51 @@ export function sortItems(items: Item[], filter: FilterId): Item[] {
 export type SortColumn = 'date' | 'time' | 'state' | 'subject' | 'kind';
 export type SortDirection = 'asc' | 'desc';
 
+/** Where the order of the list is kept, so it is the same when it opens again. */
+export const SORT_STORAGE = 'cybergo-table-sort-v1';
+
+const SORT_COLUMNS: SortColumn[] = ['date', 'time', 'state', 'subject', 'kind'];
+
+/** The storage of the browser, when there is one. */
+function storage(): Storage | null {
+  try {
+    if (typeof globalThis === 'undefined') return null;
+    return (globalThis as { localStorage?: Storage }).localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Reads the order that was chosen, and ignores anything that is not one. */
+export function readStoredSort(): { column: SortColumn; direction: SortDirection } | null {
+  const store = storage();
+  if (!store) return null;
+  try {
+    const raw = store.getItem(SORT_STORAGE);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { column?: string; direction?: string };
+    const column = parsed?.column as SortColumn;
+    const direction = parsed?.direction as SortDirection;
+    if (!SORT_COLUMNS.includes(column)) return null;
+    if (direction !== 'asc' && direction !== 'desc') return null;
+    return { column, direction };
+  } catch {
+    return null;
+  }
+}
+
+/** Keeps the order that was chosen, or forgets it when there is none. */
+export function writeStoredSort(sort: { column: SortColumn; direction: SortDirection } | null) {
+  const store = storage();
+  if (!store) return;
+  try {
+    if (sort) store.setItem(SORT_STORAGE, JSON.stringify(sort));
+    else store.removeItem(SORT_STORAGE);
+  } catch {
+    /* The storage can be unavailable, the order just does not survive. */
+  }
+}
+
 /**
  * The group of the state of an item.
  *

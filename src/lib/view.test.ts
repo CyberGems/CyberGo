@@ -1,7 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Item } from '@shared/types';
-import { sortByColumn } from './view';
+import { readStoredSort, sortByColumn, writeStoredSort } from './view';
+
+/** Runs a test with a storage that only lives in memory. */
+function withStorage(run: () => void) {
+  const store = new Map<string, string>();
+  const original = (globalThis as { localStorage?: unknown }).localStorage;
+  (globalThis as { localStorage?: unknown }).localStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => { store.set(key, value); },
+    removeItem: (key: string) => { store.delete(key); },
+  };
+  try {
+    run();
+  } finally {
+    if (original === undefined) delete (globalThis as { localStorage?: unknown }).localStorage;
+    else (globalThis as { localStorage?: unknown }).localStorage = original;
+  }
+}
 
 function item(id: string, extra: Partial<Item> = {}): Item {
   return {
@@ -70,4 +87,24 @@ test('the state is ordered with what is late first, and what is over at the end'
   const today = item('today', { startAt: new Date().toISOString() });
   const byState = sortByColumn([over, today, late], 'state', 'asc');
   assert.deepEqual(titles(byState), ['late', 'today', 'over']);
+});
+
+test('the order of the list is kept between sessions', () => {
+  withStorage(() => {
+    assert.equal(readStoredSort(), null);
+    writeStoredSort({ column: 'subject', direction: 'desc' });
+    assert.deepEqual(readStoredSort(), { column: 'subject', direction: 'desc' });
+    writeStoredSort(null);
+    assert.equal(readStoredSort(), null);
+  });
+});
+
+test('an order that is not one of the columns is forgotten', () => {
+  withStorage(() => {
+    writeStoredSort({ column: 'subject', direction: 'asc' });
+    (globalThis as { localStorage: Storage }).localStorage.setItem('cybergo-table-sort-v1', '{"column":"nonsense","direction":"asc"}');
+    assert.equal(readStoredSort(), null);
+    (globalThis as { localStorage: Storage }).localStorage.setItem('cybergo-table-sort-v1', 'not even json');
+    assert.equal(readStoredSort(), null);
+  });
 });
