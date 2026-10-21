@@ -27,6 +27,7 @@
 - The table never grows past the window. When a column is made wider, the subject of the item gives up the room it has, and the list keeps its shape.
 - The title of a column is picked anywhere in the cell, and the cell lights up as a whole when the pointer rests on it, the way a file explorer does.
 - The column of the subject now has a line that separates it from the last one, so the two do not look like a single block.
+- The header of the list has no dead room left. The title of the date covers the column of the dot as well, and the last column reaches the edge, so the whole header can be picked and lights up as a whole.
 
 ### Fixed
 

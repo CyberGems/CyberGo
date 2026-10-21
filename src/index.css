@@ -187,6 +187,12 @@ body.pointer-reset .settings-header-close:hover {
 .column-sort:hover { background: var(--bg-hover); color: var(--text-primary); }
 .column-sort.sorted { color: var(--accent-light); }
 .table-head-cell.last .column-sort { justify-content: flex-end; }
+/*
+ * The title of the date covers the column of the dot as well, so there is
+ * no dead room on the left. The title keeps the place it had, next to the
+ * dates of the rows.
+ */
+.table-head-cell.spans-marker .column-sort { padding-left: calc(var(--marker-column-width, 12px) + 18px); }
 .column-sort-arrow { display: inline-flex; flex-shrink: 0; }
 .column-sort-arrow[data-hidden="true"] { visibility: hidden; }
 /* The line that separates two columns when there is no handle to drag. */
@@ -1488,7 +1494,8 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .list-head {
   height: 38px;
   margin: 18px 20px 0;
-  padding-inline: 14px;
+  /* The cells of the header reach the edges, so there is no dead room. */
+  padding-inline: 0;
   border: 1px solid var(--border);
   border-bottom: 0;
   border-radius: var(--radius-md) var(--radius-md) 0 0;

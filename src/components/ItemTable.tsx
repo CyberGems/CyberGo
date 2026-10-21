@@ -17,6 +17,7 @@ import { useListSelection } from '../hooks/useListSelection';
  */
 const SUBJECT_COLUMN = 4;
 const MARKER_COLUMN = 0;
+const DATE_COLUMN = 1;
 const TABLE_WIDTHS = [12, 96, 80, 96, 200, 48];
 const TABLE_MIN_WIDTHS = [10, 76, 68, 84, 180, 44];
 const TABLE_MAX_WIDTHS = [40, 200, 180, 260, 900, 120];
@@ -111,6 +112,7 @@ export default function ItemTable({
   if (!items.length) return null;
 
   const tableStyle = {
+    '--marker-column-width': `${widths[MARKER_COLUMN]}px`,
     '--table-columns': widths
       .map((width, index) => {
         // The subject takes the room that is left, and it can give all of it
@@ -177,13 +179,13 @@ export default function ItemTable({
     persistWidths(next);
   }
 
-  const headers: { key: SortColumn | null; label: string }[] = [
-    { key: null, label: '' },
-    { key: 'date', label: copy.colWhen },
-    { key: 'time', label: copy.colTime },
-    { key: 'state', label: copy.colLeft },
-    { key: 'subject', label: copy.colSubject },
-    { key: 'kind', label: copy.kind },
+  const headers: { key: SortColumn | null; label: string; index: number }[] = [
+    { key: null, label: '', index: 0 },
+    { key: 'date', label: copy.colWhen, index: 1 },
+    { key: 'time', label: copy.colTime, index: 2 },
+    { key: 'state', label: copy.colLeft, index: 3 },
+    { key: 'subject', label: copy.colSubject, index: 4 },
+    { key: 'kind', label: copy.kind, index: 5 },
   ];
   return (
     <>
@@ -207,31 +209,31 @@ export default function ItemTable({
         }}
       >
         <div className="list-head" style={tableStyle}>
-          {headers.map((column, index) => {
+          {headers.filter((column) => column.key).map((column) => {
             const label = column.label;
+            const index = column.index;
             const sorted = sort?.column === column.key;
             const direction = sorted ? sort.direction : null;
             return (
               <span
-                className={`table-head-cell ${index === LAST_COLUMN ? 'last' : ''}`}
-                key={column.key || 'marker'}
-                aria-sort={column.key ? (sorted ? (direction === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
+                className={`table-head-cell ${index === LAST_COLUMN ? 'last' : ''} ${index === DATE_COLUMN ? 'spans-marker' : ''}`}
+                key={column.key!}
+                style={index === DATE_COLUMN ? { gridColumn: 'span 2' } : undefined}
+                aria-sort={sorted ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
               >
-                {column.key && (
-                  <button
-                    type="button"
-                    className={`column-sort ${sorted ? 'sorted' : ''}`}
-                    onClick={() => onSort(column.key as SortColumn)}
-                    aria-label={sorted
-                      ? `${copy.sortBy.replace('{column}', label)} · ${direction === 'asc' ? copy.sortAsc : copy.sortDesc}`
-                      : copy.sortBy.replace('{column}', label)}
-                  >
-                    <span>{label}</span>
-                    <span className="column-sort-arrow" data-hidden={!sorted} aria-hidden="true">
-                      {direction === 'desc' ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
-                    </span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className={`column-sort ${sorted ? 'sorted' : ''}`}
+                  onClick={() => onSort(column.key!)}
+                  aria-label={sorted
+                    ? `${copy.sortBy.replace('{column}', label)} · ${direction === 'asc' ? copy.sortAsc : copy.sortDesc}`
+                    : copy.sortBy.replace('{column}', label)}
+                >
+                  <span>{label}</span>
+                  <span className="column-sort-arrow" data-hidden={!sorted} aria-hidden="true">
+                    {direction === 'desc' ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+                  </span>
+                </button>
                 {index === SUBJECT_COLUMN && (
                   /**
                    * The subject takes the room that is left, so its edge
@@ -240,7 +242,7 @@ export default function ItemTable({
                    */
                   <span className="column-divider" aria-hidden="true" />
                 )}
-                {index !== SUBJECT_COLUMN && index !== LAST_COLUMN && index !== MARKER_COLUMN && (
+                {index !== SUBJECT_COLUMN && index !== LAST_COLUMN && (
                   <Tooltip label={`${copy.resizeColumn}: ${label}`} placement="top" delay={350}>
                     <button
                       type="button"
