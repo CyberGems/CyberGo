@@ -19,12 +19,15 @@
 - The list of the main window can pick several items by dragging a rectangle over them, the same way the reminder window does. The rows the rectangle touches are marked while the drag lasts, so it is clear what is going to be picked.
 - The handle that changes the width of a column is always there, as a thin line at the edge of the header, and it only says something when the pointer rests on it.
 - The menu of the right button of the reminder window works on the whole selection, the same way the one of the main window does, and it can mark the picked tasks as done.
+- The picked rows say it better. The color of the accent is stronger, and the rows that the rectangle of the drag is touching are painted even stronger, so it is clear at every moment what is going to be picked.
 
 ### Fixed
 
 - The rectangle of the drag in the list of the main window is drawn under the pointer, and not far away from it, and it no longer stays on the screen when the drag is over.
 - Dragging the edge of a column no longer leaves a rectangle on the screen nor picks the rows that are under it.
 - The selection of the list is no longer taken away the moment a drag ends, when the drag is let go on the empty room of the list.
+- The handle of a column no longer paints a bar over it when the pointer rests on it. Only the line on the edge lights up.
+- The handle of the last column stays inside the table, so it no longer pushes the list and breaks the layout on the right.
 
 ## 0.1.0-alpha.5 - 2026-10-20
 

@@ -163,21 +163,29 @@ body.pointer-reset .settings-header-close:hover {
  *
  * It is always there, so the columns can be resized without hunting for the
  * edge, but it is a thin line that only says something when the pointer
- * rests on it.
+ * rests on it. The line sits on the edge of the column and the area that
+ * catches the pointer stays inside it, so the last column does not push the
+ * table out of the window.
  */
 .column-resizer {
-  position: absolute; z-index: 2; top: 5px; right: -5px; bottom: 5px;
-  width: 10px; padding: 0; border: 0; border-left: 1px solid var(--border-strong);
-  background: transparent; cursor: col-resize;
-  opacity: 0.5;
-  transition: opacity var(--transition), border-color var(--transition), background var(--transition);
-}
-.table-head-cell:hover .column-resizer { opacity: 0.9; }
-.column-resizer:hover, .column-resizer:focus-visible {
-  border-left-color: var(--accent);
-  background: var(--accent-dim);
-  opacity: 1;
+  position: absolute; z-index: 2; top: 5px; right: 0; bottom: 5px;
+  width: 10px; padding: 0; border: 0; background: transparent; cursor: col-resize;
   outline: none;
+}
+.column-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 1px;
+  background: var(--border-strong);
+  opacity: 0.45;
+  transition: opacity var(--transition), background var(--transition), box-shadow var(--transition);
+}
+.table-head-cell:hover .column-resizer::after { opacity: 0.8; }
+.column-resizer:hover::after, .column-resizer:focus-visible::after {
+  background: var(--accent);
+  opacity: 1;
+  box-shadow: 0 0 7px var(--accent-glow);
 }
 .is-resizing-column, .is-resizing-column * { cursor: col-resize !important; user-select: none !important; }
 .rows { overflow: visible; }
@@ -1474,17 +1482,25 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 }
 .row:last-child { border-bottom: 0; }
 .row:focus-visible { position: relative; z-index: 1; }
+/*
+ * The picked rows.
+ *
+ * The tint of the accent says that they are picked, and the bar on the left
+ * says where the selection begins. The rows that the rectangle of the drag
+ * is touching are painted a little stronger, because they are about to be
+ * picked and the user has to see it while the pointer moves.
+ */
 .row.selected {
-  background: var(--bg-active);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   box-shadow: inset 3px 0 0 var(--accent);
 }
-/* A row the rectangle of the drag is touching, before the drag is over. */
 .row.in-drag {
-  background: var(--bg-active);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent-light);
 }
 .row:hover { background: color-mix(in srgb, var(--bg-hover) 80%, var(--bg-list)); }
-.row.selected:hover { background: color-mix(in srgb, var(--bg-active) 84%, var(--bg-hover)); }
+.row.selected:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.row.in-drag:hover { background: color-mix(in srgb, var(--accent) 34%, transparent); }
 .date-cell, .time-cell, .row-status { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .date-value { font-variant-numeric: tabular-nums; font-weight: 600; }
 .date-relative, .time-cell span { color: var(--text-muted); font-size: 11px; }
@@ -1723,8 +1739,8 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .reminder-row.gravity-3::before { background: var(--danger); }
 .reminder-row:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 .reminder-row:hover { background: color-mix(in srgb, var(--bg-surface) 76%, var(--bg-hover)); border-color: var(--border-strong); }
-.reminder-row.selected { background: var(--bg-active); border-color: color-mix(in srgb, var(--accent) 66%, var(--border)); }
-.reminder-row.in-drag { background: var(--bg-active); border-color: color-mix(in srgb, var(--accent) 66%, var(--border)); }
+.reminder-row.selected { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: color-mix(in srgb, var(--accent) 66%, var(--border)); }
+.reminder-row.in-drag { background: color-mix(in srgb, var(--accent) 32%, transparent); border-color: color-mix(in srgb, var(--accent-light) 70%, var(--border)); }
 .reminder-row.pulse { animation: reminder-pulse 1.6s ease; }
 @keyframes reminder-pulse {
   0% { box-shadow: 0 0 0 0 var(--accent-glow); }
