@@ -37,6 +37,7 @@
 - The state column is ordered the way its wording reads: first what is late, then today, tomorrow and later, and at the end what is already over. Inside each group, the closest moment comes first.
 - The dialogs sit on a blurred background, the way the rest of the suite does, so they do not mix with what is under them.
 - A tip that was left open no longer floats above a dialog that opens over it.
+- The tip follows the pointer and goes away with the window, so it never stays floating over a control that was left behind.
 - The order of the columns is kept, so the list opens the same way it was left.
 
 ### Fixed

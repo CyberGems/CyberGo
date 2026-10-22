@@ -73,6 +73,19 @@ export default function Tooltip({
       clearTimer();
       setAnchor(null);
     };
+    /**
+     * The tip follows the pointer.
+     *
+     * The bar of the window is a region that the system drags, and there the
+     * browser does not always say that the pointer left a control. The place
+     * of the pointer is the truth, so it is asked on every move.
+     */
+    const onMove = (event: MouseEvent) => {
+      const inside = event.clientX >= anchor.left && event.clientX <= anchor.right
+        && event.clientY >= anchor.top && event.clientY <= anchor.bottom;
+      if (!inside) hide();
+    };
+    window.addEventListener('mousemove', onMove, true);
     window.addEventListener('scroll', hide, true);
     window.addEventListener('wheel', hide, true);
     window.addEventListener('blur', hide);
@@ -82,13 +95,17 @@ export default function Tooltip({
     document.addEventListener('visibilitychange', hide);
     // A dialog that opens over the application takes the tip away.
     window.addEventListener('cybergo:dialog-open', hide);
+    // The same when the window comes back to the screen.
+    window.addEventListener('cybergo:window-shown', hide);
     return () => {
+      window.removeEventListener('mousemove', onMove, true);
       window.removeEventListener('scroll', hide, true);
       window.removeEventListener('wheel', hide, true);
       window.removeEventListener('blur', hide);
       window.removeEventListener('focus', hide);
       document.removeEventListener('visibilitychange', hide);
       window.removeEventListener('cybergo:dialog-open', hide);
+      window.removeEventListener('cybergo:window-shown', hide);
     };
   }, [anchor]);
 

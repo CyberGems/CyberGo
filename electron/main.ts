@@ -745,6 +745,11 @@ function createMain() {
     if (startup.maximized && !mainWindow?.isMaximized()) mainWindow?.maximize();
     mainWindow?.show();
   });
+  // The window comes back to the screen with the tips that were open, so the
+  // application is told to close them.
+  mainWindow.on('show', () => {
+    mainWindow?.webContents.send('window:shown');
+  });
   const dev = process.env.VITE_DEV_SERVER_URL;
   if (dev) void mainWindow.loadURL(dev);
   else void mainWindow.loadFile(path.join(here, '../dist/index.html'));

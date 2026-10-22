@@ -120,7 +120,11 @@ function MainApp() {
       setCloseRemember(false);
       setCloseDialog(true);
     });
-    return () => { off(); open(); focusQuick(); confirmClose(); };
+    // The window comes back with the tips that were open, so they are closed.
+    const shown = api.onWindowShown(() => {
+      window.dispatchEvent(new Event('cybergo:window-shown'));
+    });
+    return () => { off(); open(); focusQuick(); confirmClose(); shown(); };
   }, []);
 
   /** The answer to the question of what to do when the window is closed. */
