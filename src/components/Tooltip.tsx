@@ -96,7 +96,7 @@ export default function Tooltip({
     // A dialog that opens over the application takes the tip away.
     window.addEventListener('cybergo:dialog-open', hide);
     // The same when the window comes back to the screen.
-    window.addEventListener('cybergo:window-shown', hide);
+    window.addEventListener('cybergo:window-visibility', hide);
     return () => {
       window.removeEventListener('mousemove', onMove, true);
       window.removeEventListener('scroll', hide, true);
@@ -105,7 +105,7 @@ export default function Tooltip({
       window.removeEventListener('focus', hide);
       document.removeEventListener('visibilitychange', hide);
       window.removeEventListener('cybergo:dialog-open', hide);
-      window.removeEventListener('cybergo:window-shown', hide);
+      window.removeEventListener('cybergo:window-visibility', hide);
     };
   }, [anchor]);
 
@@ -116,6 +116,14 @@ export default function Tooltip({
     child.props.onFocus?.(event);
     clearTimer();
     if (!label) return;
+    /**
+     * A focus that comes from a click does not deserve a tip.
+     *
+     * The pointer is already on the control, so the tip would be left
+     * floating over it, and it would come back when the window is restored.
+     * Only the focus that comes from the keyboard deserves one.
+     */
+    if (event.type === 'focus' && (event.nativeEvent as MouseEvent).detail !== 0) return;
     const rect = event.currentTarget.getBoundingClientRect();
     timerRef.current = setTimeout(() => setAnchor(rect), delay);
   };
@@ -130,11 +138,18 @@ export default function Tooltip({
     clearTimer();
     setAnchor(null);
   };
+  /** The press of the button takes the tip away, before the click even. */
+  const pressHide = (event: ReactMouseEvent<HTMLElement>) => {
+    child.props.onMouseDown?.(event);
+    clearTimer();
+    setAnchor(null);
+  };
   const cloned = cloneElement(child, {
     onMouseEnter: show,
     onMouseLeave: hide,
     onFocus: show,
     onBlur: hide,
+    onMouseDown: pressHide,
     onClick: clickHide,
   });
 

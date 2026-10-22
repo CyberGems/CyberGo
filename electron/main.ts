@@ -747,9 +747,12 @@ function createMain() {
   });
   // The window comes back to the screen with the tips that were open, so the
   // application is told to close them.
-  mainWindow.on('show', () => {
-    mainWindow?.webContents.send('window:shown');
-  });
+  const tellVisibility = (visible: boolean) => {
+    mainWindow?.webContents.send('window:visibility', visible);
+  };
+  mainWindow.on('show', () => tellVisibility(true));
+  mainWindow.on('restore', () => tellVisibility(true));
+  mainWindow.on('hide', () => tellVisibility(false));
   const dev = process.env.VITE_DEV_SERVER_URL;
   if (dev) void mainWindow.loadURL(dev);
   else void mainWindow.loadFile(path.join(here, '../dist/index.html'));

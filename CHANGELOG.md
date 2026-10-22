@@ -38,6 +38,7 @@
 - The dialogs sit on a blurred background, the way the rest of the suite does, so they do not mix with what is under them.
 - A tip that was left open no longer floats above a dialog that opens over it.
 - The tip follows the pointer and goes away with the window, so it never stays floating over a control that was left behind.
+- Pressing a button takes its tip away at once, and the focus that a click leaves on the control no longer brings it back.
 - The order of the columns is kept, so the list opens the same way it was left.
 
 ### Fixed
