@@ -178,6 +178,27 @@ Inside the reminder window:
 - The visual identity is not finished yet, so the icon and the colors may still change before the first stable release.
 - Bug reports and suggestions are welcome through [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
 
+## Windows SmartScreen
+
+Windows may show a SmartScreen warning the first time you run the CyberGo installer: this is an unsigned app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does.
+
+To continue:
+
+<details>
+<summary><strong>See how to run the installer (step by step)</strong></summary>
+
+Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
+
+1. Run the `CyberGo-Setup.exe` installer. Windows may show the blue "Windows protected your PC" dialog.
+2. Click the small **More info** link.
+3. Click **Run anyway**. The installer starts normally.
+
+You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
+
+</details>
+
+---
+
 ## License
 
 CyberGo is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full license text.
