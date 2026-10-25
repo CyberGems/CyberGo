@@ -60,7 +60,9 @@ test('a task that is late is overdue and an event that passed is not', () => {
   assert.equal(passed.tone, '');
 });
 
-test('the state of an item says how far away it is', () => {
+test('the state of an item says how far away it is', (t) => {
+  // Keep today's 23:00 in the future regardless of when the test runs.
+  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 0, 15, 12).getTime() });
   const today = new Date();
   today.setHours(23, 0, 0, 0);
   const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);

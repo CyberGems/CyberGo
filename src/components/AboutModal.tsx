@@ -4,6 +4,7 @@ import type { AppInfo } from '@shared/types';
 import type { Copy } from '../i18n';
 import { useFocusTrap } from './Dialog';
 import Tooltip from './Tooltip';
+import { pickSuiteApps } from '../lib/suiteApps';
 
 const REPO_URL = 'https://github.com/CyberGems/CyberGo';
 // The app page of the site is not published yet, so the link goes to the
@@ -31,6 +32,7 @@ export default function AboutModal({
 }) {
   const about = copy.about;
   const [copied, setCopied] = useState(false);
+  const [suitePick] = useState(pickSuiteApps);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const version = info?.version || '…';
@@ -105,6 +107,22 @@ export default function AboutModal({
               <div><span>{about.engine}</span><strong>{info ? `Electron ${info.electron}` : '…'}</strong></div>
               <div><span>{about.node}</span><strong>{info?.node || '…'}</strong></div>
             </div>
+          </section>
+
+          <section className="about-suite" aria-label={about.suiteTitle}>
+            <h3 className="about-section-heading">{about.suiteTitle}</h3>
+            <div className="about-suite-icons">
+              {suitePick.map((app) => (
+                <Tooltip key={app.slug} placement="top" label={<><strong>{app.name}</strong><span className="about-suite-pitch">{about.suitePitches[app.slug]}</span></>}>
+                  <button type="button" className="about-suite-app" aria-label={app.name} onClick={() => void openExternal(app.site)}>
+                    <img src={`./suite/${app.slug}.png`} alt="" draggable={false} />
+                  </button>
+                </Tooltip>
+              ))}
+            </div>
+            <button type="button" className="about-suite-more" onClick={() => void openExternal('https://cybergems.org/#apps')}>
+              {about.suiteAll} <span aria-hidden="true">→</span>
+            </button>
           </section>
 
           <div className="about-actions">
