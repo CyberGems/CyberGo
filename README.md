@@ -190,7 +190,7 @@ To continue:
 Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
 
 1. Run the `CyberGo-Setup.exe` installer. Windows may show the blue "Windows protected your PC" dialog.
-2. Click the small **More info** link.
+2. Click the small **More info** link. The expanded dialog shows your installer: `CyberGo-Setup.exe`.
 3. Click **Run anyway**. The installer starts normally.
 
 You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
