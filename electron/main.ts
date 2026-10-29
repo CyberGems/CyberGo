@@ -761,7 +761,7 @@ function createMain() {
 function createTray() {
   const image = nativeImage.createFromPath(fromPublic('tray.png'));
   tray = new Tray(image.isEmpty() ? nativeImage.createEmpty() : image);
-  tray.setToolTip('CyberGo');
+  tray.setToolTip('CyberGo · Alt+Shift+G');
   const es = locale() === 'es';
   const menu = Menu.buildFromTemplate([
     { label: es ? 'Abrir CyberGo' : 'Open CyberGo', click: () => showMain() },
