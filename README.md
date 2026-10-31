@@ -34,14 +34,14 @@ The interface is available in **English and Spanish**. The application is curren
 
 - [What is CyberGo?](#what-is-cybergo)
 - [🔒 Why CyberGo?](#-why-cybergo)
-- [Highlights](#highlights)
-- [Download](#download)
-- [Getting started](#getting-started)
-- [Development](#development)
-- [Architecture](#architecture)
-- [Keyboard shortcuts](#keyboard-shortcuts)
-- [Alpha notes](#alpha-notes)
-- [Windows SmartScreen](#windows-smartscreen)
+- [✨ Key Features](#-key-features)
+- [📥 Download](#-download)
+- [🚀 Getting Started](#-getting-started)
+- [🛠️ Development](#️-development)
+- [🏗️ Architecture](#️-architecture)
+- [⌨️ Keyboard shortcuts](#️-keyboard-shortcuts)
+- [🧪 Alpha notes](#-alpha-notes)
+- [🛡️ Windows SmartScreen](#️-windows-smartscreen)
 - [❤️ Donate](#️-donate)
 - [📄 License](#-license)
 - [❓ FAQ](#-faq)
@@ -75,7 +75,7 @@ Most planners either lock your agenda behind an account and a cloud, or bury it 
 | A tool that respects you | Free and open source (GPLv3), no ads, no upsells |
 
 ---
-## Highlights
+## ✨ Key Features
 
 ### Planning
 
@@ -123,7 +123,7 @@ Most planners either lock your agenda behind an account and a cloud, or bury it 
 - Dialogs keep the focus while they are open and give it back when they close.
 - Keyboard-friendly controls, including resizable table columns.
 
-## Download
+## 📥 Download
 
 Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.5).
 
@@ -131,7 +131,7 @@ The alpha installers are unsigned Windows executables. Windows SmartScreen may d
 
 This alpha targets **Windows 10 and Windows 11, 64-bit**.
 
-## Getting started
+## 🚀 Getting Started
 
 1. Download and run the installer.
 2. Start CyberGo from the Start menu.
@@ -141,7 +141,7 @@ This alpha targets **Windows 10 and Windows 11, 64-bit**.
 
 For safety, create a backup before importing a large CSV or testing a new alpha build.
 
-## Development
+## 🛠️ Development
 
 ### Requirements
 
@@ -172,7 +172,7 @@ npm run dev
 
 `npm run release:pre` places artifacts in a unique temporary directory. The command prints the exact path when it finishes.
 
-## Architecture
+## 🏗️ Architecture
 
 ```text
 CyberGo/
@@ -199,7 +199,7 @@ CyberGo/
 
 CyberGo uses **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js**, and **electron-builder**. The renderer communicates with the local Electron process through the preload bridge.
 
-## Keyboard shortcuts
+## ⌨️ Keyboard shortcuts
 
 | Shortcut | Action |
 |---|---|
@@ -221,7 +221,7 @@ Inside the reminder window:
 | `Ctrl+A` | Select every reminder |
 | `Ctrl+click` | Add or remove an item from the selection |
 
-## Alpha notes
+## 🧪 Alpha notes
 
 - This is an alpha pre-release. Features and data formats may change.
 - Keep a recent backup before importing or upgrading.
@@ -229,7 +229,7 @@ Inside the reminder window:
 - The visual identity is not finished yet, so the icon and the colors may still change before the first stable release.
 - Bug reports and suggestions are welcome through [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
 
-## Windows SmartScreen
+## 🛡️ Windows SmartScreen
 
 Windows may show a SmartScreen warning the first time you run the CyberGo installer: this is an unsigned app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does.
 

@@ -3,9 +3,13 @@
 </p>
 
 <p align="center">
-  <a href="https://cybergems.org/apps/cybergo/">
-    <img src="https://cybergems.org/banners/es/cybergo.png" alt="CyberGo: agenda privada y local para Windows" />
-  </a>
+  <img src="public/icon.png" width="96" height="96" alt="Icono de CyberGo" />
+</p>
+
+<h1 align="center">CyberGo</h1>
+
+<p align="center">
+  Una agenda local y privada para tareas, eventos y avisos en Windows.
 </p>
 
 <p align="center">
@@ -30,14 +34,14 @@ La interfaz está disponible en **inglés y español**. La aplicación está act
 
 - [¿Qué es CyberGo?](#qué-es-cybergo)
 - [🔒 ¿Por qué CyberGo?](#-por-qué-cybergo)
-- [Destacados](#destacados)
-- [Descargar](#descargar)
-- [Primeros pasos](#primeros-pasos)
-- [Desarrollo](#desarrollo)
-- [Arquitectura](#arquitectura)
-- [Atajos de teclado](#atajos-de-teclado)
-- [Notas de la versión alpha](#notas-de-la-versión-alpha)
-- [Windows SmartScreen](#windows-smartscreen)
+- [✨ Funciones principales](#-funciones-principales)
+- [📥 Descargar](#-descargar)
+- [🚀 Primeros pasos](#-primeros-pasos)
+- [🛠️ Desarrollo](#️-desarrollo)
+- [🏗️ Arquitectura](#️-arquitectura)
+- [⌨️ Atajos de teclado](#️-atajos-de-teclado)
+- [🧪 Notas de la versión alpha](#-notas-de-la-versión-alpha)
+- [🛡️ Windows SmartScreen](#️-windows-smartscreen)
 - [❤️ Donar](#️-donar)
 - [📄 Licencia](#-licencia)
 - [❓ Preguntas frecuentes](#-preguntas-frecuentes)
@@ -73,7 +77,7 @@ La mayoría de las agendas o bien encierran tu planificación tras una cuenta y 
 
 ---
 
-## Destacados
+## ✨ Funciones principales
 
 ### Planificación
 
@@ -121,7 +125,7 @@ La mayoría de las agendas o bien encierran tu planificación tras una cuenta y 
 - Los diálogos mantienen el foco mientras están abiertos y lo devuelven al cerrarse.
 - Controles amigables con el teclado, incluidas columnas de tabla redimensionables.
 
-## Descargar
+## 📥 Descargar
 
 Descarga el instalador de Windows desde la [página de pre-release de CyberGo](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.5).
 
@@ -129,7 +133,7 @@ Los instaladores alpha son ejecutables de Windows sin firmar. Es posible que Win
 
 Esta versión alpha está pensada para **Windows 10 y Windows 11 de 64 bits**.
 
-## Primeros pasos
+## 🚀 Primeros pasos
 
 1. Descarga y ejecuta el instalador.
 2. Inicia CyberGo desde el menú Inicio.
@@ -139,7 +143,7 @@ Esta versión alpha está pensada para **Windows 10 y Windows 11 de 64 bits**.
 
 Por seguridad, crea una copia de seguridad antes de importar un CSV grande o probar una nueva build alpha.
 
-## Desarrollo
+## 🛠️ Desarrollo
 
 ### Requisitos
 
@@ -170,7 +174,7 @@ npm run dev
 
 `npm run release:pre` coloca los artefactos en un directorio temporal único. El comando imprime la ruta exacta al terminar.
 
-## Arquitectura
+## 🏗️ Arquitectura
 
 ```text
 CyberGo/
@@ -197,7 +201,7 @@ CyberGo/
 
 CyberGo usa **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js** y **electron-builder**. El renderer se comunica con el proceso local de Electron a través del puente de preload.
 
-## Atajos de teclado
+## ⌨️ Atajos de teclado
 
 | Atajo | Acción |
 |---|---|
@@ -219,7 +223,7 @@ Dentro de la ventana de avisos:
 | `Ctrl+A` | Selecciona todos los avisos |
 | `Ctrl+clic` | Añade o quita un elemento de la selección |
 
-## Notas de la versión alpha
+## 🧪 Notas de la versión alpha
 
 - Esta es una pre-release alpha. Las funciones y los formatos de datos pueden cambiar.
 - Mantén una copia de seguridad reciente antes de importar o actualizar.
@@ -227,7 +231,7 @@ Dentro de la ventana de avisos:
 - La identidad visual aún no está terminada, por lo que el icono y los colores pueden cambiar antes de la primera versión estable.
 - Los informes de errores y sugerencias son bienvenidos a través de [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
 
-## Windows SmartScreen
+## 🛡️ Windows SmartScreen
 
 Es posible que Windows muestre una advertencia de SmartScreen la primera vez que ejecutes el instalador de CyberGo: es una app sin firmar, así que Windows aún no ha ganado reputación para el archivo. Es esperado; el código es público, así que puedes inspeccionar exactamente qué hace.
 
