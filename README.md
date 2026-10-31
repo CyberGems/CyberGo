@@ -36,8 +36,10 @@ The interface is available in **English and Spanish**. The application is curren
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [Alpha notes](#alpha-notes)
 - [Windows SmartScreen](#windows-smartscreen)
-- [License](#license)
-- [About CyberGems](#about-cybergems)
+- [❤️ Donate](#️-donate)
+- [📄 License](#-license)
+- [❓ FAQ](#-faq)
+- [🔗 See also](#-see-also)
 
 <details>
 <summary><strong>🔗 Related links (outside this README)</strong></summary>
@@ -225,12 +227,92 @@ You can verify the file independently: compare the SHA with the GitHub release, 
 
 ---
 
-## License
+## ❤️ Donate
+
+**CyberGo** is 100% free and open source. If it helps you, please consider [donating](https://cybergems.org/donate) or [starring the repo on GitHub](https://github.com/CyberGems/CyberGo) to support continued development. [Read the full story](https://cybergems.org/about/) behind the project. Thank you! 🙏
+
+<p align="center">
+  <a href="https://www.paypal.com/donate/?hosted_button_id=M4PY3UPJA5Y6Q"><img src="https://img.shields.io/badge/Donate-PayPal-0070BA?style=for-the-badge&logo=paypal" alt="Donate via PayPal" /></a>
+</p>
+
+<p align="center">
+  <a href="https://ko-fi.com/cybergems"><img src="https://img.shields.io/badge/Support_me_on_Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support me on Ko-fi" /></a>
+</p>
+
+<p align="center">
+  <a href="https://buymeacoffee.com/cybergems"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" /></a>
+</p>
+
+<div align="center">
+
+<details>
+<summary><b>Crypto donations (BTC, ETH, USDT, LTC): click to view addresses</b></summary>
+
+| Asset | Address | QR |
+|---|---|---|
+| **BTC** | <pre><code>bc1q5mxzz05nmvsheqzx7970euswta3fksxzcfzag4</code></pre> | <img src="assets/donate/qr-btc.png" width="90" height="90" alt="BTC QR" /> |
+| **ETH** | <pre><code>0x79b703Ec0f77493679Fcd280aF3b983E20c580B8</code></pre> | <img src="assets/donate/qr-eth.png" width="90" height="90" alt="ETH QR" /> |
+| **USDT (ERC20 / BEP20)** | <pre><code>0x79b703Ec0f77493679Fcd280aF3b983E20c580B8</code></pre> | <img src="assets/donate/qr-eth.png" width="90" height="90" alt="USDT QR" /> |
+| **USDT (TRC20)** | <pre><code>TSVbSk1HSyZ1NprCnAYiw56ECwXgH887mD</code></pre> | <img src="assets/donate/qr-usdt-tron.png" width="90" height="90" alt="USDT TRC20 QR" /> |
+| **LTC** | <pre><code>LWGnEHgcFCE2BRkzLnsdPDD8Y8ZeDK577X</code></pre> | <img src="assets/donate/qr-ltc.png" width="90" height="90" alt="LTC QR" /> |
+
+> ⚠️ Send only the selected asset on the indicated network. Using the wrong network will result in permanent loss of funds.
+
+</details>
+
+</div>
+
+---
+
+## 📄 License
 
 CyberGo is distributed under the terms of the GNU General Public License v3.0. See [LICENSE](LICENSE) for the full license text.
 
 Copyright (C) 2026 CyberGems
 
-## About CyberGems
+---
 
-CyberGo is part of the [CyberGems](https://github.com/CyberGems) collection of privacy-focused Windows tools.
+## ❓ FAQ
+
+For frequently asked questions, troubleshooting guides, and detailed configuration instructions, visit the [FAQ](https://github.com/CyberGems/CyberGo/wiki/FAQ) or the [online documentation](https://cybergems.org/docs/cybergo/FAQ).
+
+> Documentation source of truth: the [GitHub Wiki](https://github.com/CyberGems/CyberGo/wiki) is canonical (edited via the `CyberGo.wiki` checkout). The website mirrors it.
+
+---
+
+<div align="center" style="background:#0D0F17; border:1px solid rgba(0,255,255,0.12); border-radius:12px; padding:28px 20px; margin-top:32px;">
+
+### Thanks for using CyberGo! 🎉
+
+Made by [**CyberGems**](https://cybergems.org)
+
+</div>
+<p align="center">
+  <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F&title=CyberGo%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows"><img src="https://img.shields.io/badge/Share_on_Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Share on Reddit" /></a>
+  &nbsp;<a href="https://twitter.com/intent/tweet?text=CyberGo%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows&url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Share_on_X-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="Share on X" /></a>
+  &nbsp;<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Share_on_Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Share on Facebook" /></a>
+  &nbsp;<a href="mailto:?subject=CyberGo%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows&body=CyberGo%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows%20https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Share_by_Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Share by Email" /></a>
+  &nbsp;<a href="https://t.me/share/url?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F&text=CyberGo%3A%20free%20%26%20open-source%20desktop%20tool%20for%20Windows"><img src="https://img.shields.io/badge/Share_on_Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Share on Telegram" /></a>
+  &nbsp;<a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Share_on_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="Share on LinkedIn" /></a>
+</p>
+
+---
+
+## 🔗 See also
+
+More free, open-source, privacy-first apps from [**CyberGems**](https://github.com/CyberGems):
+
+| App | Description |
+|:---:|---|
+| 🕐&nbsp;[**CyberClock**](https://github.com/CyberGems/CyberClock#readme) | Clock, calendar, timer, stopwatch, relaxation, and compact floating time tools for Windows. |
+| 📢&nbsp;[**CyberFeeds**](https://github.com/CyberGems/CyberFeeds#readme) | Follow websites, YouTube and Reddit in one calm, private reading space. |
+| 🚀&nbsp;[**CyberLauncher**](https://github.com/CyberGems/CyberLauncher#readme) | Find apps and files, launch favorites and get back to work in seconds. |
+| 💻&nbsp;[**CyberManager**](https://github.com/CyberGems/CyberManager#readme) | See what is slowing your PC down and take action without losing your place. |
+| 📝&nbsp;[**CyberNotes**](https://github.com/CyberGems/CyberNotes#readme) | Catch ideas, organize your thoughts and keep useful notes close, all on your PC. |
+| ⚡&nbsp;[**CyberPaste**](https://github.com/CyberGems/CyberPaste#readme) | Recall anything you have ever copied — text, code, images, files — 100% local. |
+| 📸&nbsp;[**CyberSnap**](https://github.com/CyberGems/CyberSnap#readme) | Capture, annotate and share anything — screenshots, recordings, text and color — with speed. |
+| ⭐&nbsp;[**CyberTray**](https://github.com/CyberGems/CyberTray#readme) | Your favorite apps, files and links, one gesture away without a crowded taskbar. |
+| 💫&nbsp;[**CyberViewer**](https://github.com/CyberGems/CyberViewer#readme) | Open images and videos quickly, explore whole folders and make the edits you need. |
+| 🛡️&nbsp;[**CyberWall**](https://github.com/CyberGems/CyberWall#readme) | Choose which apps can connect. Review new connections and keep the rules that work for you. |
+
+➡️ **[Browse all apps at cybergems.org](https://cybergems.org)**
