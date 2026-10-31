@@ -208,9 +208,3 @@ Copyright (C) 2026 CyberGems
 ## About CyberGems
 
 CyberGo is part of the [CyberGems](https://github.com/CyberGems) collection of privacy-focused Windows tools.
-
-## About suite icons
-
-About shows five CyberGems apps per opening, with bundled icons, localized descriptions, and links to their app pages. Release preparation refreshes icons from the official repositories using `.github/about-icons.json` and the shared CyberSnap synchronizer. Missing sources or invalid PNGs stop preparation. The About icon verification workflow checks synchronization without publishing a release.
-
-`npm run release:pre` and `npm run build:electron` refresh icons before compiling. Use `npm run icons:sync` to refresh them separately. PowerShell 7 (`pwsh`) and network access are required for this preparation step; the installed app uses bundled icons offline. The bootstrap pins and verifies the shared synchronizer while downloading current icons from official sources.
