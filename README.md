@@ -24,6 +24,32 @@ CyberGo is a desktop agenda for people who want a focused daily planner without 
 
 The interface is available in **English and Spanish**. The application is currently in alpha, so backups are recommended before testing new versions.
 
+---
+
+## 📑 Table of Contents
+
+- [Highlights](#highlights)
+- [Download](#download)
+- [Getting started](#getting-started)
+- [Development](#development)
+- [Architecture](#architecture)
+- [Keyboard shortcuts](#keyboard-shortcuts)
+- [Alpha notes](#alpha-notes)
+- [Windows SmartScreen](#windows-smartscreen)
+- [License](#license)
+- [About CyberGems](#about-cybergems)
+
+<details>
+<summary><strong>🔗 Related links (outside this README)</strong></summary>
+
+- 🌐 [CyberGo on the web](https://cybergems.org/apps/cybergo/) — overview, download and SmartScreen guide
+- 📚 [Documentation & FAQ — Wiki](https://github.com/CyberGems/CyberGo/wiki) — troubleshooting and deep-dives
+- 💾 [Releases](https://github.com/CyberGems/CyberGo/releases) — installers, portable builds and changelog
+- 🟣 [CyberGems suite](https://github.com/CyberGems) — all open-source apps
+
+</details>
+
+---
 ## Highlights
 
 ### Planning
