@@ -1,4 +1,8 @@
 <p align="center">
+  English · <a href="./README.es.md">Español</a>
+</p>
+
+<p align="center">
   <img src="public/icon.png" width="96" height="96" alt="CyberGo icon" />
 </p>
 
@@ -28,6 +32,8 @@ The interface is available in **English and Spanish**. The application is curren
 
 ## 📑 Table of Contents
 
+- [What is CyberGo?](#what-is-cybergo)
+- [🔒 Why CyberGo?](#-why-cybergo)
 - [Highlights](#highlights)
 - [Download](#download)
 - [Getting started](#getting-started)
@@ -50,6 +56,23 @@ The interface is available in **English and Spanish**. The application is curren
 - 🟣 [CyberGems suite](https://github.com/CyberGems) — all open-source apps
 
 </details>
+
+---
+## What is CyberGo?
+
+**CyberGo** is a private, local-first agenda for Windows that helps you plan tasks, events, and reminders without an account, cloud sync, or a web dashboard. Add items in plain language with Quick Add, get local reminders, and keep every piece of data on your own device. The interface is available in English and Spanish, and the app is built with Electron + React + TypeScript.
+
+## 🔒 Why CyberGo?
+
+Most planners either lock your agenda behind an account and a cloud, or bury it in features you never use. CyberGo gives you **the best of both worlds**: a focused daily planner that stays entirely on your Windows device — no sign-up, no sync, no web dashboard — while still feeling modern and capable.
+
+| Need | Solution |
+|---|---|
+| Keep your agenda private | 100% local storage: no account, no cloud, no telemetry |
+| Plan without friction | Quick Add understands natural phrases in English or Spanish |
+| Never miss what matters | Local reminders with snooze, grouping, and per-row actions |
+| Stay in control of your data | CSV/ICS import & export, manual backups and restore |
+| A tool that respects you | Free and open source (GPLv3), no ads, no upsells |
 
 ---
 ## Highlights

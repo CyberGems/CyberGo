@@ -28,6 +28,8 @@ La interfaz está disponible en **inglés y español**. La aplicación está act
 
 ## 📑 Table of Contents
 
+- [¿Qué es CyberGo?](#qué-es-cybergo)
+- [🔒 ¿Por qué CyberGo?](#-por-qué-cybergo)
 - [Destacados](#destacados)
 - [Descargar](#descargar)
 - [Primeros pasos](#primeros-pasos)
@@ -50,6 +52,24 @@ La interfaz está disponible en **inglés y español**. La aplicación está act
 - 🟣 [Suite CyberGems](https://github.com/CyberGems) — todas las apps de código abierto
 
 </details>
+
+---
+
+## ¿Qué es CyberGo?
+
+**CyberGo** es una agenda local y privada para Windows que te ayuda a planificar tareas, eventos y avisos sin cuenta, sin sincronización en la nube ni un panel web. Añade elementos en lenguaje natural con Quick Add, recibe avisos locales y mantén todos tus datos en tu propio equipo. La interfaz está disponible en inglés y español, y la app está construida con Electron + React + TypeScript.
+
+## 🔒 ¿Por qué CyberGo?
+
+La mayoría de las agendas o bien encierran tu planificación tras una cuenta y una nube, o te entierran en funciones que nunca usas. CyberGo te da **lo mejor de ambos mundos**: un planificador diario enfocado que vive enteramente en tu equipo Windows — sin registro, sin sincronización, sin panel web — y que sigue siendo moderno y capaz.
+
+| Necesidad | Solución |
+|---|---|
+| Mantener tu agenda privada | Almacenamiento 100% local: sin cuenta, sin nube, sin telemetría |
+| Planificar sin fricción | Quick Add entiende frases naturales en inglés o español |
+| No perder lo importante | Avisos locales con posponer, agrupación y acciones por fila |
+| Mantener el control de tus datos | Importación y exportación CSV/ICS, copias y restauración manuales |
+| Una herramienta que te respeta | Gratis y de código abierto (GPLv3), sin anuncios ni ventas |
 
 ---
 
