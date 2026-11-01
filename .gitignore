@@ -1,8 +1,2 @@
-node_modules
-dist
-dist-electron
-release
-.DS_Store
-*.log
-AGENTS.md
-artifacts/
+# Shared dependency exclusion
+node_modules/
