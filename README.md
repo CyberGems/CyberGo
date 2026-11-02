@@ -3,13 +3,9 @@
 </p>
 
 <p align="center">
-  <img src="public/icon.png" width="96" height="96" alt="CyberGo icon" />
-</p>
-
-<h1 align="center">CyberGo</h1>
-
-<p align="center">
-  A private, local-first agenda for tasks, events, and reminders on Windows.
+  <a href="https://github.com/CyberGems/CyberGo">
+    <img src="https://cybergems.org/banners/cybergo.png" alt="Your offline planner for tasks, events and reminders" />
+  </a>
 </p>
 
 <p align="center">
@@ -24,6 +20,16 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-334155?style=flat-square" alt="License: GPL-3.0" />
 </p>
 
+---
+
+<div align="center">
+
+### A private, local-first agenda for tasks, events, and reminders on Windows
+
+</div>
+
+---
+
 CyberGo is a desktop agenda for people who want a focused daily planner without an account, cloud sync, or a web dashboard. Create tasks and events, parse natural quick-add text, receive local reminders, and keep the data on your own Windows device.
 
 The interface is available in **English and Spanish**. The application is currently in alpha, so backups are recommended before testing new versions.
@@ -32,7 +38,7 @@ The interface is available in **English and Spanish**. The application is curren
 
 ## 📑 Table of Contents
 
-- [What is CyberGo?](#what-is-cybergo)
+- [👋 Introduction](#-introduction)
 - [🔒 Why CyberGo?](#-why-cybergo)
 - [✨ Key Features](#-key-features)
 - [📥 Download](#-download)
@@ -58,7 +64,7 @@ The interface is available in **English and Spanish**. The application is curren
 </details>
 
 ---
-## What is CyberGo?
+## 👋 Introduction
 
 **CyberGo** is a private, local-first agenda for Windows that helps you plan tasks, events, and reminders without an account, cloud sync, or a web dashboard. Add items in plain language with Quick Add, get local reminders, and keep every piece of data on your own device. The interface is available in English and Spanish, and the app is built with Electron + React + TypeScript.
 

@@ -3,13 +3,9 @@
 </p>
 
 <p align="center">
-  <img src="public/icon.png" width="96" height="96" alt="Icono de CyberGo" />
-</p>
-
-<h1 align="center">CyberGo</h1>
-
-<p align="center">
-  Una agenda local y privada para tareas, eventos y avisos en Windows.
+  <a href="https://github.com/CyberGems/CyberGo">
+    <img src="https://cybergems.org/banners/es/cybergo.png" alt="Tu planificador offline de tareas y eventos" />
+  </a>
 </p>
 
 <p align="center">
@@ -24,6 +20,16 @@
   <img src="https://img.shields.io/badge/Licencia-GPL--3.0-334155?style=flat-square" alt="Licencia: GPL-3.0" />
 </p>
 
+---
+
+<div align="center">
+
+### Una agenda local y privada para tareas, eventos y avisos en Windows
+
+</div>
+
+---
+
 CyberGo es una agenda de escritorio para quienes quieren un planificador diario enfocado, sin cuenta, sin sincronización en la nube y sin un panel web. Crea tareas y eventos, analiza texto rápido en lenguaje natural, recibe avisos locales y mantén los datos en tu propio equipo Windows.
 
 La interfaz está disponible en **inglés y español**. La aplicación está actualmente en fase alpha, por lo que se recomiendan copias de seguridad antes de probar nuevas versiones.
@@ -32,7 +38,7 @@ La interfaz está disponible en **inglés y español**. La aplicación está act
 
 ## 📑 Table of Contents
 
-- [¿Qué es CyberGo?](#qué-es-cybergo)
+- [👋 Introducción](#-introducción)
 - [🔒 ¿Por qué CyberGo?](#-por-qué-cybergo)
 - [✨ Funciones principales](#-funciones-principales)
 - [📥 Descargar](#-descargar)
@@ -59,7 +65,7 @@ La interfaz está disponible en **inglés y español**. La aplicación está act
 
 ---
 
-## ¿Qué es CyberGo?
+## 👋 Introducción
 
 **CyberGo** es una agenda local y privada para Windows que te ayuda a planificar tareas, eventos y avisos sin cuenta, sin sincronización en la nube ni un panel web. Añade elementos en lenguaje natural con Quick Add, recibe avisos locales y mantén todos tus datos en tu propio equipo. La interfaz está disponible en inglés y español, y la app está construida con Electron + React + TypeScript.
 
