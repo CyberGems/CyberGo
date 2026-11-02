@@ -50,7 +50,7 @@
 <details>
 <summary><strong>🔗 Related links (outside this README)</strong></summary>
 
-- 🌐 [CyberGo en la web](https://cybergems.org/apps/cybergo/) — resumen, descarga y guía de SmartScreen
+- 🌐 [CyberGo en GitHub](https://github.com/CyberGems/CyberGo) — código fuente, issues y notas de versión
 - 📚 [Documentación y FAQ — Wiki](https://github.com/CyberGems/CyberGo/wiki) — solución de problemas y guías detalladas
 - 💾 [Releases](https://github.com/CyberGems/CyberGo/releases) — instaladores, versiones portátiles y changelog
 - 🟣 [Suite CyberGems](https://github.com/CyberGems) — todas las apps de código abierto

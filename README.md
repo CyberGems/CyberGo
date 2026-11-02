@@ -50,7 +50,7 @@
 <details>
 <summary><strong>🔗 Related links (outside this README)</strong></summary>
 
-- 🌐 [CyberGo on the web](https://cybergems.org/apps/cybergo/) — overview, download and SmartScreen guide
+- 🌐 [CyberGo on GitHub](https://github.com/CyberGems/CyberGo) — source code, issues and release notes
 - 📚 [Documentation & FAQ — Wiki](https://github.com/CyberGems/CyberGo/wiki) — troubleshooting and deep-dives
 - 💾 [Releases](https://github.com/CyberGems/CyberGo/releases) — installers, portable builds and changelog
 - 🟣 [CyberGems suite](https://github.com/CyberGems) — all open-source apps
