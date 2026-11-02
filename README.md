@@ -24,7 +24,7 @@
 
 <div align="center">
 
-### A private, local-first agenda for tasks, events, and reminders on Windows
+### Your tasks, events and reminders, planned in plain language and kept on your PC
 
 </div>
 
@@ -61,18 +61,18 @@
 
 ## 👋 Introduction
 
-**CyberGo** is a private, local-first agenda for Windows that helps you plan tasks, events, and reminders without an account, cloud sync, or a web dashboard. Add items in plain language with Quick Add, get local reminders, and keep every piece of data on your own device. The interface is available in English and Spanish, and the app is built with Electron + React + TypeScript.
+Most planners ask you to create an account before you can write down a dentist appointment. CyberGo is a local agenda for Windows: type `Dentist 3pm tomorrow` and Quick Add works out the date, the time and the repeat, in English or Spanish. Tasks and events live in list or calendar views with reminders, groups and colors, export to CSV or ICS whenever you need them elsewhere, and never leave your PC — with a daily automatic backup in case something goes wrong. Built with **Electron + React + TypeScript**.
 
 ## 🔒 Why CyberGo?
 
-Most planners either lock your agenda behind an account and a cloud, or bury it in features you never use. CyberGo gives you **the best of both worlds**: a focused daily planner that stays entirely on your Windows device — no sign-up, no sync, no web dashboard — while still feeling modern and capable.
+Plenty of planners lock your agenda behind an account and a cloud, or bury it in features you never use. CyberGo gives you **the best of both worlds**: a focused daily planner that stays entirely on your Windows device — no sign-up, no sync, no web dashboard — while still feeling modern and capable.
 
 | Need | Solution |
 |---|---|
 | Keep your agenda private | 100% local storage: no account, no cloud, no telemetry |
 | Plan without friction | Quick Add understands natural phrases in English or Spanish |
 | Never miss what matters | Local reminders with snooze, grouping, and per-row actions |
-| Stay in control of your data | CSV/ICS import & export, manual backups and restore |
+| Stay in control of your data | CSV/ICS import & export, manual backups, and a daily automatic backup with rotating copies |
 | A tool that respects you | Free and open source (GPLv3), no ads, no upsells |
 
 ---
@@ -109,11 +109,12 @@ Most planners either lock your agenda behind an account and a cloud, or bury it 
 - Access log for successful logins and failed attempts.
 - The access log can be disabled and cleared from Security settings.
 - Application data is stored locally. CyberGo does not require an account or send agenda data to a server.
-- Manual backups and restore workflows are available from Backup and data settings.
+- Manual backups, restore, and a daily automatic backup are available from Backup and data settings.
 
 ### Data and experience
 
 - CSV and ICS import and export with validation feedback.
+- **Automatic daily backup:** CyberGo copies the local database once a day, keeps the last 7 copies by default (adjustable), and lets you restore any of them from Backup and data settings.
 - A damaged local database no longer stops the app from starting: the newest usable copy is restored, the damaged file is kept aside, and a notice tells you what had to be done.
 - The local database records its own version, so a future update can add fields without breaking an existing installation.
 - Dark, gray, and light themes, with a lower-contrast dark theme.

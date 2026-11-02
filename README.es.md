@@ -24,7 +24,7 @@
 
 <div align="center">
 
-### Una agenda local y privada para tareas, eventos y avisos en Windows
+### Tus tareas, eventos y recordatorios, planificados en lenguaje natural y guardados en tu PC
 
 </div>
 
@@ -61,18 +61,18 @@
 
 ## 👋 Introducción
 
-**CyberGo** es una agenda local y privada para Windows que te ayuda a planificar tareas, eventos y avisos sin cuenta, sin sincronización en la nube ni un panel web. Añade elementos en lenguaje natural con Quick Add, recibe avisos locales y mantén todos tus datos en tu propio equipo. La interfaz está disponible en inglés y español, y la app está construida con Electron + React + TypeScript.
+La mayoría de los planificadores te piden una cuenta antes de dejarte anotar una cita con el dentista. CyberGo es una agenda local para Windows: escribe `Dentista mañana a las 3` y Quick Add deduce la fecha, la hora y la repetición, en inglés o en español. Las tareas y eventos viven en vistas de lista o calendario con recordatorios, grupos y colores, se exportan a CSV o ICS cuando los necesitas en otro sitio y nunca salen de tu PC, con una copia automática diaria por si algo sale mal. Construido con **Electron + React + TypeScript**.
 
 ## 🔒 ¿Por qué CyberGo?
 
-La mayoría de las agendas o bien encierran tu planificación tras una cuenta y una nube, o te entierran en funciones que nunca usas. CyberGo te da **lo mejor de ambos mundos**: un planificador diario enfocado que vive enteramente en tu equipo Windows — sin registro, sin sincronización, sin panel web — y que sigue siendo moderno y capaz.
+Muchas agendas encierran tu planificación tras una cuenta y una nube, o te entierran en funciones que nunca usas. CyberGo te da **lo mejor de ambos mundos**: un planificador diario enfocado que vive enteramente en tu equipo Windows — sin registro, sin sincronización, sin panel web — y que sigue siendo moderno y capaz.
 
 | Necesidad | Solución |
 |---|---|
 | Mantener tu agenda privada | Almacenamiento 100% local: sin cuenta, sin nube, sin telemetría |
 | Planificar sin fricción | Quick Add entiende frases naturales en inglés o español |
 | No perder lo importante | Avisos locales con posponer, agrupación y acciones por fila |
-| Mantener el control de tus datos | Importación y exportación CSV/ICS, copias y restauración manuales |
+| Mantener el control de tus datos | Importación y exportación CSV/ICS, copias y restauración manuales, y una copia automática diaria con rotación |
 | Una herramienta que te respeta | Gratis y de código abierto (GPLv3), sin anuncios ni ventas |
 
 ---
@@ -110,11 +110,12 @@ La mayoría de las agendas o bien encierran tu planificación tras una cuenta y 
 - Registro de acceso para inicios de sesión correctos e intentos fallidos.
 - El registro de acceso se puede desactivar y borrar desde Ajustes de seguridad.
 - Los datos de la aplicación se guardan localmente. CyberGo no requiere cuenta ni envía datos de la agenda a un servidor.
-- Las copias de seguridad manuales y su restauración están disponibles en Ajustes de copia de datos.
+- Las copias de seguridad manuales, su restauración y una copia automática diaria están disponibles en Ajustes de copia de datos.
 
 ### Datos y experiencia
 
 - Importación y exportación CSV e ICS con validación.
+- **Copia automática diaria:** CyberGo copia la base de datos local una vez al día, conserva las últimas 7 copias por defecto (ajustable) y permite restaurar cualquiera de ellas desde Ajustes de copia de datos.
 - Una base de datos local dañada ya no impide el arranque: se restaura la copia utilizable más reciente, el archivo dañado se aparta y un aviso te cuenta lo que hubo que hacer.
 - La base de datos local registra su propia versión, para que una actualización futura pueda añadir campos sin romper una instalación existente.
 - Temas oscuro, gris y claro, con un tema oscuro de menor contraste.
