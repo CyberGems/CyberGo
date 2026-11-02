@@ -30,12 +30,6 @@
 
 ---
 
-CyberGo es una agenda de escritorio para quienes quieren un planificador diario enfocado, sin cuenta, sin sincronización en la nube y sin un panel web. Crea tareas y eventos, analiza texto rápido en lenguaje natural, recibe avisos locales y mantén los datos en tu propio equipo Windows.
-
-La interfaz está disponible en **inglés y español**. La aplicación está actualmente en fase alpha, por lo que se recomiendan copias de seguridad antes de probar nuevas versiones.
-
----
-
 ## 📑 Table of Contents
 
 - [👋 Introducción](#-introducción)

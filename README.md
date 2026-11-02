@@ -30,12 +30,6 @@
 
 ---
 
-CyberGo is a desktop agenda for people who want a focused daily planner without an account, cloud sync, or a web dashboard. Create tasks and events, parse natural quick-add text, receive local reminders, and keep the data on your own Windows device.
-
-The interface is available in **English and Spanish**. The application is currently in alpha, so backups are recommended before testing new versions.
-
----
-
 ## 📑 Table of Contents
 
 - [👋 Introduction](#-introduction)
@@ -64,6 +58,7 @@ The interface is available in **English and Spanish**. The application is curren
 </details>
 
 ---
+
 ## 👋 Introduction
 
 **CyberGo** is a private, local-first agenda for Windows that helps you plan tasks, events, and reminders without an account, cloud sync, or a web dashboard. Add items in plain language with Quick Add, get local reminders, and keep every piece of data on your own device. The interface is available in English and Spanish, and the app is built with Electron + React + TypeScript.
