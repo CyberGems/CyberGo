@@ -33,7 +33,7 @@
 ## 📑 Table of Contents
 
 - [👋 Introducción](#-introducción)
-- [📸 Capturas](#-capturas)
+- [🖼️ Capturas](#️-capturas)
 - [🔒 ¿Por qué CyberGo?](#-por-qué-cybergo)
 - [✨ Funciones principales](#-funciones-principales)
 - [📥 Descargar](#-descargar)
@@ -68,7 +68,7 @@ La mayoría de los planificadores te piden una cuenta antes de dejarte anotar un
 
 <!-- Capturas: pendiente de la galería bilingüe ES/EN del plan en https://github.com/CyberGems/CyberGems.github.io/blob/main/docs/screenshots.md — sustituir la cita, conservar este título y su entrada en el índice. -->
 
-## 📸 Capturas
+## 🖼️ Capturas
 
 > Próximamente...
 
