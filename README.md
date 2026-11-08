@@ -33,6 +33,7 @@
 ## 📑 Table of Contents
 
 - [👋 Introduction](#-introduction)
+- [📸 Screenshots](#-screenshots)
 - [🔒 Why CyberGo?](#-why-cybergo)
 - [✨ Key Features](#-key-features)
 - [📥 Download](#-download)
@@ -62,6 +63,16 @@
 ## 👋 Introduction
 
 Most planners ask you to create an account before you can write down a dentist appointment. CyberGo is a local agenda for Windows: type `Dentist 3pm tomorrow` and Quick Add works out the date, the time and the repeat, in English or Spanish. Tasks and events live in list or calendar views with reminders, groups and colors, export to CSV or ICS whenever you need them elsewhere, and never leave your PC — with a daily automatic backup in case something goes wrong. Built with **Electron + React + TypeScript**.
+
+---
+
+<!-- Screenshots: pending the bilingual EN/ES gallery in the capture plan at https://github.com/CyberGems/CyberGems.github.io/blob/main/docs/screenshots.md — replace the blockquote, keep this heading and the TOC entry. -->
+
+## 📸 Screenshots
+
+> Coming soon...
+
+---
 
 ## 🔒 Why CyberGo?
 
