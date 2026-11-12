@@ -37,7 +37,8 @@
 - [🔒 ¿Por qué CyberGo?](#-por-qué-cybergo)
 - [✨ Funciones principales](#-funciones-principales)
 - [📥 Descargar](#-descargar)
-- [🚀 Primeros pasos](#-primeros-pasos)
+- [🚀 Instalación](#-instalación)
+- [🧭 Cómo usar la app](#-cómo-usar-la-app)
 - [🛠️ Desarrollo](#️-desarrollo)
 - [🏗️ Arquitectura](#️-arquitectura)
 - [⌨️ Atajos de teclado](#️-atajos-de-teclado)
@@ -145,15 +146,29 @@ Los instaladores alpha son ejecutables de Windows sin firmar. Es posible que Win
 
 Esta versión alpha está pensada para **Windows 10 y Windows 11 de 64 bits**.
 
-## 🚀 Primeros pasos
+## 🚀 Instalación
 
 1. Descarga y ejecuta el instalador.
 2. Inicia CyberGo desde el menú Inicio.
 3. Elige inglés o español y selecciona un tema.
-4. Crea un elemento con **Nuevo elemento**, o escribe una frase en **Quick Add**.
-5. Configura avisos, seguridad, copias de seguridad y la posición del monitor en **Ajustes**.
 
 Por seguridad, crea una copia de seguridad antes de importar un CSV grande o probar una nueva build alpha.
+
+---
+
+## 🧭 Cómo usar la app
+
+CyberGo se abre en tu agenda; **Quick Add**, en la parte superior de la ventana principal, es la forma más rápida de capturar algo.
+
+1. Escribe una frase en lenguaje natural en **Quick Add** y pulsa `Intro`: `Farmacia en 10 minutos` crea una tarea que vence en diez minutos.
+2. Usa **Nuevo elemento** cuando quieras ajustar avisos y otros detalles a mano.
+3. Configura avisos, seguridad, copias de seguridad y la posición del monitor en **Ajustes**.
+
+Quick Add entiende inglés y español; una frase sin fecha se convierte simplemente en una tarea sin vencimiento. Crea una copia de seguridad antes de importar un CSV grande o probar una build alpha nueva.
+
+Consulta [¿Cómo se usa CyberGo?](https://github.com/CyberGems/CyberGo/wiki/How-Do-You-Use) para ver ejemplos cotidianos y las guías completas de la wiki (en inglés).
+
+---
 
 ## 🛠️ Desarrollo
 

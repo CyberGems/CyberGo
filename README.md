@@ -37,7 +37,8 @@
 - [🔒 Why CyberGo?](#-why-cybergo)
 - [✨ Key Features](#-key-features)
 - [📥 Download](#-download)
-- [🚀 Getting Started](#-getting-started)
+- [🚀 Installation](#-installation)
+- [🧭 Using the App](#-using-the-app)
 - [🛠️ Development](#️-development)
 - [🏗️ Architecture](#️-architecture)
 - [⌨️ Keyboard shortcuts](#️-keyboard-shortcuts)
@@ -144,15 +145,27 @@ The alpha installers are unsigned Windows executables. Windows SmartScreen may d
 
 This alpha targets **Windows 10 and Windows 11, 64-bit**.
 
-## 🚀 Getting Started
+## 🚀 Installation
 
 1. Download and run the installer.
 2. Start CyberGo from the Start menu.
 3. Choose English or Spanish and select a theme.
-4. Create an item with **New item**, or type a phrase in **Quick Add**.
-5. Configure reminders, security, backups, and monitor placement in **Settings**.
 
-For safety, create a backup before importing a large CSV or testing a new alpha build.
+---
+
+## 🧭 Using the App
+
+CyberGo opens to your agenda; **Quick Add** at the top of the main window is the fastest way to capture something.
+
+1. Type a phrase in plain language in **Quick Add** and press `Enter`: `Farmacia en 10 minutos` becomes a task due in ten minutes.
+2. Use **New item** when you want to set reminders and other details by hand.
+3. Configure reminders, security, backups and monitor placement in **Settings**.
+
+Quick Add understands English and Spanish; a phrase with no date simply becomes a task with no due date. Create a backup before importing a large CSV or testing a new alpha build.
+
+See [How Do You Use CyberGo?](https://github.com/CyberGems/CyberGo/wiki/How-Do-You-Use) for everyday examples and the full guides.
+
+---
 
 ## 🛠️ Development
 
