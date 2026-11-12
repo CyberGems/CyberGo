@@ -36,14 +36,10 @@
 - [🖼️ Capturas](#️-capturas)
 - [🔒 ¿Por qué CyberGo?](#-por-qué-cybergo)
 - [✨ Funciones principales](#-funciones-principales)
-- [📥 Descargar](#-descargar)
-- [🚀 Instalación](#-instalación)
+- [⬇️ Instalación](#️-instalación)
 - [🧭 Cómo usar la app](#-cómo-usar-la-app)
-- [🛠️ Desarrollo](#️-desarrollo)
-- [🏗️ Arquitectura](#️-arquitectura)
+- [🛠️ Stack tecnológico y arquitectura](#️-stack-tecnológico-y-arquitectura)
 - [⌨️ Atajos de teclado](#️-atajos-de-teclado)
-- [🧪 Notas de la versión alpha](#-notas-de-la-versión-alpha)
-- [🛡️ Windows SmartScreen](#️-windows-smartscreen)
 - [❤️ Donar](#️-donar)
 - [📄 Licencia](#-licencia)
 - [❓ Preguntas frecuentes](#-preguntas-frecuentes)
@@ -64,6 +60,14 @@
 ## 👋 Introducción
 
 La mayoría de los planificadores te piden una cuenta antes de dejarte anotar una cita con el dentista. CyberGo es una agenda local para Windows: escribe `Dentista mañana a las 3` y Quick Add deduce la fecha, la hora y la repetición, en inglés o en español. Las tareas y eventos viven en vistas de lista o calendario con recordatorios, grupos y colores, se exportan a CSV o ICS cuando los necesitas en otro sitio y nunca salen de tu PC, con una copia automática diaria por si algo sale mal. Construido con **Electron + React + TypeScript**.
+
+### 🧪 Notas de la versión alpha
+
+- Esta es una pre-release alpha. Las funciones y los formatos de datos pueden cambiar.
+- Mantén una copia de seguridad reciente antes de importar o actualizar.
+- El instalador aún no está firmado digitalmente.
+- La identidad visual aún no está terminada, por lo que el icono y los colores pueden cambiar antes de la primera versión estable.
+- Los informes de errores y sugerencias son bienvenidos a través de [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
 
 ---
 
@@ -138,7 +142,11 @@ Muchas agendas encierran tu planificación tras una cuenta y una nube, o te enti
 - Los diálogos mantienen el foco mientras están abiertos y lo devuelven al cerrarse.
 - Controles amigables con el teclado, incluidas columnas de tabla redimensionables.
 
-## 📥 Descargar
+---
+
+## ⬇️ Instalación
+
+### 📥 Descargar
 
 Descarga el instalador de Windows desde la [página de pre-release de CyberGo](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.5).
 
@@ -146,13 +154,30 @@ Los instaladores alpha son ejecutables de Windows sin firmar. Es posible que Win
 
 Esta versión alpha está pensada para **Windows 10 y Windows 11 de 64 bits**.
 
-## 🚀 Instalación
+### Instalar
 
 1. Descarga y ejecuta el instalador.
 2. Inicia CyberGo desde el menú Inicio.
 3. Elige inglés o español y selecciona un tema.
 
-Por seguridad, crea una copia de seguridad antes de importar un CSV grande o probar una nueva build alpha.
+### 🛡️ Windows SmartScreen
+
+Es posible que Windows muestre una advertencia de SmartScreen la primera vez que ejecutes el instalador de CyberGo: es una app sin firmar, así que Windows aún no ha ganado reputación para el archivo. Es esperado; el código es público, así que puedes inspeccionar exactamente qué hace.
+
+Para continuar:
+
+<details>
+<summary><strong>Ver cómo ejecutar el instalador (paso a paso)</strong></summary>
+
+Windows muestra esta advertencia para cualquier instalador sin un certificado de firma de código de pago; no significa que el archivo sea inseguro. No hagas clic en "Don't run":
+
+1. Ejecuta el instalador `CyberGo-Setup.exe`. Es posible que Windows muestre el cuadro azul "Windows protegió tu PC".
+2. Haz clic en el pequeño enlace **Más información**. El cuadro expandido muestra tu instalador: `CyberGo-Setup.exe`.
+3. Haz clic en **Ejecutar de todas formas**. El instalador arranca con normalidad.
+
+Puedes verificar el archivo por tu cuenta: compara el SHA con la release de GitHub, escanea en VirusTotal o compílalo desde el código fuente. Más detalles: [guía de SmartScreen en el sitio web](https://cybergems.org/download#smartscreen).
+
+</details>
 
 ---
 
@@ -170,7 +195,7 @@ Consulta [¿Cómo se usa CyberGo?](https://github.com/CyberGems/CyberGo/wiki/How
 
 ---
 
-## 🛠️ Desarrollo
+## 🛠️ Stack tecnológico y arquitectura
 
 ### Requisitos
 
@@ -201,7 +226,7 @@ npm run dev
 
 `npm run release:pre` coloca los artefactos en un directorio temporal único. El comando imprime la ruta exacta al terminar.
 
-## 🏗️ Arquitectura
+### 🏗️ Arquitectura
 
 ```text
 CyberGo/
@@ -228,6 +253,8 @@ CyberGo/
 
 CyberGo usa **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js** y **electron-builder**. El renderer se comunica con el proceso local de Electron a través del puente de preload.
 
+---
+
 ## ⌨️ Atajos de teclado
 
 | Atajo | Acción |
@@ -249,33 +276,6 @@ Dentro de la ventana de avisos:
 | `Delete` / `Backspace` | Descarta el aviso seleccionado |
 | `Ctrl+A` | Selecciona todos los avisos |
 | `Ctrl+clic` | Añade o quita un elemento de la selección |
-
-## 🧪 Notas de la versión alpha
-
-- Esta es una pre-release alpha. Las funciones y los formatos de datos pueden cambiar.
-- Mantén una copia de seguridad reciente antes de importar o actualizar.
-- El instalador aún no está firmado digitalmente.
-- La identidad visual aún no está terminada, por lo que el icono y los colores pueden cambiar antes de la primera versión estable.
-- Los informes de errores y sugerencias son bienvenidos a través de [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
-
-## 🛡️ Windows SmartScreen
-
-Es posible que Windows muestre una advertencia de SmartScreen la primera vez que ejecutes el instalador de CyberGo: es una app sin firmar, así que Windows aún no ha ganado reputación para el archivo. Es esperado; el código es público, así que puedes inspeccionar exactamente qué hace.
-
-Para continuar:
-
-<details>
-<summary><strong>Ver cómo ejecutar el instalador (paso a paso)</strong></summary>
-
-Windows muestra esta advertencia para cualquier instalador sin un certificado de firma de código de pago; no significa que el archivo sea inseguro. No hagas clic en "Don't run":
-
-1. Ejecuta el instalador `CyberGo-Setup.exe`. Es posible que Windows muestre el cuadro azul "Windows protegió tu PC".
-2. Haz clic en el pequeño enlace **Más información**. El cuadro expandido muestra tu instalador: `CyberGo-Setup.exe`.
-3. Haz clic en **Ejecutar de todas formas**. El instalador arranca con normalidad.
-
-Puedes verificar el archivo por tu cuenta: compara el SHA con la release de GitHub, escanea en VirusTotal o compílalo desde el código fuente. Más detalles: [guía de SmartScreen en el sitio web](https://cybergems.org/download#smartscreen).
-
-</details>
 
 ---
 

@@ -36,14 +36,10 @@
 - [🖼️ Screenshots](#️-screenshots)
 - [🔒 Why CyberGo?](#-why-cybergo)
 - [✨ Key Features](#-key-features)
-- [📥 Download](#-download)
-- [🚀 Installation](#-installation)
+- [⬇️ Installation](#️-installation)
 - [🧭 Using the App](#-using-the-app)
-- [🛠️ Development](#️-development)
-- [🏗️ Architecture](#️-architecture)
-- [⌨️ Keyboard shortcuts](#️-keyboard-shortcuts)
-- [🧪 Alpha notes](#-alpha-notes)
-- [🛡️ Windows SmartScreen](#️-windows-smartscreen)
+- [🛠️ Tech Stack & Architecture](#️-tech-stack--architecture)
+- [⌨️ Keyboard Shortcuts](#️-keyboard-shortcuts)
 - [❤️ Donate](#️-donate)
 - [📄 License](#-license)
 - [❓ FAQ](#-faq)
@@ -64,6 +60,14 @@
 ## 👋 Introduction
 
 Most planners ask you to create an account before you can write down a dentist appointment. CyberGo is a local agenda for Windows: type `Dentist 3pm tomorrow` and Quick Add works out the date, the time and the repeat, in English or Spanish. Tasks and events live in list or calendar views with reminders, groups and colors, export to CSV or ICS whenever you need them elsewhere, and never leave your PC — with a daily automatic backup in case something goes wrong. Built with **Electron + React + TypeScript**.
+
+### 🧪 Alpha notes
+
+- This is an alpha pre-release. Features and data formats may change.
+- Keep a recent backup before importing or upgrading.
+- The installer is not digitally signed yet.
+- The visual identity is not finished yet, so the icon and the colors may still change before the first stable release.
+- Bug reports and suggestions are welcome through [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
 
 ---
 
@@ -88,6 +92,7 @@ Plenty of planners lock your agenda behind an account and a cloud, or bury it in
 | A tool that respects you | Free and open source (GPLv3), no ads, no upsells |
 
 ---
+
 ## ✨ Key Features
 
 ### Planning
@@ -137,7 +142,11 @@ Plenty of planners lock your agenda behind an account and a cloud, or bury it in
 - Dialogs keep the focus while they are open and give it back when they close.
 - Keyboard-friendly controls, including resizable table columns.
 
-## 📥 Download
+---
+
+## ⬇️ Installation
+
+### 📥 Download
 
 Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.5).
 
@@ -145,11 +154,30 @@ The alpha installers are unsigned Windows executables. Windows SmartScreen may d
 
 This alpha targets **Windows 10 and Windows 11, 64-bit**.
 
-## 🚀 Installation
+### Install
 
 1. Download and run the installer.
 2. Start CyberGo from the Start menu.
 3. Choose English or Spanish and select a theme.
+
+### 🛡️ Windows SmartScreen
+
+Windows may show a SmartScreen warning the first time you run the CyberGo installer: this is an unsigned app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does.
+
+To continue:
+
+<details>
+<summary><strong>See how to run the installer (step by step)</strong></summary>
+
+Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
+
+1. Run the `CyberGo-Setup.exe` installer. Windows may show the blue "Windows protected your PC" dialog.
+2. Click the small **More info** link. The expanded dialog shows your installer: `CyberGo-Setup.exe`.
+3. Click **Run anyway**. The installer starts normally.
+
+You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
+
+</details>
 
 ---
 
@@ -167,7 +195,7 @@ See [How Do You Use CyberGo?](https://github.com/CyberGems/CyberGo/wiki/How-Do-Y
 
 ---
 
-## 🛠️ Development
+## 🛠️ Tech Stack & Architecture
 
 ### Requirements
 
@@ -198,7 +226,7 @@ npm run dev
 
 `npm run release:pre` places artifacts in a unique temporary directory. The command prints the exact path when it finishes.
 
-## 🏗️ Architecture
+### 🏗️ Architecture
 
 ```text
 CyberGo/
@@ -225,7 +253,9 @@ CyberGo/
 
 CyberGo uses **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js**, and **electron-builder**. The renderer communicates with the local Electron process through the preload bridge.
 
-## ⌨️ Keyboard shortcuts
+---
+
+## ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
@@ -246,33 +276,6 @@ Inside the reminder window:
 | `Delete` / `Backspace` | Dismiss the selected reminder |
 | `Ctrl+A` | Select every reminder |
 | `Ctrl+click` | Add or remove an item from the selection |
-
-## 🧪 Alpha notes
-
-- This is an alpha pre-release. Features and data formats may change.
-- Keep a recent backup before importing or upgrading.
-- The installer is not digitally signed yet.
-- The visual identity is not finished yet, so the icon and the colors may still change before the first stable release.
-- Bug reports and suggestions are welcome through [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).
-
-## 🛡️ Windows SmartScreen
-
-Windows may show a SmartScreen warning the first time you run the CyberGo installer: this is an unsigned app, so Windows hasn't built reputation for the file yet. This is expected; the source is public so you can inspect exactly what it does.
-
-To continue:
-
-<details>
-<summary><strong>See how to run the installer (step by step)</strong></summary>
-
-Windows shows this warning for any installer without a paid code-signing certificate; it does not mean the file is unsafe. Do <strong>not</strong> click "Don't run":
-
-1. Run the `CyberGo-Setup.exe` installer. Windows may show the blue "Windows protected your PC" dialog.
-2. Click the small **More info** link. The expanded dialog shows your installer: `CyberGo-Setup.exe`.
-3. Click **Run anyway**. The installer starts normally.
-
-You can verify the file independently: compare the SHA with the GitHub release, scan it on VirusTotal, or build from source. More details: [SmartScreen guide on the website](https://cybergems.org/download#smartscreen).
-
-</details>
 
 ---
 
