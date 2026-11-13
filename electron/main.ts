@@ -128,6 +128,11 @@ function quickCapture() {
 }
 
 let trayToggleAt = 0;
+// Windows may emit a normal click around the same right-click that opens the
+// tray popup. Defer the click and cancel it when the right-click wins.
+let trayRightClickSeq = 0;
+let lastTrayRightClickAt = 0;
+let trayClickTimer: ReturnType<typeof setTimeout> | null = null;
 
 function toggleMainFromTray() {
   const now = Date.now();
@@ -758,29 +763,411 @@ function createMain() {
   else void mainWindow.loadFile(path.join(here, '../dist/index.html'));
 }
 
+// =====================================
+// CUSTOM TRAY MENU WINDOW (SUITE STANDARD)
+// =====================================
+// The tray icon itself only toggles the main window on left click. Right click
+// opens a frameless HTML popup anchored to the icon bounds, following the
+// CyberViewer / CyberLauncher pattern used across the suite. Menu state is
+// pushed over 'tray-menu-state' and items report back through
+// 'tray-menu-action'.
+
+const SUITE_SHORT_DESCS: Record<string, { es: string; en: string }> = {
+  cyberclock: { es: 'Reloj de escritorio', en: 'Desktop Clock' },
+  cyberfeeds: { es: 'Lector RSS', en: 'RSS Reader' },
+  cybergo: { es: 'Avisos y eventos', en: 'Events and reminders' },
+  cyberlauncher: { es: 'Lanzador de apps', en: 'App Launcher' },
+  cybermanager: { es: 'Administrador de tareas', en: 'Task Manager' },
+  cybernotes: { es: 'Notas', en: 'Note Taking' },
+  cyberpaste: { es: 'Portapapeles', en: 'Clipboard Manager' },
+  cybersnap: { es: 'Captura de pantalla', en: 'Screen Capture' },
+  cybertray: { es: 'Accesos directos', en: 'Shortcut Manager' },
+  cyberwall: { es: 'Firewall', en: 'Firewall' },
+};
+
+function getSuiteAppsList(lang: 'es' | 'en') {
+  try {
+    const dataPath = fromPublic('suite/suite.json');
+    if (fs.existsSync(dataPath)) {
+      const raw = JSON.parse(fs.readFileSync(dataPath, 'utf8')) as {
+        apps?: Array<{ slug: string; name: string; tagline?: { es?: string; en?: string }; site?: string }>;
+      };
+      if (raw && Array.isArray(raw.apps)) {
+        return raw.apps.map((a) => ({
+          slug: a.slug,
+          name: a.name,
+          desc: (SUITE_SHORT_DESCS[a.slug] && SUITE_SHORT_DESCS[a.slug][lang])
+            || (a.tagline && a.tagline[lang])
+            || a.name,
+          site: a.site || `https://cybergems.org/apps/${a.slug}/`,
+        }));
+      }
+    }
+  } catch { /* fall back to the built-in list */ }
+  return Object.entries(SUITE_SHORT_DESCS).map(([slug, descObj]) => ({
+    slug,
+    name: slug.charAt(0).toUpperCase() + slug.slice(1),
+    desc: descObj[lang] || descObj.en,
+    site: `https://cybergems.org/apps/${slug}/`,
+  }));
+}
+
+let trayMenuWin: BrowserWindow | null = null;
+let trayMenuAnchor: Electron.Rectangle | null = null;
+let trayMenuHideTimer: ReturnType<typeof setTimeout> | null = null;
+let trayMenuShowPending = false;
+let trayMenuShowFallback: ReturnType<typeof setTimeout> | null = null;
+let trayMenuRevealTimer: ReturnType<typeof setTimeout> | null = null;
+let trayMenuLastShown = 0;
+let trayMenuOpen = false;
+const TRAY_MENU_CARD_WIDTH = 292;
+const TRAY_MENU_SHADOW_PAD = 24;
+const TRAY_MENU_EST_HEIGHT = 550;
+let lastTrayMenuHeight = 550;
+let mainViewHeight = 550;
+
+function buildTrayMenuState(resetView: boolean) {
+  const lang = locale();
+  return {
+    version: app.getVersion(),
+    lang,
+    isVisible: Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized()),
+    shortcut: 'Alt+Shift+G',
+    hasPassword: db.hasPassword(),
+    suiteApps: getSuiteAppsList(lang),
+    resetView: Boolean(resetView),
+  };
+}
+
+function trayMenuGeometry(iconBounds: Electron.Rectangle | null, windowW: number, windowH: number) {
+  const b: { x: number; y: number; width: number; height: number } = (iconBounds && (iconBounds.width || iconBounds.height))
+    ? { x: iconBounds.x, y: iconBounds.y, width: iconBounds.width, height: iconBounds.height }
+    : (() => {
+      try {
+        const p = screen.getCursorScreenPoint();
+        return { x: p.x, y: p.y, width: 0, height: 0 };
+      } catch {
+        return { x: 0, y: 0, width: 0, height: 0 };
+      }
+    })();
+  const cx = b.x + b.width / 2;
+  const cy = b.y + b.height / 2;
+  let display: Electron.Display;
+  try {
+    display = screen.getDisplayNearestPoint({ x: cx, y: cy });
+  } catch {
+    display = screen.getPrimaryDisplay();
+  }
+  const work = (display && display.workArea) || { x: 0, y: 0, width: windowW, height: windowH };
+
+  const gap = 4;
+  const pad = TRAY_MENU_SHADOW_PAD;
+  const cardW = windowW - 2 * pad;
+  const cardH = windowH - 2 * pad;
+
+  let cardX: number;
+  let cardY: number;
+  const dLeft = cx - work.x;
+  const dRight = (work.x + work.width) - cx;
+  const dTop = cy - work.y;
+  const dBottom = (work.y + work.height) - cy;
+
+  if (dBottom <= dLeft && dBottom <= dRight && dBottom <= dTop) {
+    cardX = cx - cardW / 2;
+    cardY = b.y - gap - cardH;
+  } else if (dTop <= dLeft && dTop <= dRight) {
+    cardX = cx - cardW / 2;
+    cardY = b.y + b.height + gap;
+  } else if (dLeft <= dRight) {
+    cardX = b.x + b.width + gap;
+    cardY = cy - cardH / 2;
+  } else {
+    cardX = b.x - gap - cardW;
+    cardY = cy - cardH / 2;
+  }
+
+  // Position the outer window centered on the card, clamped inside the display
+  // work area so the shadow padding never crosses the monitor boundary.
+  let windowX = cardX - pad;
+  let windowY = cardY - pad;
+  windowX = Math.min(Math.max(windowX, work.x + 2), work.x + work.width - windowW - 2);
+  const screenBottom = (display.bounds ? display.bounds.y + display.bounds.height : work.y + work.height) - 2;
+  windowY = Math.min(Math.max(windowY, work.y + 2), screenBottom - windowH);
+
+  return { x: Math.round(windowX), y: Math.round(windowY), width: Math.round(windowW), height: Math.round(windowH) };
+}
+
+function ensureTrayMenuWin(): BrowserWindow {
+  if (trayMenuWin && !trayMenuWin.isDestroyed()) return trayMenuWin;
+
+  const windowW = TRAY_MENU_CARD_WIDTH + 2 * TRAY_MENU_SHADOW_PAD;
+  trayMenuWin = new BrowserWindow({
+    width: windowW,
+    height: TRAY_MENU_EST_HEIGHT,
+    show: false,
+    frame: false,
+    transparent: true,
+    hasShadow: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    focusable: true,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: fromPublic('tray/tray-preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+      backgroundThrottling: false,
+    },
+  });
+
+  trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
+  void trayMenuWin.loadFile(fromPublic('tray/tray-menu.html'));
+
+  trayMenuWin.on('blur', () => {
+    if (trayMenuHideTimer) return;
+    if (Date.now() - trayMenuLastShown < 250) return;
+    trayMenuHideTimer = setTimeout(() => {
+      trayMenuHideTimer = null;
+      hideCustomTrayMenu();
+    }, 120);
+  });
+
+  trayMenuWin.on('closed', () => {
+    trayMenuWin = null;
+    trayMenuOpen = false;
+  });
+
+  trayMenuWin.webContents.on('preload-error', (_e, pPath, error) => {
+    console.error('[TRAY-PRELOAD-ERROR]', pPath, error);
+  });
+
+  trayMenuWin.webContents.once('did-finish-load', () => {
+    if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
+    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(true));
+  });
+
+  return trayMenuWin;
+}
+
+function revealTrayMenuWin() {
+  if (!trayMenuWin || trayMenuWin.isDestroyed()) return;
+  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
+  trayMenuShowPending = false;
+  if (!trayMenuWin.isVisible()) {
+    try { trayMenuWin.setOpacity(0); } catch { /* ignore */ }
+    trayMenuWin.show();
+    if (trayMenuRevealTimer) clearTimeout(trayMenuRevealTimer);
+    trayMenuRevealTimer = setTimeout(() => {
+      trayMenuRevealTimer = null;
+      if (trayMenuWin && !trayMenuWin.isDestroyed()) {
+        try { trayMenuWin.setOpacity(1); } catch { /* ignore */ }
+      }
+    }, 40);
+  } else {
+    try { trayMenuWin.setOpacity(1); } catch { /* ignore */ }
+  }
+  trayMenuWin.focus();
+  trayMenuLastShown = Date.now();
+}
+
+function showCustomTrayMenu(eventBounds?: Electron.Rectangle) {
+  if (!tray || tray.isDestroyed()) return;
+  let b: Electron.Rectangle | null = (eventBounds && (eventBounds.width || eventBounds.height)) ? eventBounds : null;
+  if (!b) {
+    try { b = tray.getBounds(); } catch { b = null; }
+  }
+  if (!b || (!b.width && !b.height)) {
+    try {
+      const p = screen.getCursorScreenPoint();
+      b = { x: p.x, y: p.y, width: 0, height: 0 };
+    } catch {
+      b = { x: 0, y: 0, width: 0, height: 0 };
+    }
+  }
+
+  trayMenuAnchor = b;
+  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+
+  const w = ensureTrayMenuWin();
+  if (!w || w.isDestroyed()) return;
+
+  trayMenuOpen = true;
+
+  const windowW = TRAY_MENU_CARD_WIDTH + 2 * TRAY_MENU_SHADOW_PAD;
+  const initialH = mainViewHeight || lastTrayMenuHeight || TRAY_MENU_EST_HEIGHT;
+  const geo = trayMenuGeometry(trayMenuAnchor, windowW, initialH);
+  const current = w.getBounds();
+  if (current.x !== geo.x || current.y !== geo.y || current.width !== geo.width || current.height !== geo.height) {
+    w.setBounds(geo);
+  }
+
+  trayMenuShowPending = true;
+  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
+  trayMenuShowFallback = setTimeout(() => {
+    trayMenuShowFallback = null;
+    if (trayMenuShowPending) revealTrayMenuWin();
+  }, 500);
+
+  w.webContents.send('tray-menu-state', buildTrayMenuState(true));
+}
+
+function hideCustomTrayMenu() {
+  if (trayMenuHideTimer) { clearTimeout(trayMenuHideTimer); trayMenuHideTimer = null; }
+  if (trayMenuShowFallback) { clearTimeout(trayMenuShowFallback); trayMenuShowFallback = null; }
+  if (trayMenuRevealTimer) { clearTimeout(trayMenuRevealTimer); trayMenuRevealTimer = null; }
+  trayMenuShowPending = false;
+  trayMenuOpen = false;
+  if (trayMenuWin && !trayMenuWin.isDestroyed()) {
+    try { trayMenuWin.setOpacity(1); } catch { /* ignore */ }
+    if (trayMenuWin.isVisible()) {
+      trayMenuWin.hide();
+    }
+    trayMenuWin.webContents.send('tray-menu-reset');
+  }
+}
+
+function updateCustomTrayMenuState() {
+  if (trayMenuWin && !trayMenuWin.isDestroyed()) {
+    trayMenuWin.webContents.send('tray-menu-state', buildTrayMenuState(false));
+  }
+}
+
 function createTray() {
   const image = nativeImage.createFromPath(fromPublic('tray.png'));
   tray = new Tray(image.isEmpty() ? nativeImage.createEmpty() : image);
   tray.setToolTip('CyberGo · Alt+Shift+G');
-  const es = locale() === 'es';
-  const menu = Menu.buildFromTemplate([
-    { label: es ? 'Abrir CyberGo' : 'Open CyberGo', click: () => showMain() },
-    { label: es ? 'Captura rápida' : 'Quick capture', accelerator: 'Alt+Shift+G', click: () => quickCapture() },
-    { label: es ? 'Avisos' : 'Reminders', click: () => void evaluateReminders('show') },
-    { label: es ? 'Bloquear' : 'Lock', click: () => { if (db.hasPassword()) { sessionLocked = true; hideReminders(); changed(); showMain(); } } },
-    { type: 'separator' },
-    { label: es ? 'Salir' : 'Quit', click: () => { quitting = true; app.quit(); } },
-  ]);
-  // Open explicitly on right-click so Windows can anchor the menu to the
-  // duplicated tray icon on a secondary monitor.
-  tray.on('right-click', (_event, bounds) => {
-    const x = Math.round(bounds.x + bounds.width / 2);
-    const y = Math.round(bounds.y + bounds.height / 2);
-    tray?.popUpContextMenu(menu, { x, y });
+  try {
+    ensureTrayMenuWin();
+  } catch (err) {
+    console.warn('[TRAY] Failed to prewarm tray menu window:', err instanceof Error ? err.message : err);
+  }
+
+  if (process.platform === 'win32') {
+    tray.on('right-click', (_event, bounds) => {
+      trayRightClickSeq += 1;
+      lastTrayRightClickAt = Date.now();
+      if (trayMenuOpen && trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuWin.isVisible()) {
+        hideCustomTrayMenu();
+      } else {
+        showCustomTrayMenu(bounds);
+      }
+    });
+  }
+
+  tray.on('click', () => {
+    // If the popup is open, closing it is the whole action; do not also toggle
+    // the main window underneath.
+    const menuWasOpen = trayMenuOpen;
+    hideCustomTrayMenu();
+    if (process.platform === 'win32') {
+      const clickSeq = trayRightClickSeq;
+      if (trayClickTimer) clearTimeout(trayClickTimer);
+      trayClickTimer = setTimeout(() => {
+        trayClickTimer = null;
+        if (menuWasOpen) return;
+        if (trayRightClickSeq !== clickSeq || Date.now() - lastTrayRightClickAt < 400) return;
+        if (trayMenuOpen) return;
+        toggleMainFromTray();
+      }, 120);
+      return;
+    }
+    if (menuWasOpen) return;
+    toggleMainFromTray();
   });
-  tray.on('click', () => toggleMainFromTray());
-  tray.on('double-click', () => toggleMainFromTray());
+
+  tray.on('double-click', () => {
+    hideCustomTrayMenu();
+    showMain();
+  });
 }
+
+// IPC for the custom tray menu window.
+ipcMain.on('tray-menu-action', (_event, action: string, payload?: { site?: string }) => {
+  hideCustomTrayMenu();
+
+  if (action === 'quit') {
+    quitting = true;
+    app.quit();
+    return;
+  }
+  if (action === 'show') {
+    showMain();
+    return;
+  }
+  if (action === 'hide') {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+    return;
+  }
+  if (action === 'quick-capture') {
+    quickCapture();
+    return;
+  }
+  if (action === 'reminders') {
+    void evaluateReminders('show');
+    return;
+  }
+  if (action === 'lock') {
+    if (db.hasPassword()) {
+      sessionLocked = true;
+      hideReminders();
+      changed();
+      showMain();
+    }
+    return;
+  }
+  if (action === 'suite-app' && payload && payload.site) {
+    void shell.openExternal(payload.site);
+    return;
+  }
+  if (action === 'suite-view-all') {
+    void shell.openExternal('https://cybergems.org/#apps');
+    return;
+  }
+  if (action === 'suite-home') {
+    void shell.openExternal('https://cybergems.org');
+    return;
+  }
+});
+
+ipcMain.on('tray-menu-hide', () => {
+  hideCustomTrayMenu();
+});
+
+ipcMain.on('tray-menu-ready', (_event, rect: { height: number; view?: string }) => {
+  if (trayMenuWin && !trayMenuWin.isDestroyed() && trayMenuAnchor && rect && rect.height) {
+    const pad = TRAY_MENU_SHADOW_PAD;
+    const windowW = TRAY_MENU_CARD_WIDTH + 2 * pad;
+    const isMain = rect.view === 'main' || !rect.view;
+
+    if (isMain) {
+      const naturalMainH = Math.min(Math.max(rect.height, 350), 750);
+      mainViewHeight = naturalMainH;
+      lastTrayMenuHeight = naturalMainH;
+      const currentBounds = trayMenuWin.getBounds();
+      if (Math.abs(currentBounds.height - naturalMainH) > 4 || Math.abs(currentBounds.width - windowW) > 4) {
+        trayMenuWin.setBounds(trayMenuGeometry(trayMenuAnchor, windowW, naturalMainH));
+      }
+    } else {
+      // Subviews keep at least the main view height so the card never shrinks
+      // mid-navigation; expand up to 750px when a view needs more room.
+      const desiredH = Math.min(Math.max(rect.height, mainViewHeight), 750);
+      const currentBounds = trayMenuWin.getBounds();
+      if (Math.abs(currentBounds.height - desiredH) > 4 || Math.abs(currentBounds.width - windowW) > 4) {
+        trayMenuWin.setBounds(trayMenuGeometry(trayMenuAnchor, windowW, desiredH));
+      }
+    }
+  }
+  if (trayMenuShowPending) revealTrayMenuWin();
+});
+
+ipcMain.on('tray-menu-request-state', (event) => {
+  event.reply('tray-menu-state', buildTrayMenuState(false));
+});
 
 function registerIpc() {
   ipcMain.handle('bootstrap:get', () => snapshot());
