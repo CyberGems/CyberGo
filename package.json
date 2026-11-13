@@ -5,7 +5,7 @@
   "author": "CyberGems",
   "license": "GPL-3.0-only",
   "homepage": "https://cybergems.org",
-  "description": "Local event and task reminders for Windows",
+  "description": "A private, local-first agenda for tasks, events and reminders on Windows.",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
