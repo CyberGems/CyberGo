@@ -4,6 +4,7 @@
   "version": "0.1.0-alpha.5",
   "author": "CyberGems",
   "license": "GPL-3.0-only",
+  "homepage": "https://cybergems.org",
   "description": "Local event and task reminders for Windows",
   "type": "module",
   "main": "dist-electron/main.js",
