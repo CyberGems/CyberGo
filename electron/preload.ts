@@ -56,6 +56,7 @@ export interface CyberGoAPI {
   onMaximized: (cb: (value: boolean) => void) => () => void;
   onWindowVisibility: (cb: (visible: boolean) => void) => () => void;
   onConfirmFirstClose: (cb: () => void) => () => void;
+  onOpenAbout: (cb: () => void) => () => void;
   respondFirstClose: (action: 'tray' | 'quit', remember: boolean) => Promise<boolean>;
 }
 
@@ -145,6 +146,11 @@ const api: CyberGoAPI = {
     const listener = () => cb();
     ipcRenderer.on('confirm-first-close', listener);
     return () => ipcRenderer.removeListener('confirm-first-close', listener);
+  },
+  onOpenAbout: (cb) => {
+    const listener = () => cb();
+    ipcRenderer.on('open-about', listener);
+    return () => ipcRenderer.removeListener('open-about', listener);
   },
   respondFirstClose: (action, remember) => ipcRenderer.invoke('first-close-choice', action, remember),
 };

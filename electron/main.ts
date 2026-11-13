@@ -785,6 +785,15 @@ const SUITE_SHORT_DESCS: Record<string, { es: string; en: string }> = {
   cyberwall: { es: 'Firewall', en: 'Firewall' },
 };
 
+// Help destinations for the tray menu; every URL points at a page that exists.
+const TRAY_HELP_URLS = {
+  docs: 'https://github.com/CyberGems/CyberGo/wiki',
+  faq: 'https://github.com/CyberGems/CyberGo/wiki/FAQ',
+  changelog: 'https://github.com/CyberGems/CyberGo/releases',
+  website: 'https://cybergems.org/apps/cybergo/',
+  donate: 'https://cybergems.org/donate',
+} as const;
+
 function getSuiteAppsList(lang: 'es' | 'en') {
   try {
     const dataPath = fromPublic('suite/suite.json');
@@ -1107,6 +1116,11 @@ ipcMain.on('tray-menu-action', (_event, action: string, payload?: { site?: strin
     quickCapture();
     return;
   }
+  if (action === 'about') {
+    showMain();
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('open-about');
+    return;
+  }
   if (action === 'reminders') {
     void evaluateReminders('show');
     return;
@@ -1130,6 +1144,26 @@ ipcMain.on('tray-menu-action', (_event, action: string, payload?: { site?: strin
   }
   if (action === 'suite-home') {
     void shell.openExternal('https://cybergems.org');
+    return;
+  }
+  if (action === 'help-docs') {
+    void shell.openExternal(TRAY_HELP_URLS.docs);
+    return;
+  }
+  if (action === 'help-faq') {
+    void shell.openExternal(TRAY_HELP_URLS.faq);
+    return;
+  }
+  if (action === 'help-changelog') {
+    void shell.openExternal(TRAY_HELP_URLS.changelog);
+    return;
+  }
+  if (action === 'help-website') {
+    void shell.openExternal(TRAY_HELP_URLS.website);
+    return;
+  }
+  if (action === 'help-donate') {
+    void shell.openExternal(TRAY_HELP_URLS.donate);
     return;
   }
 });
