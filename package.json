@@ -70,10 +70,10 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.5",
     "bcryptjs": "^3.0.2",
-    "lucide-react": "^0.511.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "sql.js": "^1.14.1"
+    "lucide-react": "^0.577.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sql.js": "^1.16.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -81,10 +81,10 @@
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
     "electron": "^35.2.1",
-    "electron-builder": "^26.0.12",
+    "electron-builder": "^26.18.0",
     "tsx": "^4.19.4",
-    "typescript": "~5.8.3",
-    "vite": "^6.3.5",
+    "typescript": "~5.9.3",
+    "vite": "^6.4.6",
     "vite-plugin-electron": "^0.29.1",
     "vite-plugin-electron-renderer": "^0.14.7"
   }
