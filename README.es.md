@@ -191,7 +191,7 @@ CyberGo se abre en tu agenda; **Quick Add**, en la parte superior de la ventana 
 
 Quick Add entiende inglés y español; una frase sin fecha se convierte simplemente en una tarea sin vencimiento. Crea una copia de seguridad antes de importar un CSV grande o probar una build alpha nueva.
 
-Consulta [¿Cómo se usa CyberGo?](https://github.com/CyberGems/CyberGo/wiki/How-Do-You-Use) para ver ejemplos cotidianos y las guías completas de la wiki (en inglés).
+Consulta [¿Cómo se usa CyberGo?](https://github.com/CyberGems/CyberGo/wiki/How-Do-You-Use-es) para ver ejemplos cotidianos y las guías completas de la wiki.
 
 ---
 
