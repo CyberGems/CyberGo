@@ -49,7 +49,7 @@
 <summary><strong>🔗 Related links (outside this README)</strong></summary>
 
 - 🌐 [CyberGo en GitHub](https://github.com/CyberGems/CyberGo) — código fuente, issues y notas de versión
-- 📚 [Documentación y FAQ — Wiki](https://github.com/CyberGems/CyberGo/wiki) — solución de problemas y guías detalladas
+- 📚 [Documentación y FAQ — Wiki](https://github.com/CyberGems/CyberGo/wiki/Home-es) — solución de problemas y guías detalladas
 - 💾 [Releases](https://github.com/CyberGems/CyberGo/releases) — instaladores, versiones portátiles y changelog
 - 🟣 [Suite CyberGems](https://github.com/CyberGems) — todas las apps de código abierto
 
@@ -175,7 +175,7 @@ Windows muestra esta advertencia para cualquier instalador sin un certificado de
 2. Haz clic en el pequeño enlace **Más información**. El cuadro expandido muestra tu instalador: `CyberGo-Setup.exe`.
 3. Haz clic en **Ejecutar de todas formas**. El instalador arranca con normalidad.
 
-Puedes verificar el archivo por tu cuenta: compara el SHA con la release de GitHub, escanea en VirusTotal o compílalo desde el código fuente. Más detalles: [guía de SmartScreen en el sitio web](https://cybergems.org/download#smartscreen).
+Puedes verificar el archivo por tu cuenta: compara el SHA con la release de GitHub, escanea en VirusTotal o compílalo desde el código fuente. Más detalles: [guía de SmartScreen en el sitio web](https://cybergems.org/es/download#smartscreen).
 
 </details>
 
@@ -281,7 +281,7 @@ Dentro de la ventana de avisos:
 
 ## ❤️ Donar
 
-**CyberGo** es 100% gratis y de código abierto. Si te resulta útil, por favor considera [donar](https://cybergems.org/donate) o [dar una estrella al repo en GitHub](https://github.com/CyberGems/CyberGo) para apoyar el desarrollo continuo. [Lee la historia completa](https://cybergems.org/about/) del proyecto. ¡Gracias! 🙏
+**CyberGo** es 100% gratis y de código abierto. Si te resulta útil, por favor considera [donar](https://cybergems.org/es/donate) o [dar una estrella al repo en GitHub](https://github.com/CyberGems/CyberGo) para apoyar el desarrollo continuo. [Lee la historia completa](https://cybergems.org/es/about/) del proyecto. ¡Gracias! 🙏
 
 <p align="center">
   <a href="https://www.paypal.com/donate/?hosted_button_id=M4PY3UPJA5Y6Q"><img src="https://img.shields.io/badge/Donar-PayPal-0070BA?style=for-the-badge&logo=paypal" alt="Donar con PayPal" /></a>
@@ -326,9 +326,9 @@ Copyright (C) 2026 CyberGems
 
 ## ❓ Preguntas frecuentes
 
-Para preguntas frecuentes, guías de solución de problemas e instrucciones detalladas de configuración, visita las [Preguntas frecuentes](https://github.com/CyberGems/CyberGo/wiki/FAQ) o la [documentación en línea](https://cybergems.org/docs/cybergo/FAQ).
+Para preguntas frecuentes, guías de solución de problemas e instrucciones detalladas de configuración, visita las [Preguntas frecuentes](https://github.com/CyberGems/CyberGo/wiki/FAQ-es) o la [documentación en línea](https://github.com/CyberGems/CyberGo/wiki/Home-es).
 
-> Fuente de verdad de la documentación: la [wiki de GitHub](https://github.com/CyberGems/CyberGo/wiki) es la canónica (editada desde el checkout `CyberGo.wiki`). El sitio web la refleja.
+> Fuente de verdad de la documentación: la [wiki de GitHub](https://github.com/CyberGems/CyberGo/wiki/Home-es) es la canónica (editada desde el checkout `CyberGo.wiki`). El sitio web todavía no publica CyberGo.
 
 ---
 
@@ -336,16 +336,16 @@ Para preguntas frecuentes, guías de solución de problemas e instrucciones deta
 
 ### ¡Gracias por usar CyberGo! 🎉
 
-Creado por [**CyberGems**](https://cybergems.org)
+Creado por [**CyberGems**](https://cybergems.org/es/)
 
 </div>
 <p align="center">
-  <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F&title=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows"><img src="https://img.shields.io/badge/Compartir_en_Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Compartir en Reddit" /></a>
-  &nbsp;<a href="https://twitter.com/intent/tweet?text=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows&url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Compartir_en_X-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="Compartir en X" /></a>
-  &nbsp;<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Compartir_en_Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Compartir en Facebook" /></a>
-  &nbsp;<a href="mailto:?subject=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows&body=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows%20https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Compartir_por_Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Compartir por correo" /></a>
-  &nbsp;<a href="https://t.me/share/url?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F&text=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows"><img src="https://img.shields.io/badge/Compartir_en_Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Compartir en Telegram" /></a>
-  &nbsp;<a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fcybergems.org%2Fapps%2Fcybergo%2F"><img src="https://img.shields.io/badge/Compartir_en_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="Compartir en LinkedIn" /></a>
+  <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2FCyberGems%2FCyberGo&title=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows"><img src="https://img.shields.io/badge/Compartir_en_Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Compartir en Reddit" /></a>
+  &nbsp;<a href="https://twitter.com/intent/tweet?text=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows&url=https%3A%2F%2Fgithub.com%2FCyberGems%2FCyberGo"><img src="https://img.shields.io/badge/Compartir_en_X-1DA1F2?style=for-the-badge&logo=x&logoColor=white" alt="Compartir en X" /></a>
+  &nbsp;<a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2FCyberGems%2FCyberGo"><img src="https://img.shields.io/badge/Compartir_en_Facebook-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Compartir en Facebook" /></a>
+  &nbsp;<a href="mailto:?subject=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows&body=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows%20https%3A%2F%2Fgithub.com%2FCyberGems%2FCyberGo"><img src="https://img.shields.io/badge/Compartir_por_Email-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Compartir por correo" /></a>
+  &nbsp;<a href="https://t.me/share/url?url=https%3A%2F%2Fgithub.com%2FCyberGems%2FCyberGo&text=CyberGo%3A%20herramienta%20de%20escritorio%20gratuita%20y%20de%20c%C3%B3digo%20abierto%20para%20Windows"><img src="https://img.shields.io/badge/Compartir_en_Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Compartir en Telegram" /></a>
+  &nbsp;<a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2FCyberGems%2FCyberGo"><img src="https://img.shields.io/badge/Compartir_en_LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="Compartir en LinkedIn" /></a>
 </p>
 
 ---
@@ -367,4 +367,4 @@ Más aplicaciones gratuitas, de código abierto y con la privacidad primero de [
 | 💫&nbsp;[**CyberViewer**](https://github.com/CyberGems/CyberViewer#readme) | Abre imágenes y videos rápido, recorre carpetas y haz los ajustes que necesitas. |
 | 🛡️&nbsp;[**CyberWall**](https://github.com/CyberGems/CyberWall#readme) | Decide qué apps pueden conectarse. Revisa las conexiones nuevas y conserva las reglas que te convengan. |
 
-➡️ **[Todas las aplicaciones en cybergems.org](https://cybergems.org)**
+➡️ **[Todas las aplicaciones en cybergems.org](https://cybergems.org/es/)**
