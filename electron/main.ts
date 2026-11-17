@@ -935,10 +935,13 @@ function ensureTrayMenuWin(): BrowserWindow {
       preload: fromPublic('tray/tray-preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
       backgroundThrottling: false,
     },
   });
+  // The tray menu is as locked down as the other windows: it never
+  // navigates and never opens windows, and its preload only bridges IPC,
+  // so it runs sandboxed like the rest.
+  lockNavigation(trayMenuWin);
 
   trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
   void trayMenuWin.loadFile(fromPublic('tray/tray-menu.html'));
@@ -1141,7 +1144,16 @@ ipcMain.on('tray-menu-action', (_event, action: string, payload?: { site?: strin
     return;
   }
   if (action === 'suite-app' && payload && payload.site) {
-    void shell.openExternal(payload.site);
+    // The payload crosses the sandbox, so it is not trusted: only web URLs
+    // reach the system browser, the same rule the shell channel applies.
+    try {
+      const site = new URL(String(payload.site));
+      if (site.protocol === 'https:' || site.protocol === 'http:') {
+        void shell.openExternal(site.toString());
+      }
+    } catch {
+      // Anything that is not a URL is dropped.
+    }
     return;
   }
   if (action === 'suite-view-all') {
