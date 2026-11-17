@@ -513,20 +513,12 @@ function toastFor(fresh: Item[]) {
     body: es ? 'Clic para ver los avisos' : 'Click to view reminders',
     silent: !settings.soundEnabled,
     icon: fromPublic('icon.png'),
-    actions: [
-      { type: 'button', text: es ? 'Abrir' : 'Open' },
-      { type: 'button', text: es ? 'Descartar' : 'Dismiss' },
-    ],
+    // No actions here: Electron only delivers toast buttons on macOS, and
+    // Windows ignored them, so the dismiss button never existed for the
+    // user. The click opens the reminder window, where the reminder can be
+    // handled.
   });
   note.on('click', () => void evaluateReminders('show'));
-  note.on('action', (_event, index) => {
-    if (index === 0) {
-      void evaluateReminders('show');
-      return;
-    }
-    for (const item of fresh) db.dismissItem(item.id);
-    afterReminderChange();
-  });
   note.show();
 }
 
