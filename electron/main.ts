@@ -1518,37 +1518,43 @@ function registerIpc() {
     positionReminderWindow(reminderWindow, settings);
     return true;
   });
-  ipcMain.handle('reminders:snooze', (_e, id: unknown, minutes: unknown) => {
+  ipcMain.handle('reminders:snooze', (e, id: unknown, minutes: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     const amount = asNumber(minutes);
     if (!clean || amount == null) return;
     db.snoozeMinutes(clean, Math.max(1, Math.floor(amount)));
     afterReminderChange();
   });
-  ipcMain.handle('reminders:snooze-until', (_e, id: unknown, iso: unknown) => {
+  ipcMain.handle('reminders:snooze-until', (e, id: unknown, iso: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     const until = asIsoDate(iso);
     if (!clean || !until) return;
     db.snoozeItem(clean, until);
     afterReminderChange();
   });
-  ipcMain.handle('reminders:tomorrow', (_e, id: unknown) => {
+  ipcMain.handle('reminders:tomorrow', (e, id: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     if (!clean) return;
     db.snoozeItem(clean, tomorrowAtNine());
     afterReminderChange();
   });
-  ipcMain.handle('reminders:dismiss', (_e, id: unknown) => {
+  ipcMain.handle('reminders:dismiss', (e, id: unknown) => {
+    refuseWhenLocked(e);
     const clean = asId(id);
     if (!clean) return;
     db.dismissItem(clean);
     afterReminderChange();
   });
-  ipcMain.handle('reminders:dismiss-all', () => {
+  ipcMain.handle('reminders:dismiss-all', (e) => {
+    refuseWhenLocked(e);
     for (const item of db.listItems().filter((row) => isDue(row, Date.now()))) db.dismissItem(item.id);
     afterReminderChange();
   });
-  ipcMain.handle('reminders:always-on-top', (_e, value: unknown) => {
+  ipcMain.handle('reminders:always-on-top', (e, value: unknown) => {
+    refuseWhenLocked(e);
     db.applySettingsPatch({ reminderAlwaysOnTop: value === true });
     if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.setAlwaysOnTop(value === true, 'floating');
     changed();
