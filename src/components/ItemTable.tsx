@@ -311,12 +311,16 @@ export default function ItemTable({
                 </span>
                 <span className="row-status">
                   {status.label && (
-                    <span className={`status-pill ${status.tone}`} title={fullStatus || undefined}>
-                      {status.label}
-                    </span>
+                    <Tooltip label={fullStatus || undefined} placement="top">
+                      <span className={`status-pill ${status.tone}`}>
+                        {status.label}
+                      </span>
+                    </Tooltip>
                   )}
                 </span>
-                <span className="subject" title={item.notes || undefined}>{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
+                <Tooltip label={item.notes || undefined} placement="top">
+                  <span className="subject">{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
+                </Tooltip>
                 <span className={`kind-tag kind-${item.kind}`}>{item.kind === 'task' ? copy.task : copy.event}</span>
               </div>
             );
