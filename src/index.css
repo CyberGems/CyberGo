@@ -108,7 +108,7 @@ body.pointer-reset .settings-header-close:hover {
 }
 .icon-btn { width: 28px; height: 28px; }
 .win-btn:hover, .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-.win-btn.close:hover { background: var(--danger); color: white; }
+.win-btn.close:hover { background: var(--danger); color: var(--text-on-accent); }
 
 .shell { flex: 1; display: flex; min-height: 0; }
 .sidebar {
@@ -334,7 +334,7 @@ body.pointer-reset .settings-header-close:hover {
   border-color: rgba(255, 255, 255, 0.36);
 }
 .btn-danger { background: var(--danger-dim); color: var(--danger); }
-.btn-danger:hover { background: var(--danger); color: white; }
+.btn-danger:hover { background: var(--danger); color: var(--text-on-accent); }
 .toolbar { display: flex; gap: 4px; -webkit-app-region: no-drag; }
 .text-context-menu {
   position: fixed;
@@ -684,7 +684,7 @@ body.pointer-reset .settings-header-close:hover {
   flex-shrink: 0;
   padding: 10px 18px;
   border-top: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--bg-hover);
 }
 .about-footer-brand {
   padding: 0;
@@ -1031,7 +1031,7 @@ body.pointer-reset .settings-header-close:hover {
 }
 .picker-grid button.outside { color: var(--text-muted); opacity: 0.55; }
 .picker-grid button.today { box-shadow: inset 0 0 0 1px var(--border); }
-.picker-grid button.on { background: var(--accent); color: white; }
+.picker-grid button.on { background: var(--accent); color: var(--text-on-accent); }
 .picker-grid button:hover { background: var(--bg-hover); }
 .picker-grid button.on:hover { background: var(--accent); }
 .picker-time {
@@ -1718,7 +1718,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgba(15, 15, 20, 0.97);
+  background: var(--bg-tooltip);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 10px var(--accent-glow);
   backdrop-filter: blur(10px);
   color: var(--text-primary);
@@ -1733,7 +1733,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   width: 8px;
   height: 8px;
   transform: rotate(45deg);
-  background: rgba(15, 15, 20, 0.97);
+  background: var(--bg-tooltip);
 }
 @keyframes tooltipPop {
   from { opacity: 0; transform: translateY(2px) scale(0.98); }
@@ -2281,7 +2281,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .login-ambient-two {
   right: 16%;
   bottom: 5%;
-  background: color-mix(in srgb, var(--accent-light) 50%, #2c8d9d);
+  background: color-mix(in srgb, var(--accent-light) 50%, var(--accent));
 }
 
 .login-card {
@@ -2794,7 +2794,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 .config-brand-footer:hover,
 .config-brand-footer:focus-visible {
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   outline: none;
 }
 .config-brand-line {
