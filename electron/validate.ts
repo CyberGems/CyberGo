@@ -1,4 +1,4 @@
-import type { AuthMethod, ItemDraft } from '@shared/types';
+import type { AuthMethod, DisplayBounds, ItemDraft, PublicSettings, ReminderPosition } from '@shared/types';
 
 /**
  * Every value that crosses the IPC boundary is checked here. A malformed
@@ -44,6 +44,67 @@ export function methodOf(value: unknown): AuthMethod {
 export function presented(value: unknown, method: AuthMethod): string {
   const raw = typeof value === 'string' ? value : '';
   return method === 'pin' ? raw.trim() : raw;
+}
+
+const SETTINGS_THEMES = ['cybergo', 'gray', 'light'];
+const SETTINGS_LANGS = ['es', 'en'];
+const SETTINGS_LOCK_LEVELS = ['visible', 'soft', 'hard'];
+const SETTINGS_POSITIONS = ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right'];
+
+/**
+ * The patch of settings:pick is the one mutating payload that used to be
+ * written as it arrived, and a malformed value would be persisted forever
+ * and read back with surprising fallbacks. A field that fails its check is
+ * dropped from the patch, never guessed; a payload that is not an object is
+ * refused whole.
+ */
+export function asSettingsPatch(value: unknown): Partial<PublicSettings> | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Record<string, unknown>;
+  const out: Partial<PublicSettings> = {};
+  if (raw.theme != null && SETTINGS_THEMES.includes(raw.theme as string)) out.theme = raw.theme as PublicSettings['theme'];
+  if (raw.language != null && SETTINGS_LANGS.includes(raw.language as string)) out.language = raw.language as PublicSettings['language'];
+  if (typeof raw.soundEnabled === 'boolean') out.soundEnabled = raw.soundEnabled;
+  if (raw.soundPath != null) {
+    const soundPath = asText(raw.soundPath, 4096);
+    if (soundPath != null) out.soundPath = soundPath;
+  }
+  if (raw.lockLevel != null && SETTINGS_LOCK_LEVELS.includes(raw.lockLevel as string)) out.lockLevel = raw.lockLevel as PublicSettings['lockLevel'];
+  if (typeof raw.lockOnLaunch === 'boolean') out.lockOnLaunch = raw.lockOnLaunch;
+  if (typeof raw.autobackup === 'boolean') out.autobackup = raw.autobackup;
+  if (raw.autobackupKeep != null) {
+    const keep = asNumber(raw.autobackupKeep);
+    if (keep != null && Number.isInteger(keep) && keep >= 1 && keep <= 60) out.autobackupKeep = keep;
+  }
+  if (typeof raw.openAtLogin === 'boolean') out.openAtLogin = raw.openAtLogin;
+  if (typeof raw.reminderAlwaysOnTop === 'boolean') out.reminderAlwaysOnTop = raw.reminderAlwaysOnTop;
+  if (raw.reminderDisplayId != null) {
+    const displayId = asNumber(raw.reminderDisplayId);
+    if (displayId != null && Number.isInteger(displayId)) out.reminderDisplayId = displayId;
+  }
+  if (raw.reminderDisplayBounds !== undefined) {
+    // Missing stays out of the patch, null resets the remembered bounds.
+    if (raw.reminderDisplayBounds == null) {
+      out.reminderDisplayBounds = null;
+    } else {
+      const bounds = raw.reminderDisplayBounds as Record<string, unknown>;
+      const x = asNumber(bounds.x);
+      const y = asNumber(bounds.y);
+      const width = asNumber(bounds.width);
+      const height = asNumber(bounds.height);
+      if (x != null && y != null && width != null && height != null) {
+        out.reminderDisplayBounds = { x, y, width, height } satisfies DisplayBounds;
+      }
+    }
+  }
+  if (raw.reminderPosition != null && SETTINGS_POSITIONS.includes(raw.reminderPosition as string)) out.reminderPosition = raw.reminderPosition as ReminderPosition;
+  if (raw.passwordHint != null) {
+    // The same ceiling the auth channel applies to the hint.
+    const hint = asText(raw.passwordHint, 200);
+    if (hint != null) out.passwordHint = hint;
+  }
+  if (typeof raw.accessLogEnabled === 'boolean') out.accessLogEnabled = raw.accessLogEnabled;
+  return out;
 }
 
 export function asDraft(value: unknown): ItemDraft | null {

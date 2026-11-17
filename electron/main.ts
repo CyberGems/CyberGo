@@ -11,7 +11,7 @@ import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { hashSecret, normalizeAuthSecret, verifySecret as verifyStoredSecret } from '../shared/auth';
 import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition } from '../shared/types';
 import * as db from './db';
-import { asDraft, asId, asIsoDate, asNumber, asText, methodOf, presented } from './validate';
+import { asDraft, asId, asIsoDate, asNumber, asSettingsPatch, asText, methodOf, presented } from './validate';
 import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -1379,22 +1379,26 @@ function registerIpc() {
     changed();
   });
 
-  ipcMain.handle('settings:patch', (e, patch: Partial<PublicSettings>) => {
+  ipcMain.handle('settings:patch', (e, patch: unknown) => {
     refuseWhenLocked(e);
-    db.applySettingsPatch(patch);
-    if (patch.openAtLogin != null) applyLogin(patch.openAtLogin);
-    if (patch.reminderAlwaysOnTop != null && reminderWindow && !reminderWindow.isDestroyed()) {
-      reminderWindow.setAlwaysOnTop(patch.reminderAlwaysOnTop, 'floating');
+    // The patch crosses the sandbox, so it is checked like every other
+    // payload: invalid fields are dropped instead of persisted.
+    const clean = asSettingsPatch(patch);
+    if (!clean || Object.keys(clean).length === 0) return db.readSettings(locale());
+    db.applySettingsPatch(clean);
+    if (clean.openAtLogin != null) applyLogin(clean.openAtLogin);
+    if (clean.reminderAlwaysOnTop != null && reminderWindow && !reminderWindow.isDestroyed()) {
+      reminderWindow.setAlwaysOnTop(clean.reminderAlwaysOnTop, 'floating');
     }
     if (
-      (patch.reminderDisplayId != null || patch.reminderDisplayBounds !== undefined || patch.reminderPosition != null)
+      (clean.reminderDisplayId != null || clean.reminderDisplayBounds !== undefined || clean.reminderPosition != null)
       && reminderWindow
       && !reminderWindow.isDestroyed()
     ) {
       positionReminderWindow(reminderWindow, db.readSettings(locale()));
     }
-    if (patch.lockLevel === 'hard' && sessionLocked) hideReminders();
-    if (patch.lockLevel === 'soft' && sessionLocked) void evaluateReminders('tick');
+    if (clean.lockLevel === 'hard' && sessionLocked) hideReminders();
+    if (clean.lockLevel === 'soft' && sessionLocked) void evaluateReminders('tick');
     changed();
     return db.readSettings(locale());
   });
