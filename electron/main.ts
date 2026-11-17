@@ -407,6 +407,13 @@ async function createReminderWindow(alwaysOnTop: boolean) {
   // may report is not taken for a size of the user.
   lastProgrammaticSize = { width: size.width, height: size.height };
   lockNavigation(win);
+  // A renderer that dies would leave a dead window in front of the user.
+  // The list rebuilds itself from the database on reload: the items stay
+  // due until they are handled, so nothing is lost.
+  win.webContents.on('render-process-gone', (_event, details) => {
+    console.error('CyberGo: the reminder renderer died.', details.reason);
+    if (details.reason !== 'clean-exit') win.webContents.reload();
+  });
   win.on('close', (event) => {
     if (quitting) return;
     event.preventDefault();
@@ -765,8 +772,26 @@ function createMain() {
   mainWindow.on('restore', () => tellVisibility(true));
   mainWindow.on('hide', () => tellVisibility(false));
   const dev = process.env.VITE_DEV_SERVER_URL;
-  if (dev) void mainWindow.loadURL(dev);
-  else void mainWindow.loadFile(path.join(here, '../dist/index.html'));
+  // A renderer that dies must not leave a dead window behind: a reload
+  // rebuilds it from the database, and the lock state lives here in the
+  // main process, so it survives the renderer.
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('CyberGo: the main renderer died.', details.reason);
+    if (details.reason !== 'clean-exit') mainWindow?.webContents.reload();
+  });
+  const load = dev
+    ? mainWindow.loadURL(dev)
+    : mainWindow.loadFile(path.join(here, '../dist/index.html'));
+  load.catch((error) => {
+    // An unhandled rejection would leave an invisible window, so the
+    // failure is told to the user. While developing the server may just be
+    // restarting, and there the log is enough.
+    console.error('CyberGo: the main window could not be loaded.', error);
+    if (!dev) {
+      dialog.showErrorBox('CyberGo', 'No se pudo cargar la ventana principal de CyberGo.\nThe CyberGo main window could not be loaded.');
+      app.exit(1);
+    }
+  });
 }
 
 // =====================================
@@ -944,7 +969,12 @@ function ensureTrayMenuWin(): BrowserWindow {
   lockNavigation(trayMenuWin);
 
   trayMenuWin.setAlwaysOnTop(true, 'pop-up-menu');
-  void trayMenuWin.loadFile(fromPublic('tray/tray-menu.html'));
+  trayMenuWin.loadFile(fromPublic('tray/tray-menu.html')).catch((error) => {
+    // A menu that did not load would stay dead for every later click, so
+    // the window is dropped and the next one that opens is built again.
+    console.error('CyberGo: the tray menu could not be loaded.', error);
+    if (trayMenuWin && !trayMenuWin.isDestroyed()) trayMenuWin.destroy();
+  });
 
   trayMenuWin.on('blur', () => {
     if (trayMenuHideTimer) return;
@@ -1838,7 +1868,15 @@ if (!gotLock) {
     }
   }).catch((error: unknown) => {
     const text = error instanceof Error ? error.stack || error.message : String(error);
-    fs.appendFileSync(path.join(os.tmpdir(), 'cybergo-boot.txt'), `${new Date().toISOString()} ${text}\n`);
+    try {
+      fs.appendFileSync(path.join(os.tmpdir(), 'cybergo-boot.txt'), `${new Date().toISOString()} ${text}\n`);
+    } catch {
+      // The log is best effort, the dialog below is the real report.
+    }
+    // A silent exit looks like a double click that did nothing, so the
+    // cause is told to the user. Both languages, because the settings that
+    // carry the language may not be readable at this point.
+    dialog.showErrorBox('CyberGo', `CyberGo no pudo iniciarse / CyberGo could not start:\n\n${text.slice(0, 600)}`);
     app.exit(1);
   });
 }
