@@ -272,7 +272,11 @@ function MainApp() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [closeDialog]);
+    // chooseClose is rebuilt on every render and closes over closeRemember,
+    // so the effect has to follow it: answering with Space must carry the
+    // remember checkbox as it is at that moment, not as it was when the
+    // dialog opened.
+  }, [closeDialog, chooseClose]);
 
   function askDelete(item: Item) {
     if (item.deletedAt) {
