@@ -654,14 +654,20 @@ function lockNavigation(win: BrowserWindow) {
  */
 function applyContentSecurityPolicy() {
   const dev = process.env.VITE_DEV_SERVER_URL;
+  // The dev server needs inline scripts for the refresh preamble, an eval
+  // for the transforms and a websocket for the HMR client. The packaged
+  // page has none of that: it carries a single external script and only
+  // ever talks to its own files.
+  const scriptSrc = dev ? "'self' 'unsafe-inline' 'unsafe-eval'" : "'self'";
+  const connectSrc = dev ? "'self' ws: data: http: https:" : "'self' data:";
   const policy = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'" + (dev ? " 'unsafe-eval'" : ''),
+    `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
     "media-src 'self' file: blob: data:",
-    "connect-src 'self' ws: data:" + (dev ? ' http: https:' : ''),
+    `connect-src ${connectSrc}`,
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
