@@ -129,7 +129,7 @@ export default function LockScreen({
       <div className="login-logo">
         <span className="login-logo-wave" aria-hidden="true" />
         <span className="login-logo-wave" aria-hidden="true" />
-        <img className="login-logo-image" src="/icon.png" alt="" />
+        <img className="login-logo-image" src="icon.png" alt="" />
       </div>
 
       <h1 className="login-title">Cyber<span>Go</span></h1>
