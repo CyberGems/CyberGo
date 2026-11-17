@@ -180,7 +180,7 @@ export default function SettingsModal({
       else onClose();
     },
     enter: restoreName ? () => {
-      void api.restoreBackup(restoreName).then(() => setMessage(copy.saved));
+      void restoreBackup();
       setRestoreName(null);
     } : undefined,
   });
@@ -246,6 +246,25 @@ export default function SettingsModal({
       setDataNotice({ tone: 'error', title: copy.backupError });
     } finally {
       setDataBusy(null);
+    }
+  }
+
+  // Restoring reports the real result of the call: a missing or unreadable
+  // backup must not be presented as saved, and the safety copy that the
+  // restore leaves behind has to join the list.
+  async function restoreBackup() {
+    if (!restoreName) return;
+    setDataNotice(null);
+    try {
+      const ok = await api.restoreBackup(restoreName);
+      if (ok) {
+        await refreshBackups();
+        setDataNotice({ tone: 'success', title: copy.restoreDone });
+      } else {
+        setDataNotice({ tone: 'error', title: copy.restoreError });
+      }
+    } catch {
+      setDataNotice({ tone: 'error', title: copy.restoreError });
     }
   }
 
@@ -809,7 +828,7 @@ export default function SettingsModal({
             <p className="hint">{copy.confirmRestoreBody}</p>
             <div className="row-actions" style={{ justifyContent: 'flex-start' }}>
               <button className="btn" onClick={() => setRestoreName(null)}>{copy.cancel}<EscHint /></button>
-              <button className="btn btn-primary" onClick={() => { void api.restoreBackup(restoreName).then(() => setMessage(copy.saved)); setRestoreName(null); }}>{copy.restoreBackup}<EnterGlyph /></button>
+              <button className="btn btn-primary" onClick={() => { void restoreBackup(); setRestoreName(null); }}>{copy.restoreBackup}<EnterGlyph /></button>
             </div>
           </div>
         )}
