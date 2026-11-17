@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-The lock screen was rebuilt to match the rest of the suite, the official CyberGems icon is now everywhere, and the main window fits its list, selects several items and opens an editor styled like the lock. Reminders stay hidden while Windows is locked.
+The list now behaves like a file explorer: any column orders it, every item carries its own menu, and the toolbar acts on the whole selection. The calendar opens a day in detail, closing asks what to do, tooltips follow the light theme, and each installer ships with its checksum.
 <!-- changelog-summary:end -->
 
 > **New to CyberGo?** A private, local-first agenda for tasks, events and reminders on Windows.
@@ -17,20 +17,22 @@ The lock screen was rebuilt to match the rest of the suite, the official CyberGe
 
 ### ✨ Key Features & Highlights
 
-- 🔒 **A lock screen that matches the suite**: sound-wave icon, greeting with time and date, version at the bottom, key chips throughout and a third Visible level. Soft lets the alert through with sound but hides its content, and the lock is enforced by the process.
+- 🗓️ **A list that behaves like a file explorer**: click the title of a column to order by it and click again to turn the order around, a chevron shows the active one, the order and the widths are kept between sessions, and every item has a menu of its own that edits, marks as done and deletes, acting on the whole selection when several are picked.
 
-- 🗓️ **A main window that fits**: no horizontal scroll, shorter rows, two-row quick capture, multi-selection by mouse, keyboard or drag rectangle, toolbar actions on the whole selection, and a sidebar split into sections with kind filters.
+- 🖱️ **Selection and closing, the way the reminder window does it**: one button picks everything at once, a click on the empty room of the list takes the selection away, and closing the window asks whether to stay in the tray or quit for good, with the answer remembered if wanted.
 
-- ✍️ **Editing with the same language**: the item editor takes its title, small captions and footer from the lock screen, dialogs sit on a blurred background, tooltips no longer float over them, and the window can shrink to 840 by 560.
+- 📅 **A calendar with detail and a window that fits**: a day with more items than it can show opens in full with a way to add one more, and the reminder window grows to the height of its reminders and keeps the size the user gives it.
 
-- 🛡️ **Local data kept safe**: the official bell icon appears in the installer, window, tray and About dialog; a damaged database is kept aside when recovery runs, and monthly or yearly repeats keep their original day.
+- 🎨 **Themes kept honest**: the tooltips are readable again in the light theme, the selected day of the date picker and the close and destructive buttons keep their words on their colors in the gray one, and no fixed color leaks between themes.
+
+- 🛡️ **Hardening under the hood**: the locked window can no longer change reminders through the channels of the reminder window, the packaged page runs only its own files, the tray menu is sandboxed, settings patches are checked field by field, and a failing start now says why instead of staying silent.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-La pantalla de bloqueo se rediseñó para igualar al resto de la suite, el icono oficial de CyberGems está en todas partes y la ventana principal ajusta la lista, permite seleccionar varios elementos y abre un editor con el mismo aire del bloqueo. Los avisos siguen ocultos con Windows bloqueado.
+La lista se comporta como un explorador de archivos: cualquier columna la ordena, cada elemento tiene su propio menú y la barra actúa sobre toda la selección. El calendario abre el día en detalle, al cerrar pregunta qué hacer, las ayudas siguen el tema claro y cada instalador llega con su checksum.
 
 > **¿Nuevo en CyberGo?** Una agenda local y privada para tareas, eventos y avisos en Windows.
 
@@ -38,13 +40,15 @@ La pantalla de bloqueo se rediseñó para igualar al resto de la suite, el icono
 
 ### ✨ Novedades destacadas
 
-- 🔒 **Una pantalla de bloqueo de la suite**: icono con ondas de sonido, saludo con hora y fecha, versión abajo, chips de tecla en toda la app y un tercer nivel Visible. Soft deja pasar el aviso con sonido pero oculta su contenido, y el bloqueo se aplica en el proceso.
+- 🗓️ **Una lista como un explorador de archivos**: el título de una columna la ordena y otra pulsación invierte el orden, una flecha señala la activa, el orden y los anchos se conservan entre sesiones, y cada elemento tiene un menú propio que edita, completa y borra, y actúa sobre toda la selección cuando hay varios.
 
-- 🗓️ **Una ventana principal que encaja**: sin desplazamiento horizontal, filas más cortas, captura rápida en dos filas, selección múltiple con ratón, teclado o rectángulo, acciones de la barra sobre toda la selección y barra lateral dividida en secciones con filtro por tipo.
+- 🖱️ **Selección y cierre, como en la ventana de avisos**: un botón lo elige todo de una vez, una pulsación en el espacio vacío de la lista la quita, y al cerrar la ventana pregunta si se queda en la bandeja o se marcha del todo, con la respuesta recordada si se quiere.
 
-- ✍️ **Edición con el mismo lenguaje**: el editor toma el título, las etiquetas en versalitas y el pie de la pantalla de bloqueo, los diálogos se apoyan en un fondo difuminado, las ayudas emergentes ya no flotan sobre ellos y la ventana baja hasta 840 por 560.
+- 📅 **Un calendario con detalle y una ventana que encaja**: un día con más avisos de los que caben se abre entero con forma de añadir uno más, y la ventana de avisos crece hasta la altura de sus avisos y conserva el tamaño que le da el usuario.
 
-- 🛡️ **Datos locales a salvo**: el icono oficial de la campana aparece en el instalador, la ventana, la bandeja y Acerca de; un archivo dañado se conserva cuando se recupera una copia, y las repeticiones mensuales o anuales mantienen su día original.
+- 🎨 **Temas honestos**: las ayudas emergentes vuelven a leerse en el tema claro, el día elegido del calendario y los botones de cierre y de peligro conservan su texto sobre su color en el gris, y ningún color fijo se cuela entre temas.
+
+- 🛡️ **Refuerzo bajo la superficie**: la ventana bloqueada ya no cambia avisos por los canales de la ventana de recordatorios, la página empaquetada solo ejecuta sus propios archivos, el menú de la bandeja va en sandbox, los parches de ajustes se revisan campo a campo y un arranque que falla dice por qué en vez de callarse.
 
 ### ℹ️ Antes de instalar
 
@@ -67,6 +71,7 @@ La pantalla de bloqueo se rediseñó para igualar al resto de la suite, el icono
 | File | Description | Platform |
 | :--- | :--- | :--- |
 | **[`CyberGo.Setup.{{VERSION_NUM}}.exe`](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/CyberGo.Setup.{{VERSION_NUM}}.exe)** | 🚀 **Alpha installer** (NSIS with Start Menu & Desktop shortcuts; no portable build yet) | Windows 10 / 11 (x64) |
+| **[`SHA256SUMS.txt`](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/SHA256SUMS.txt)** | 🔐 SHA-256 checksum of the installer | Any (text) |
 
 ---
 

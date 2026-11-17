@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.5"><img src="https://img.shields.io/badge/Descargar%20pre--release-0.1.0--alpha.5-0891B2?style=for-the-badge" alt="Descargar CyberGo 0.1.0-alpha.5" /></a>
+  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.6"><img src="https://img.shields.io/badge/Descargar%20pre--release-0.1.0--alpha.6-0891B2?style=for-the-badge" alt="Descargar CyberGo 0.1.0-alpha.6" /></a>
   <a href="https://github.com/CyberGems/CyberGo/releases"><img src="https://img.shields.io/badge/Todas_las_versiones-30363D?style=for-the-badge&logo=github&logoColor=white" alt="Todas las versiones" /></a>
 </p>
 
@@ -148,7 +148,7 @@ Muchas agendas encierran tu planificación tras una cuenta y una nube, o te enti
 
 ### 📥 Descargar
 
-Descarga el instalador de Windows desde la [página de pre-release de CyberGo](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.5).
+Descarga el instalador de Windows desde la [página de pre-release de CyberGo](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.6). El checksum SHA-256 del instalador viaja junto a él como un archivo SHA256SUMS.txt en los assets del release.
 
 Los instaladores alpha son ejecutables de Windows sin firmar. Es posible que Windows SmartScreen muestre una advertencia porque el archivo aún no tiene reputación de firma de código. Puedes inspeccionar el código fuente, comparar el valor SHA-256 publicado con la release, o construir el instalador tú mismo.
 

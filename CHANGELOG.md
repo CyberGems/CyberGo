@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.6 - 2026-11-17
+
+Sixth public pre-release of CyberGo. The list of the main window behaves like a file explorer: any column orders it, every item carries a menu of its own, and the toolbar acts on the whole selection. The calendar opens a day in detail, closing the window asks what to do, and the release carries a round of theme and safety fixes: the logo of the lock is whole again in the installed app, the tooltips follow the light theme, and a failing start says why instead of dying in silence.
 
 ### Added
 
@@ -48,6 +50,17 @@
 - The selection of the list is no longer taken away the moment a drag ends, when the drag is let go on the empty room of the list.
 - The handle of a column no longer paints a bar over it when the pointer rests on it. Only the line on the edge lights up.
 - The handle of the last column is gone. Its edge is the edge of the table, and that edge never moves, so it was dragged without anything happening.
+- The logo of the lock screen comes out whole in the installed app again: the image was asked with a path that only exists while developing.
+- The tooltips follow the theme they are in, so they are readable again in the light one, and the selected day of the date picker and the close and destructive buttons keep their words on their colors in the gray one. The teal of the ambient light of the lock and the strips of the About and settings footers are mixed from the palette of each theme now.
+- The status of an item and the notes of its subject are told by the tip of the application, no longer by the tips of the system.
+- Restoring a backup tells the truth: when the copy cannot be restored, the error is said instead of a saved that never happened, and the list of copies is refreshed.
+- Answering the close dialog with the Space key now carries the remember box the way its buttons do.
+- While the session is locked, the main window can no longer dismiss or snooze reminders through the channels of the reminder window.
+- A start that fails says why in a dialog instead of leaving the user with a double click that does nothing, a window or a tray menu that fails to load says so and makes itself again, and a renderer that dies is reloaded instead of left dead.
+- The menu of the tray runs sandboxed, with its navigation locked, and only a web address leaves it toward the browser.
+- The packaged page only runs its own files: no inline scripts and no websockets toward unknown hosts.
+- The patch of settings is checked field by field, and a value that does not pass is dropped instead of being persisted forever.
+- The toast of a reminder carries no buttons anymore: Electron only delivers them on macOS, so the dismiss button never existed for the user.
 
 ## 0.1.0-alpha.5 - 2026-10-20
 
