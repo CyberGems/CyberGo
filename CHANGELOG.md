@@ -61,6 +61,7 @@ Sixth public pre-release of CyberGo. The list of the main window behaves like a 
 - The packaged page only runs its own files: no inline scripts and no websockets toward unknown hosts.
 - The patch of settings is checked field by field, and a value that does not pass is dropped instead of being persisted forever.
 - The toast of a reminder carries no buttons anymore: Electron only delivers them on macOS, so the dismiss button never existed for the user.
+- The first launch after an update could run for minutes without a window: the main window waited hidden for its first paint, and when that paint stalled the app looked dead while it ran. The window is now shown even when the paint never reports, so the lock screen appears the moment the installer closes.
 
 ## 0.1.0-alpha.5 - 2026-10-20
 

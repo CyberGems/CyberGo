@@ -774,7 +774,21 @@ function createMain() {
   const load = dev
     ? mainWindow.loadURL(dev)
     : mainWindow.loadFile(path.join(here, '../dist/index.html'));
-  load.catch((error) => {
+  load.then(() => {
+    // The window waits hidden for its first paint, and ready-to-show only
+    // fires when that paint lands. When the paint never lands, the app
+    // would run forever without a window, which is exactly what the user
+    // sees the moment the installer closes: a stale GPU cache left behind
+    // by the previous build is enough to stall it. Three seconds after the
+    // load settles the window is shown anyway, and a late paint fills it
+    // in.
+    setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+        console.warn('CyberGo: the main window never reported its first paint; showing it anyway.');
+        mainWindow.show();
+      }
+    }, 3000);
+  }).catch((error) => {
     // An unhandled rejection would leave an invisible window, so the
     // failure is told to the user. While developing the server may just be
     // restarting, and there the log is enough.
