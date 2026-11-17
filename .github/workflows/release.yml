@@ -37,11 +37,13 @@ jobs:
         run: npm test
 
       # Build only, never let electron-builder publish on tag (avoids
-      # double-upload and API flakes). The build:electron script syncs the
-      # About icons, compiles the renderer and the main process, and packages
-      # the NSIS installer into release/.
+      # double-upload and API flakes): --publish never keeps the packaging
+      # honest, because on a tag push electron-builder would otherwise try
+      # to publish itself and demand a GitHub token. The build:electron
+      # script syncs the About icons, compiles the renderer and the main
+      # process, and packages the NSIS installer into release/.
       - name: Compile and Package Electron App
-        run: npm run build:electron
+        run: npm run build:electron -- --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
