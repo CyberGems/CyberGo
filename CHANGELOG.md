@@ -1,11 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.7 - 2026-11-18
+
+Seventh public pre-release of CyberGo. The system tray submenus now open as side-by-side flyout panels, the reminder list gains wider clickable gutters for clearing selection, and the tray Donate link points to the CyberGo GitHub README section.
 
 ### Improved
 
+- The tray submenus (`Help` and `More from CyberGems`) open as side-by-side flyout panels with dwell hover, click toggling, keyboard arrow navigation, and automatic taskbar placement.
 - The reminder window takes the selection away with a click on the dead room of its list, the way the list of the main window does.
 - The dead room of the reminder list has wider side gutters, so a click or a drag that starts a selection has room to be hit.
+
+### Fixed
+
+- Point the tray Donate item to CyberGo's GitHub README donate section (`https://github.com/CyberGems/CyberGo#%EF%B8%8F-donate`).
 
 ## 0.1.0-alpha.6 - 2026-11-17
 

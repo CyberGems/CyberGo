@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-The list now behaves like a file explorer: any column orders it, every item carries its own menu, and the toolbar acts on the whole selection. The calendar opens a day in detail, closing asks what to do, tooltips follow the light theme, and each installer ships with its checksum.
+The system tray submenus now open as side-by-side flyout panels beside the main card, the reminder list widens its side gutters so clicking empty space clears the selection smoothly, and the tray Donate link opens the repository section directly.
 <!-- changelog-summary:end -->
 
 > **New to CyberGo?** A private, local-first agenda for tasks, events and reminders on Windows.
@@ -17,22 +17,18 @@ The list now behaves like a file explorer: any column orders it, every item carr
 
 ### ✨ Key Features & Highlights
 
-- 🗓️ **A list that behaves like a file explorer**: click the title of a column to order by it and click again to turn the order around, a chevron shows the active one, the order and the widths are kept between sessions, and every item has a menu of its own that edits, marks as done and deletes, acting on the whole selection when several are picked.
+- 🪟 **Side-by-side tray flyout panels**: `Help` and `More from CyberGems` open next to the main tray card on hover or click, support Left/Right arrow navigation and `Escape`, and flip cleanly to match your taskbar position without shifting the main card.
 
-- 🖱️ **Selection and closing, the way the reminder window does it**: one button picks everything at once, a click on the empty room of the list takes the selection away, and closing the window asks whether to stay in the tray or quit for good, with the answer remembered if wanted.
+- 🖱️ **Easier deselection in the reminder window**: The reminder list adds wider side gutters and clears selection when clicking empty space, matching the main list behavior.
 
-- 📅 **A calendar with detail and a window that fits**: a day with more items than it can show opens in full with a way to add one more, and the reminder window grows to the height of its reminders and keeps the size the user gives it.
-
-- 🎨 **Themes kept honest**: the tooltips are readable again in the light theme, the selected day of the date picker and the close and destructive buttons keep their words on their colors in the gray one, and no fixed color leaks between themes.
-
-- 🛡️ **Hardening under the hood**: the locked window can no longer change reminders through the channels of the reminder window, the packaged page runs only its own files, the tray menu is sandboxed, settings patches are checked field by field, and a failing start now says why instead of staying silent.
+- ❤️ **Consistent Donate link**: The tray Donate button now links directly to CyberGo's GitHub README donate section.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-La lista se comporta como un explorador de archivos: cualquier columna la ordena, cada elemento tiene su propio menú y la barra actúa sobre toda la selección. El calendario abre el día en detalle, al cerrar pregunta qué hacer, las ayudas siguen el tema claro y cada instalador llega con su checksum.
+Los submenús de la bandeja del sistema ahora se abren como paneles flyout laterales junto a la tarjeta principal, la lista de avisos amplía sus márgenes laterales para limpiar la selección al hacer clic en espacio vacío y el botón Donar de la bandeja apunta directo al repositorio.
 
 > **¿Nuevo en CyberGo?** Una agenda local y privada para tareas, eventos y avisos en Windows.
 
@@ -40,15 +36,11 @@ La lista se comporta como un explorador de archivos: cualquier columna la ordena
 
 ### ✨ Novedades destacadas
 
-- 🗓️ **Una lista como un explorador de archivos**: el título de una columna la ordena y otra pulsación invierte el orden, una flecha señala la activa, el orden y los anchos se conservan entre sesiones, y cada elemento tiene un menú propio que edita, completa y borra, y actúa sobre toda la selección cuando hay varios.
+- 🪟 **Paneles flyout laterales en la bandeja**: `Ayuda` y `Más de CyberGems` se abren junto a la tarjeta principal al pasar el cursor o hacer clic, admiten navegación con flechas y `Escape` y se orientan según la barra de tareas sin desplazar la tarjeta base.
 
-- 🖱️ **Selección y cierre, como en la ventana de avisos**: un botón lo elige todo de una vez, una pulsación en el espacio vacío de la lista la quita, y al cerrar la ventana pregunta si se queda en la bandeja o se marcha del todo, con la respuesta recordada si se quiere.
+- 🖱️ **Deselección más cómoda en la ventana de avisos**: La lista de avisos amplía sus márgenes laterales y limpia la selección al pulsar en el espacio vacío, igual que en la ventana principal.
 
-- 📅 **Un calendario con detalle y una ventana que encaja**: un día con más avisos de los que caben se abre entero con forma de añadir uno más, y la ventana de avisos crece hasta la altura de sus avisos y conserva el tamaño que le da el usuario.
-
-- 🎨 **Temas honestos**: las ayudas emergentes vuelven a leerse en el tema claro, el día elegido del calendario y los botones de cierre y de peligro conservan su texto sobre su color en el gris, y ningún color fijo se cuela entre temas.
-
-- 🛡️ **Refuerzo bajo la superficie**: la ventana bloqueada ya no cambia avisos por los canales de la ventana de recordatorios, la página empaquetada solo ejecuta sus propios archivos, el menú de la bandeja va en sandbox, los parches de ajustes se revisan campo a campo y un arranque que falla dice por qué en vez de callarse.
+- ❤️ **Enlace de Donar unificado**: La opción Donar de la bandeja ahora abre directamente la sección correspondiente del README en GitHub.
 
 ### ℹ️ Antes de instalar
 
