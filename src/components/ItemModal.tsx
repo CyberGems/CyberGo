@@ -82,18 +82,41 @@ function monthlyAnchor(draft: ItemDraft): ItemDraft['recurrence'] {
 }
 
 /**
+ * Moving the start drags the end along by the same amount, so the item keeps
+ * its duration instead of turning into "end before start". An end that was
+ * already behind the start is clamped onto the new start, which also clears
+ * the blocking error. Returns null when the end should stay as it is.
+ */
+function withEndFollowing(draft: ItemDraft, startLocal: string): string | null {
+  if (!startLocal || !draft.startLocal || !draft.endLocal) return null;
+  try {
+    const allDay = draft.allDay;
+    const oldStart = parseLocal(draft.startLocal, allDay).getTime();
+    const newStart = parseLocal(startLocal, allDay).getTime();
+    const end = parseLocal(draft.endLocal, allDay).getTime();
+    const next = Math.max(end + (newStart - oldStart), newStart);
+    if (next === end) return null;
+    return formatLocalInput(new Date(next), allDay);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Moving the start date moves the anchor with it. A series left on the old
  * day would jump to a date the user is not looking at.
  */
 function withStartDate(draft: ItemDraft, startLocal: string): ItemDraft {
+  const endLocal = withEndFollowing(draft, startLocal) ?? draft.endLocal;
   const recurrence = draft.recurrence;
   if (!recurrence || (recurrence.freq !== 'monthly' && recurrence.freq !== 'yearly')) {
-    return { ...draft, startLocal };
+    return { ...draft, startLocal, endLocal };
   }
   const day = Number(startLocal.slice(8, 10));
   return {
     ...draft,
     startLocal,
+    endLocal,
     recurrence: { ...recurrence, dayOfMonth: day >= 1 && day <= 31 ? day : null },
   };
 }
@@ -118,9 +141,10 @@ export default function ItemModal({
   const [draft, setDraft] = useState<ItemDraft>(() => {
     if (item) return fromItem(item);
     const initial = seed ?? blank();
-    // Only fill the default when nothing else already chose a start date,
-    // e.g. a day clicked on the calendar.
-    if (!initial.startLocal) return { ...initial, startLocal: defaultStartLocal() };
+    // Only events get the default start. A task may stay undated, and a
+    // silent due date would schedule reminders nobody asked for. A seed
+    // with a chosen date, e.g. a day clicked on the calendar, is respected.
+    if (!initial.startLocal && initial.kind === 'event') return { ...initial, startLocal: defaultStartLocal() };
     return initial;
   });
   const [error, setError] = useState('');
