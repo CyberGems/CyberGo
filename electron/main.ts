@@ -828,7 +828,7 @@ const TRAY_HELP_URLS = {
   faq: 'https://github.com/CyberGems/CyberGo/wiki/FAQ',
   changelog: 'https://github.com/CyberGems/CyberGo/releases',
   website: 'https://cybergems.org/apps/cybergo/',
-  donate: 'https://cybergems.org/donate',
+  donate: 'https://github.com/CyberGems/CyberGo#%EF%B8%8F-donate',
 } as const;
 
 function getSuiteAppsList(lang: 'es' | 'en') {
