@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { Bell, CalendarDays, Check, Command, Download, Flame, Info, List, ListChecks, ListX, Lock, Pencil, Plus, Power, Search, Settings, Trash2, X } from 'lucide-react';
+import { Bell, BellRing, CalendarDays, Check, Command, Download, Flame, Info, List, ListChecks, ListX, Lock, Pencil, Plus, Power, Search, Settings, Trash2, X } from 'lucide-react';
 import type { AppInfo, Bootstrap, Item, ItemDraft, RecoveryNotice } from '@shared/types';
 import { formatLocalInput } from '@shared/schedule';
 import { copyOf, type Copy } from './i18n';
@@ -58,6 +58,7 @@ function MainApp() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [remindersVisible, setRemindersVisible] = useState(false);
   const [recoveryDismissed, setRecoveryDismissed] = useState(false);
   const [view, setView] = useState<'list' | 'calendar'>(() => (
     localStorage.getItem('cybergo-view') === 'calendar' ? 'calendar' : 'list'
@@ -124,11 +125,14 @@ function MainApp() {
       setSettingsOpen(false);
       setAboutOpen(true);
     });
+    // The toggle of the toolbar mirrors the floating window: every show and
+    // every hide, from any entry point, lands here.
+    const reminderVisibility = api.onReminderVisibility(setRemindersVisible);
     // The window comes back with the tips that were open, so they are closed.
     const visibility = api.onWindowVisibility(() => {
       window.dispatchEvent(new Event('cybergo:window-visibility'));
     });
-    return () => { off(); open(); focusQuick(); confirmClose(); openAbout(); visibility(); };
+    return () => { off(); open(); focusQuick(); confirmClose(); openAbout(); reminderVisibility(); visibility(); };
   }, []);
 
   /** The answer to the question of what to do when the window is closed. */
@@ -464,7 +468,18 @@ function MainApp() {
           </div>
           <span className="toolbar-divider" />
           <div className="toolbar-utility">
-            <button className="btn" onClick={() => detach(api.showReminders(), 'show the reminders')}><Bell size={14} /><span className="toolbar-label">{copy.reminders}</span></button>
+            <Tooltip label={remindersVisible ? copy.hideReminders : copy.showReminders} placement="bottom">
+              <button
+                type="button"
+                className={`btn ${remindersVisible ? 'active' : ''}`}
+                aria-label={remindersVisible ? copy.hideReminders : copy.showReminders}
+                aria-pressed={remindersVisible}
+                onClick={() => detach(api.toggleReminders(), 'toggle the reminders window')}
+              >
+                {remindersVisible ? <BellRing size={14} /> : <Bell size={14} />}
+                <span className="toolbar-label">{copy.reminders}</span>
+              </button>
+            </Tooltip>
             <div className="search-wrap">
               <Search size={14} />
               <input className="search" aria-label={copy.search} placeholder={copy.search} value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -634,7 +649,7 @@ function MainApp() {
           onOpenItem={(item) => { setSelectedIds([item.id]); setEditing(item); }}
           onNew={newFromPalette}
           onGoFilter={(next) => { setFilter(next); setGroupId(null); }}
-          onShowReminders={() => detach(api.showReminders(), 'show the reminders')}
+          onShowReminders={() => detach(api.toggleReminders(), 'toggle the reminders window')}
           onLock={() => detach(api.lock(), 'lock the app')}
           onOpenSettings={() => setSettingsOpen(true)}
         />

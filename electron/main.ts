@@ -418,6 +418,7 @@ async function createReminderWindow(alwaysOnTop: boolean) {
     if (quitting) return;
     event.preventDefault();
     win.hide();
+    broadcast('reminder:visibility', { visible: false });
   });
   // The size is remembered once the drag of the border is over.
   win.on('resize', () => {
@@ -473,7 +474,10 @@ async function showReminderWindow(
   if (preview) {
     reminderPreviewTimer = setTimeout(() => {
       reminderPreviewTimer = null;
-      if (reminderWindow && !reminderWindow.isDestroyed()) reminderWindow.hide();
+      if (reminderWindow && !reminderWindow.isDestroyed()) {
+        reminderWindow.hide();
+        broadcast('reminder:visibility', { visible: false });
+      }
     }, REMINDER_PREVIEW_DURATION);
   }
   const send = () => {
@@ -488,6 +492,9 @@ async function showReminderWindow(
   if (opts.focus) reminderWindow.show();
   else reminderWindow.showInactive();
   positionReminderWindow(reminderWindow, activeSettings);
+  // The toolbar toggle mirrors this state, so every show and every hide is
+  // announced to the windows.
+  broadcast('reminder:visibility', { visible: true });
 }
 
 function hideReminders() {
@@ -495,7 +502,10 @@ function hideReminders() {
     clearTimeout(reminderPreviewTimer);
     reminderPreviewTimer = null;
   }
-  if (reminderWindow && !reminderWindow.isDestroyed() && reminderWindow.isVisible()) reminderWindow.hide();
+  if (reminderWindow && !reminderWindow.isDestroyed() && reminderWindow.isVisible()) {
+    reminderWindow.hide();
+    broadcast('reminder:visibility', { visible: false });
+  }
 }
 
 /** Native Windows toast as a fallback for the floating window. Click opens reminders, buttons act directly. */
@@ -1576,6 +1586,15 @@ function registerIpc() {
     return db.listItems().filter((item) => isDue(item, Date.now()));
   });
   ipcMain.handle('reminders:show', () => evaluateReminders('show'));
+  ipcMain.handle('reminders:toggle', async () => {
+    const isVisible = (): boolean => !!reminderWindow && !reminderWindow.isDestroyed() && reminderWindow.isVisible();
+    if (isVisible()) {
+      hideReminders();
+      return { visible: false };
+    }
+    await evaluateReminders('show');
+    return { visible: isVisible() };
+  });
   ipcMain.handle('reminders:fit-window', (_e, height: unknown) => {
     if (!reminderWindow || reminderWindow.isDestroyed()) return false;
     // El tamaño que eligió el usuario no se toca nunca.

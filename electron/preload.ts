@@ -29,6 +29,8 @@ export interface CyberGoAPI {
   lock: () => Promise<boolean>;
   dueReminders: () => Promise<Item[]>;
   showReminders: () => Promise<void>;
+  toggleReminders: () => Promise<{ visible: boolean }>;
+  onReminderVisibility: (cb: (visible: boolean) => void) => () => void;
   fitReminderWindow: (height: number) => Promise<boolean>;
   snooze: (id: string, minutes: number) => Promise<void>;
   snoozeTomorrow: (id: string) => Promise<void>;
@@ -88,6 +90,12 @@ const api: CyberGoAPI = {
   lock: () => ipcRenderer.invoke('auth:lock'),
   dueReminders: () => ipcRenderer.invoke('reminders:due'),
   showReminders: () => ipcRenderer.invoke('reminders:show'),
+  toggleReminders: () => ipcRenderer.invoke('reminders:toggle'),
+  onReminderVisibility: (cb) => {
+    const listener = (_e: unknown, payload: { visible: boolean }) => cb(payload.visible);
+    ipcRenderer.on('reminder:visibility', listener);
+    return () => ipcRenderer.removeListener('reminder:visibility', listener);
+  },
   fitReminderWindow: (height: number) => ipcRenderer.invoke('reminders:fit-window', height),
   snooze: (id, minutes) => ipcRenderer.invoke('reminders:snooze', id, minutes),
   snoozeTomorrow: (id) => ipcRenderer.invoke('reminders:tomorrow', id),

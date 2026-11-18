@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Improved
+
+- The `Avisos` button of the toolbar is a toggle now: it shows the reminders window when it is hidden and hides it when it is visible, whichever entry point opened it (tray, palette, previews included). Its tooltip says which of the two it will do, and it stays highlighted while the window is on screen.
+
 ## 0.1.0-alpha.7 - 2026-11-18
 
 Seventh public pre-release of CyberGo. The system tray submenus now open as side-by-side flyout panels, the reminder list gains wider clickable gutters for clearing selection, and the tray Donate link points to the CyberGo GitHub README section.
