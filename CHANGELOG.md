@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Improved
+
+- The reminder window takes the selection away with a click on the dead room of its list, the way the list of the main window does.
+
 ## 0.1.0-alpha.6 - 2026-11-17
 
 Sixth public pre-release of CyberGo. The list of the main window behaves like a file explorer: any column orders it, every item carries a menu of its own, and the toolbar acts on the whole selection. The calendar opens a day in detail, closing the window asks what to do, and the release carries a round of theme and safety fixes: the logo of the lock is whole again in the installed app, the tooltips follow the light theme, and a failing start says why instead of dying in silence.

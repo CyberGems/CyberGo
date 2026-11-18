@@ -477,6 +477,17 @@ export default function RemindersWindow() {
               aria-label={copy.remindersTitle}
               ref={listRef}
               onMouseDown={selection.onPointerDown}
+              onClick={(event) => {
+                // The click that ends a drag is not a click on the dead room
+                // of the list.
+                if (selection.consumeClick()) return;
+                // A click on the dead room of the list takes the selection
+                // away, the same room the list of the main window has: rows
+                // and buttons are not dead room.
+                const target = event.target as HTMLElement;
+                if (target.closest('[data-id], button')) return;
+                if (target.closest('.reminder-list')) setSelectedIds([]);
+              }}
             >
               {groups.map((group) => (
                 <div className="reminder-group" key={group.id} role="group" aria-label={group.label}>
