@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { SWATCHES, type Group, type Item, type ItemDraft, type Lang } from '@shared/types';
 import { X } from 'lucide-react';
-import { parseLocal, toDateInput, toDateTimeInput } from '@shared/schedule';
+import { formatLocalInput, parseLocal, toDateInput, toDateTimeInput } from '@shared/schedule';
 import type { Copy } from '../i18n';
 import { EnterGlyph, EscHint, useModalKeys } from './ModalKeys';
 import DateTimeField from './DateTimeField';
@@ -57,6 +57,16 @@ const blank = (): ItemDraft => ({
 });
 
 /**
+ * A new item starts "today, ten minutes from now", so the common case needs
+ * no date editing at all.
+ */
+function defaultStartLocal(): string {
+  const at = new Date();
+  at.setMinutes(at.getMinutes() + 10);
+  return formatLocalInput(at, false);
+}
+
+/**
  * A monthly series keeps the calendar day of its first occurrence. Without
  * that anchor a January 31 event would settle on the 28th of February and
  * stay there for good.
@@ -105,8 +115,17 @@ export default function ItemModal({
   onClose: () => void;
   onSave: (draft: ItemDraft) => Promise<void>;
 }) {
-  const [draft, setDraft] = useState<ItemDraft>(item ? fromItem(item) : seed ?? blank());
+  const [draft, setDraft] = useState<ItemDraft>(() => {
+    if (item) return fromItem(item);
+    const initial = seed ?? blank();
+    // Only fill the default when nothing else already chose a start date,
+    // e.g. a day clicked on the calendar.
+    if (!initial.startLocal) return { ...initial, startLocal: defaultStartLocal() };
+    return initial;
+  });
   const [error, setError] = useState('');
+  // At most one of the two date pickers may be open at a time.
+  const [openPicker, setOpenPicker] = useState<'start' | 'end' | null>(null);
   const presets = [0, 15, 60, 1440];
   const custom = !presets.includes(draft.remindMinutes);
   const set = (patch: Partial<ItemDraft>) => setDraft((prev) => ({ ...prev, ...patch }));
@@ -184,11 +203,11 @@ export default function ItemModal({
       <div className="grid-2">
         <label className="field">
           <span>{draft.kind === 'task' ? copy.due : copy.start} <em>{copy.optional}</em></span>
-          <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.startLocal || ''} onChange={(startLocal) => setDraft((prev) => withStartDate(prev, startLocal))} />
+          <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.startLocal || ''} onChange={(startLocal) => setDraft((prev) => withStartDate(prev, startLocal))} open={openPicker === 'start'} onOpenChange={(open) => setOpenPicker(open ? 'start' : null)} />
         </label>
         <label className="field">
           <span>{copy.end} <em>{copy.optional}</em></span>
-          <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.endLocal || ''} onChange={(endLocal) => set({ endLocal })} />
+          <DateTimeField lang={lang} copy={copy} allDay={draft.allDay} value={draft.endLocal || ''} onChange={(endLocal) => set({ endLocal })} open={openPicker === 'end'} onOpenChange={(open) => setOpenPicker(open ? 'end' : null)} />
         </label>
       </div>
       <div className="grid-2">

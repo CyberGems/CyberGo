@@ -56,14 +56,18 @@ export default function DateTimeField({
   lang,
   copy,
   onChange,
+  open,
+  onOpenChange,
 }: {
   value: string;
   allDay: boolean;
   lang: Lang;
   copy: Copy;
   onChange: (value: string) => void;
+  /** Owned by the parent, so the start and end pickers cannot both be open. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ top: 0, left: 0 });
@@ -74,7 +78,7 @@ export default function DateTimeField({
 
   /** Closing the popover hands the focus back to the button that opened it. */
   function closePicker() {
-    setOpen(false);
+    onOpenChange(false);
     buttonRef.current?.focus();
   }
 
@@ -217,7 +221,7 @@ export default function DateTimeField({
         aria-label={label}
         onClick={() => {
           setCursor(selected ?? new Date());
-          setOpen((prev) => !prev);
+          onOpenChange(!open);
         }}
       >
         <span>{label}</span>
