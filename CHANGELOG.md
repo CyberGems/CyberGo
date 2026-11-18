@@ -5,6 +5,7 @@
 ### Improved
 
 - The reminder window takes the selection away with a click on the dead room of its list, the way the list of the main window does.
+- The dead room of the reminder list has wider side gutters, so a click or a drag that starts a selection has room to be hit.
 
 ## 0.1.0-alpha.6 - 2026-11-17
 
