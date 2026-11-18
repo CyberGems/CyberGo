@@ -1829,7 +1829,9 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   overflow: auto;
   display: flex;
   flex-direction: column;
-  padding: 8px 10px 4px;
+  /* Wide side gutters: the dead room of the list is where the click and the
+     drag of a selection start, so it needs room to be hit comfortably. */
+  padding: 8px 16px 8px;
   background: var(--bg-app);
   cursor: default;
 }
