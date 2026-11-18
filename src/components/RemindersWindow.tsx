@@ -369,7 +369,7 @@ export default function RemindersWindow() {
   return (
     <div className="reminder-app">
       <TitleBar
-        title={copy.remindersTitle}
+        title={showLock ? copy.remindersLockedTitle : copy.remindersTitle}
         windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
       />
       <div className="reminder-body" ref={bodyRef}>
