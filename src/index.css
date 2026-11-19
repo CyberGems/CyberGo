@@ -76,9 +76,7 @@ button { cursor: pointer; }
 }
 .drag:active { cursor: grabbing; }
 .no-drag, .titlebar button, .titlebar input, .toolbar, .win-controls { -webkit-app-region: no-drag; }
-.brand { font-weight: 600; letter-spacing: 0.01em; font-size: 13px; }
-/* Only the accent half of the name takes the accent; the button wrapper text keeps the plain tone. */
-.brand span:not(.brand-text) { color: var(--accent-light); }
+.brand { font-weight: 600; letter-spacing: 0.01em; font-size: 13px; color: var(--text-primary); }
 .brand-btn {
   display: inline-flex;
   align-items: center;
@@ -158,7 +156,7 @@ body.pointer-reset .settings-header-close:hover {
   background: var(--bg-surface); border-radius: 10px; padding: 0 6px;
 }
 .nav-btn.active .badge, .group-row.active .badge { color: var(--accent-light); background: transparent; }
-.dot { width: 8px; height: 8px; border-radius: 99px; flex-shrink: 0; }
+.row-kind { display: inline-flex; justify-content: center; width: 100%; }
 .side-foot { padding: 8px; border-top: 1px solid var(--border); }
 
 .list-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-list); overflow: hidden; }
@@ -1588,7 +1586,6 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   box-shadow: inset 0 -1px 0 rgba(255,255,255,0.025);
 }
 .brand { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; }
-.brand span { color: var(--accent-light); }
 .win-btn { height: 32px; border-radius: 7px; }
 .win-btn.close:hover { background: color-mix(in srgb, var(--danger) 80%, transparent); }
 

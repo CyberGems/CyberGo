@@ -18,8 +18,8 @@ import { useListSelection } from '../hooks/useListSelection';
 const SUBJECT_COLUMN = 4;
 const MARKER_COLUMN = 0;
 const DATE_COLUMN = 1;
-const TABLE_WIDTHS = [12, 96, 80, 96, 200, 48];
-const TABLE_MIN_WIDTHS = [10, 76, 68, 84, 180, 44];
+const TABLE_WIDTHS = [26, 96, 80, 96, 200, 48];
+const TABLE_MIN_WIDTHS = [20, 76, 68, 84, 180, 44];
 const TABLE_MAX_WIDTHS = [40, 200, 180, 260, 900, 120];
 /**
  * The last column holds the kind of the item, and its width is fixed.
@@ -300,7 +300,17 @@ export default function ItemTable({
                 aria-label={label}
                 style={tint && !selectedIds.includes(item.id) && !selection.hits.includes(item.id) ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
               >
-                <i className="dot" style={{ background: tint || 'transparent', border: tint ? 'none' : '1px solid var(--border)' }} />
+                {/* The kind icon carries the identity of the row: its shape
+                    says event or task, its colour says the item or the group.
+                    It keeps both even when the row is picked, so a selected
+                    row never turns into an anonymous strip. */}
+                <span
+                  className="row-kind"
+                  aria-hidden="true"
+                  style={{ color: tint || (item.kind === 'task' ? 'var(--success)' : 'var(--accent-light)') }}
+                >
+                  {item.kind === 'task' ? <ListTodo size={14} /> : <CalendarDays size={14} />}
+                </span>
                 <span className="date-cell">
                   <span className="date-value">{formatDate(item.occurrenceAt || item.startAt, lang) || copy.quickNone}</span>
                 </span>
