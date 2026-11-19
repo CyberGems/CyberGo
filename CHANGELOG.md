@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-alpha.8 - 2026-11-19
+
+Eighth public pre-release of CyberGo. Upgrades Electron to `42.11.18` to eliminate the native white titlebar flash on frameless transparent tray windows, fixes tray flicker and cross-monitor jumps with a `4px` flyout gap, turns the toolbar `Avisos` button into a toggle, and refines the calendar, date picker, splash screen, and About dialog.
 
 ### Improved
 
+- Upgraded Electron to `42.11.18` and reworked the tray menu lifecycle to use a fresh prewarmed window with two-step transparent reveal and a `4px` flyout gap, fixing the white titlebar flash, repeated-open flicker, and cross-monitor position jumps.
 - The `Avisos` button of the toolbar is a toggle now: it shows the reminders window when it is hidden and hides it when it is visible, whichever entry point opened it (tray, palette, previews included). Its tooltip says which of the two it will do, and it stays highlighted while the window is on screen.
+- Reminders window title now reflects locked state, `Nuevo` defaults start dates to now plus ten minutes while keeping one date picker open, moving the start drags the end along, new tasks stay undated, calendar distinguishes item kinds and supports completing tasks inline, the splash follows the active theme, and the About dialog matches CyberNotes.
 
 ## 0.1.0-alpha.7 - 2026-11-18
 

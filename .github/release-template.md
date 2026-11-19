@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-The system tray submenus now open as side-by-side flyout panels beside the main card, the reminder list widens its side gutters so clicking empty space clears the selection smoothly, and the tray Donate link opens the repository section directly.
+Upgrades Electron to 42.11.18 to eliminate the white native titlebar glitch on Windows tray popups, fixes tray flicker and cross-monitor jumps with a 4px flyout gap, makes the Avisos button a toggle, and refines calendar, date picker, and About views.
 <!-- changelog-summary:end -->
 
 > **New to CyberGo?** A private, local-first agenda for tasks, events and reminders on Windows.
@@ -17,18 +17,18 @@ The system tray submenus now open as side-by-side flyout panels beside the main 
 
 ### ✨ Key Features & Highlights
 
-- 🪟 **Side-by-side tray flyout panels**: `Help` and `More from CyberGems` open next to the main tray card on hover or click, support Left/Right arrow navigation and `Escape`, and flip cleanly to match your taskbar position without shifting the main card.
+- 🪟 **Clean multi-monitor tray on Electron 42**: Upgraded Electron to `42.11.18` and switched the tray menu to a fresh prewarmed window with two-step transparent reveal and a `4px` flyout gap, removing the white titlebar flash, repeated-open flicker, and cross-monitor jumps.
 
-- 🖱️ **Easier deselection in the reminder window**: The reminder list adds wider side gutters and clears selection when clicking empty space, matching the main list behavior.
+- 🔔 **Toggleable Reminders and clearer dates**: The toolbar `Avisos` button now toggles the reminders window and reflects locked state in its title, `Nuevo` defaults to ten minutes ahead with linked start/end dragging, and tasks can be completed directly from the calendar.
 
-- ❤️ **Consistent Donate link**: The tray Donate button now links directly to CyberGo's GitHub README donate section.
+- 🎨 **Themed splash and aligned About dialog**: The startup splash follows the active theme and the About dialog layout matches CyberNotes.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-Los submenús de la bandeja del sistema ahora se abren como paneles flyout laterales junto a la tarjeta principal, la lista de avisos amplía sus márgenes laterales para limpiar la selección al hacer clic en espacio vacío y el botón Donar de la bandeja apunta directo al repositorio.
+Actualiza Electron a 42.11.18 para eliminar el fallo de barra blanca en la bandeja de Windows, corrige parpadeos y saltos entre monitores con flyouts a 4px, convierte Avisos en un interruptor y pule calendario, selector de fechas y Acerca de.
 
 > **¿Nuevo en CyberGo?** Una agenda local y privada para tareas, eventos y avisos en Windows.
 
@@ -36,11 +36,11 @@ Los submenús de la bandeja del sistema ahora se abren como paneles flyout later
 
 ### ✨ Novedades destacadas
 
-- 🪟 **Paneles flyout laterales en la bandeja**: `Ayuda` y `Más de CyberGems` se abren junto a la tarjeta principal al pasar el cursor o hacer clic, admiten navegación con flechas y `Escape` y se orientan según la barra de tareas sin desplazar la tarjeta base.
+- 🪟 **Bandeja limpia en multimonitor con Electron 42**: Se actualizó Electron a `42.11.18` y se pasó el menú de bandeja a ventana precalentada con revelado transparente en dos pasos y espacio de `4px`, eliminando la barra de título blanca, el parpadeo y los saltos entre monitores.
 
-- 🖱️ **Deselección más cómoda en la ventana de avisos**: La lista de avisos amplía sus márgenes laterales y limpia la selección al pulsar en el espacio vacío, igual que en la ventana principal.
+- 🔔 **Avisos alternables y fechas más ágiles**: El botón `Avisos` ahora alterna mostrar/ocultar la ventana e indica el estado bloqueado en el título, `Nuevo` propone 10 minutos adelante arrastrando inicio y fin juntos, y las tareas pueden completarse desde el calendario.
 
-- ❤️ **Enlace de Donar unificado**: La opción Donar de la bandeja ahora abre directamente la sección correspondiente del README en GitHub.
+- 🎨 **Splash con tema y diálogo Acerca de alineado**: La pantalla inicial respeta el tema activo y el diálogo Acerca de iguala el diseño de CyberNotes.
 
 ### ℹ️ Antes de instalar
 
