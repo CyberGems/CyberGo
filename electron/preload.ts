@@ -4,7 +4,7 @@ import type { AccessLogEntry, AppInfo, AuthMethod, Bootstrap, CsvResult, Display
 export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
   getAppInfo: () => Promise<AppInfo>;
-  checkUpdates: () => Promise<UpdateCheck>;
+  checkUpdates: (force?: boolean) => Promise<UpdateCheck>;
   openExternal: (url: string) => Promise<boolean>;
   readClipboardText: () => Promise<string>;
   minimize: () => Promise<void>;
@@ -66,7 +66,7 @@ export interface CyberGoAPI {
 const api: CyberGoAPI = {
   getBootstrap: () => ipcRenderer.invoke('bootstrap:get'),
   getAppInfo: () => ipcRenderer.invoke('app:info'),
-  checkUpdates: () => ipcRenderer.invoke('updates:check'),
+  checkUpdates: (force?: boolean) => ipcRenderer.invoke('updates:check', force),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   readClipboardText: () => ipcRenderer.invoke('clipboard:read-text'),
   minimize: () => ipcRenderer.invoke('window:minimize'),

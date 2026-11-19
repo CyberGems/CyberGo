@@ -437,6 +437,9 @@ function MainApp() {
           windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
           onBrandClick={() => { setSettingsOpen(false); setAboutOpen(true); }}
           brandLabel={copy.about.title}
+          menuLabels={copy}
+          lockAvailable={boot.hasPassword}
+          onOpenAbout={() => { setSettingsOpen(false); setAboutOpen(true); }}
         >
         <div className="toolbar">
           <div className="toolbar-section">

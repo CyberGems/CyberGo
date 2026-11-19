@@ -844,6 +844,16 @@ const TRAY_HELP_URLS = {
 // The newest published release, drafts excluded. The list is used instead of
 // the /latest endpoint so pre-release builds of this app are still seen.
 const RELEASES_API = 'https://api.github.com/repos/CyberGems/CyberGo/releases?per_page=5';
+// The suite checks on startup and then every six hours; the result is kept
+// so the About dialog opens with an answer instead of a spinner.
+const UPDATE_CHECK_INTERVAL = 6 * 60 * 60 * 1000;
+let lastUpdateCheck: { result: UpdateCheck; at: number } | null = null;
+
+async function runUpdateCheck(): Promise<UpdateCheck> {
+  const result = await checkForUpdates();
+  lastUpdateCheck = { result, at: Date.now() };
+  return result;
+}
 
 /**
  * Orders CyberGo versions, tags included. Numeric parts compare as numbers,
@@ -1430,7 +1440,11 @@ function registerIpc() {
     arch: process.arch,
     osRelease: os.release(),
   }));
-  ipcMain.handle('updates:check', () => checkForUpdates());
+  ipcMain.handle('updates:check', (_event, force?: unknown) => {
+    if (force === true) return runUpdateCheck();
+    if (lastUpdateCheck && Date.now() - lastUpdateCheck.at < UPDATE_CHECK_INTERVAL) return lastUpdateCheck.result;
+    return runUpdateCheck();
+  });
   ipcMain.handle('shell:open-external', async (_event, value: unknown) => {
     if (typeof value !== 'string') return false;
     try {
@@ -2028,6 +2042,10 @@ if (!gotLock) {
     setTimeout(() => void evaluateReminders('tick'), 800);
     reminderTimer = setInterval(() => void evaluateReminders('tick'), 15_000);
     backupTimer = setInterval(() => maybeAutoBackup(), 60 * 60 * 1000);
+    // The silent update checks: one shortly after the start, then every six
+    // hours. A failure just leaves the cache empty, never bothers the user.
+    setTimeout(() => { void runUpdateCheck().catch(() => {}); }, 20_000);
+    setInterval(() => { void runUpdateCheck().catch(() => {}); }, UPDATE_CHECK_INTERVAL);
     if (verify && mainWindow) {
       bootLog('verify hook');
       // The screenshots go to the temporary folder, never into whatever

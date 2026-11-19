@@ -77,10 +77,10 @@ export default function AboutModal({
     await window.cyberGoAPI.openExternal(url);
   }
 
-  async function runCheck() {
+  async function runCheck(force = false) {
     setUpdate({ state: 'checking' });
     try {
-      const result = await window.cyberGoAPI.checkUpdates();
+      const result = await window.cyberGoAPI.checkUpdates(force);
       if (result.error) setUpdate({ state: 'error' });
       else if (result.available) setUpdate({ state: 'available', latest: result.latest ?? '', url: result.url });
       else setUpdate({ state: 'latest' });
@@ -164,7 +164,7 @@ export default function AboutModal({
                 <button
                   type="button"
                   className="btn about-check"
-                  onClick={() => void runCheck()}
+                  onClick={() => void runCheck(true)}
                   disabled={update.state === 'checking'}
                 >
                   <RefreshCw size={14} className={update.state === 'checking' ? 'spin' : ''} />
