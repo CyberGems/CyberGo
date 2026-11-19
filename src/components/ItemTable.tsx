@@ -29,7 +29,8 @@ const TABLE_MAX_WIDTHS = [40, 200, 180, 260, 900, 120];
  * there would be dragged without anything moving, so there is none.
  */
 const LAST_COLUMN = TABLE_WIDTHS.length - 1;
-const LAST_COLUMN_WIDTH = 60;
+/** Wide enough for the widest pill ("Evento") with its icon and padding. */
+const LAST_COLUMN_WIDTH = 76;
 const TABLE_WIDTH_STORAGE = 'cybergo-table-column-widths-v1';
 
 function initialTableWidths(): number[] {
