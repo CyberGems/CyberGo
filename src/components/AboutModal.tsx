@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BookOpen, Bug, Check, ClipboardCopy, Download, Gem, Github, Heart, RefreshCw, Tag, X } from 'lucide-react';
 import type { AppInfo } from '@shared/types';
 import type { Copy } from '../i18n';
+import { platformLabel } from '../lib/format';
 import { useFocusTrap } from './Dialog';
 import Tooltip from './Tooltip';
 import { pickSuiteApps } from '../lib/suiteApps';
@@ -16,13 +17,6 @@ const RELEASES_URL = `${REPO_URL}/releases`;
 const DONATE_URL = `${REPO_URL}#%EF%B8%8F-donate`;
 const DONATE_HEART = '#F43F5E';
 const AUTO_CHECK_KEY = 'cybergo-about-autocheck';
-
-function platformLabel(platform: string) {
-  if (platform === 'win32') return 'Windows';
-  if (platform === 'darwin') return 'macOS';
-  if (platform === 'linux') return 'Linux';
-  return platform;
-}
 
 type UpdateState =
   | { state: 'idle' }

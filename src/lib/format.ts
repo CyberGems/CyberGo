@@ -144,3 +144,11 @@ export function duePhrase(iso: string | null, copy: Copy): string {
   if (minutes < 2 && !past) return copy.dueNow;
   return fill(past ? copy.overdueBy : copy.dueIn, duration);
 }
+
+/** The readable name of an OS platform, the way the suite prints it. */
+export function platformLabel(platform: string): string {
+  if (platform === 'win32') return 'Windows';
+  if (platform === 'darwin') return 'macOS';
+  if (platform === 'linux') return 'Linux';
+  return platform;
+}

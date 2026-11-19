@@ -431,6 +431,26 @@ body.pointer-reset .settings-header-close:hover {
 .btn-icon.is-open { background: var(--bg-hover); color: var(--text-primary); }
 .btn-icon:disabled { opacity: 0.4; }
 .btn-icon:disabled:hover { background: transparent; color: var(--text-secondary); }
+/* The title bar badge that appears while a newer release exists. */
+.titlebar-update-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  color: var(--accent-light);
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+}
+.titlebar-update-button:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.titlebar-update-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.titlebar-update-button:active { transform: scale(0.95); }
 /* The hint of a key, the way the rest of the suite shows it. */
 .key-hint {
   display: inline-flex;

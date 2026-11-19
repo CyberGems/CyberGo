@@ -852,6 +852,9 @@ let lastUpdateCheck: { result: UpdateCheck; at: number } | null = null;
 async function runUpdateCheck(): Promise<UpdateCheck> {
   const result = await checkForUpdates();
   lastUpdateCheck = { result, at: Date.now() };
+  // The title bar badge follows every completed check, so it appears and
+  // clears without waiting for the About dialog.
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:status', result);
   return result;
 }
 

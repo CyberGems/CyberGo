@@ -57,6 +57,7 @@ export interface CyberGoAPI {
   onReminderPreview: (cb: (payload: { items: Item[]; settings: PublicSettings }) => void) => () => void;
   onOpenItem: (cb: (id: string) => void) => () => void;
   onMaximized: (cb: (value: boolean) => void) => () => void;
+  onUpdatesStatus: (cb: (result: UpdateCheck) => void) => () => void;
   onWindowVisibility: (cb: (visible: boolean) => void) => () => void;
   onConfirmFirstClose: (cb: () => void) => () => void;
   onOpenAbout: (cb: () => void) => () => void;
@@ -146,6 +147,11 @@ const api: CyberGoAPI = {
     const listener = (_e: unknown, value: boolean) => cb(value);
     ipcRenderer.on('window:maximized', listener);
     return () => ipcRenderer.removeListener('window:maximized', listener);
+  },
+  onUpdatesStatus: (cb) => {
+    const listener = (_e: unknown, result: UpdateCheck) => cb(result);
+    ipcRenderer.on('updates:status', listener);
+    return () => ipcRenderer.removeListener('updates:status', listener);
   },
   onWindowVisibility: (cb) => {
     const listener = (_e: unknown, visible: boolean) => cb(visible);

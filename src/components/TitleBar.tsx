@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Bell, BookOpen, ChevronDown, Download, Globe, Heart, HelpCircle, Info, Lock, Minus, MoreHorizontal, Power, Tag, X, Zap } from 'lucide-react';
+import { ArrowDown, Bell, BookOpen, ChevronDown, ClipboardCopy, Download, Globe, Heart, HelpCircle, Info, Lock, Minus, MoreHorizontal, Power, Tag, X, Zap } from 'lucide-react';
 import type { Copy } from '../i18n';
+import { platformLabel } from '../lib/format';
 import Tooltip from './Tooltip';
 
 /** The icon of a window that fills the screen. */
@@ -72,6 +73,8 @@ export default function TitleBar({
 }) {
   const api = window.cyberGoAPI;
   const [maximized, setMaximized] = useState(false);
+  /** The tag of the newest release when it beats this build, else null. */
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
@@ -87,6 +90,20 @@ export default function TitleBar({
       .then((value) => { if (alive) setMaximized(value); })
       .catch(() => {});
     const off = api.onMaximized?.((value) => setMaximized(value));
+    return () => {
+      alive = false;
+      off?.();
+    };
+  }, []);
+
+  // The update badge starts from the cached check and then follows every
+  // silent check the main process completes.
+  useEffect(() => {
+    let alive = true;
+    api.checkUpdates()
+      .then((result) => { if (alive && result.available) setUpdateVersion(result.latest); })
+      .catch(() => {});
+    const off = api.onUpdatesStatus?.((result) => setUpdateVersion(result.available ? result.latest : null));
     return () => {
       alive = false;
       off?.();
@@ -149,6 +166,23 @@ export default function TitleBar({
   function scheduleFlyoutClose() {
     clearFlyoutTimer();
     flyoutTimer.current = setTimeout(() => setFlyout(null), 220);
+  }
+
+  /** Copies the same diagnostics block the About dialog offers. */
+  async function copyDiagnostics() {
+    try {
+      const info = await api.getAppInfo();
+      const lines = [
+        `CyberGo ${info.version}`,
+        `Electron: ${info.electron}`,
+        `Chrome: ${info.chrome}`,
+        `Node: ${info.node}`,
+        `OS: ${platformLabel(info.platform)} ${info.osRelease} (${info.arch})`,
+      ];
+      await navigator.clipboard.writeText(lines.join('\n'));
+    } catch {
+      /* Clipboard access is optional. */
+    }
   }
 
   // The menu closes on Escape and on any press outside of it; the arrows walk
@@ -286,6 +320,7 @@ export default function TitleBar({
         { id: 'faq', icon: <HelpCircle size={14} />, label: labels.helpFaq, run: () => { setMenuOpen(false); void api.openExternal('https://github.com/CyberGems/CyberGo/wiki/FAQ'); } },
         { id: 'changelog', icon: <Tag size={14} />, label: labels.helpChangelog, run: () => { setMenuOpen(false); void api.openExternal('https://github.com/CyberGems/CyberGo/releases'); } },
         { id: 'website', icon: <Globe size={14} />, label: labels.helpWebsite, run: () => { setMenuOpen(false); void api.openExternal('https://cybergems.org/apps/cybergo/'); } },
+        { id: 'diagnostics', icon: <ClipboardCopy size={14} />, label: labels.about.copyDiagnostics, run: () => { setMenuOpen(false); void copyDiagnostics(); } },
         { id: 'help-divider', divider: true },
         { id: 'about', icon: <Info size={14} />, label: labels.aboutEntry, run: () => { setMenuOpen(false); onOpenAbout?.(); } },
         { id: 'updates', icon: <Download size={14} />, label: labels.about.checkUpdates, run: () => { setMenuOpen(false); onOpenAbout?.(); } },
@@ -324,6 +359,18 @@ export default function TitleBar({
       {hideBrand && <div className="drag" />}
       {children}
       <div style={{ position: 'relative', display: 'flex' }}>
+        {updateVersion && (
+          <Tooltip label={labels.about.updateAvailable.replace('{version}', updateVersion.replace(/^v/, ''))} placement="bottom">
+            <button
+              type="button"
+              className="titlebar-update-button"
+              aria-label={labels.about.updateAvailable.replace('{version}', updateVersion.replace(/^v/, ''))}
+              onClick={() => onOpenAbout?.()}
+            >
+              <ArrowDown size={14} strokeWidth={2.4} aria-hidden="true" />
+            </button>
+          </Tooltip>
+        )}
         <Tooltip label={labels.moreOptions} placement="bottom">
           <button
             type="button"
