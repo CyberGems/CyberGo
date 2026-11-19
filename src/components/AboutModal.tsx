@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, Bug, Check, ClipboardCopy, Cpu, Github, Globe, Tag, X } from 'lucide-react';
+import { BookOpen, Bug, Check, ClipboardCopy, Download, Gem, Github, Heart, RefreshCw, Tag, X } from 'lucide-react';
 import type { AppInfo } from '@shared/types';
 import type { Copy } from '../i18n';
 import { useFocusTrap } from './Dialog';
@@ -13,6 +13,9 @@ const SITE_URL = 'https://cybergems.org';
 const WIKI_URL = `${REPO_URL}/wiki`;
 const ISSUES_URL = `${REPO_URL}/issues`;
 const RELEASES_URL = `${REPO_URL}/releases`;
+const DONATE_URL = `${REPO_URL}#%EF%B8%8F-donate`;
+const DONATE_HEART = '#F43F5E';
+const AUTO_CHECK_KEY = 'cybergo-about-autocheck';
 
 function platformLabel(platform: string) {
   if (platform === 'win32') return 'Windows';
@@ -20,6 +23,13 @@ function platformLabel(platform: string) {
   if (platform === 'linux') return 'Linux';
   return platform;
 }
+
+type UpdateState =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'latest' }
+  | { state: 'available'; latest: string; url: string | null }
+  | { state: 'error' };
 
 export default function AboutModal({
   copy,
@@ -33,6 +43,9 @@ export default function AboutModal({
   const about = copy.about;
   const [copied, setCopied] = useState(false);
   const [suitePick] = useState(pickSuiteApps);
+  const [update, setUpdate] = useState<UpdateState>({ state: 'idle' });
+  // Default on, like the rest of the suite; the choice is remembered locally.
+  const [autoCheck, setAutoCheck] = useState(() => localStorage.getItem(AUTO_CHECK_KEY) !== 'false');
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const version = info?.version || '…';
@@ -45,7 +58,16 @@ export default function AboutModal({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      // Enter closes too, unless a control keeps it for itself.
+      if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === 'BUTTON' || tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
+      event.preventDefault();
+      onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -53,6 +75,30 @@ export default function AboutModal({
 
   async function openExternal(url: string) {
     await window.cyberGoAPI.openExternal(url);
+  }
+
+  async function runCheck() {
+    setUpdate({ state: 'checking' });
+    try {
+      const result = await window.cyberGoAPI.checkUpdates();
+      if (result.error) setUpdate({ state: 'error' });
+      else if (result.available) setUpdate({ state: 'available', latest: result.latest ?? '', url: result.url });
+      else setUpdate({ state: 'latest' });
+    } catch {
+      setUpdate({ state: 'error' });
+    }
+  }
+
+  // The first open of the window checks by itself, so the section says
+  // something instead of waiting for a click.
+  useEffect(() => {
+    if (autoCheck) void runCheck();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function toggleAutoCheck(next: boolean) {
+    setAutoCheck(next);
+    localStorage.setItem(AUTO_CHECK_KEY, String(next));
   }
 
   async function copyDiagnostics() {
@@ -84,6 +130,8 @@ export default function AboutModal({
         aria-label={about.title}
         onMouseDown={(event) => event.stopPropagation()}
       >
+        <div className="about-glass" aria-hidden="true" />
+
         <header className="about-header">
           <div />
           <Tooltip label={copy.close} placement="left">
@@ -109,6 +157,45 @@ export default function AboutModal({
             </div>
           </section>
 
+          <section className="about-section" aria-label={about.maintenance}>
+            <div className="about-section-heading">{about.maintenance}</div>
+            <div className="about-maintenance">
+              {update.state === 'latest' && <div className="about-update-status latest">{about.latestVersion}</div>}
+              {update.state === 'available' && (
+                <div className="about-update-status available">
+                  {about.updateAvailable.replace('{version}', update.latest)}
+                  <button type="button" className="btn btn-primary" onClick={() => void openExternal(update.url || RELEASES_URL)}>
+                    <Download size={14} />{about.downloadRelease}
+                  </button>
+                </div>
+              )}
+              {update.state === 'error' && <div className="about-update-status error">{about.updateError}</div>}
+              {update.state !== 'available' && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void runCheck()}
+                  disabled={update.state === 'checking'}
+                >
+                  <RefreshCw size={14} className={update.state === 'checking' ? 'spin' : ''} />
+                  {update.state === 'checking' ? about.checking : about.checkUpdates}
+                </button>
+              )}
+              <button
+                type="button"
+                className="about-toggle"
+                role="switch"
+                aria-checked={autoCheck}
+                aria-label={about.autoCheck}
+                onClick={() => toggleAutoCheck(!autoCheck)}
+              >
+                <span aria-hidden="true" className="about-toggle-knob" />
+                {about.autoCheck}
+              </button>
+              <p className="about-toggle-hint">{about.autoCheckHint}</p>
+            </div>
+          </section>
+
           <section className="about-suite" aria-label={about.suiteTitle}>
             <h3 className="about-section-heading">{about.suiteTitle}</h3>
             <div className="about-suite-icons">
@@ -125,33 +212,25 @@ export default function AboutModal({
             </button>
           </section>
 
-          <div className="about-actions">
+          <div className="about-footer-links">
             <Tooltip label={about.websiteTooltip} placement="top">
-              <button type="button" className="btn" onClick={() => void openExternal(SITE_URL)}>
-                <Globe size={14} />{about.website}
-              </button>
-            </Tooltip>
-            <Tooltip label={about.githubTooltip} placement="top">
-              <button type="button" className="btn" onClick={() => void openExternal(REPO_URL)}>
-                <Github size={14} />{about.github}
+              <button type="button" className="btn-icon" aria-label={about.websiteTooltip} onClick={() => void openExternal(SITE_URL)}>
+                <Gem size={14} />
               </button>
             </Tooltip>
             <Tooltip label={about.wikiTooltip} placement="top">
-              <button type="button" className="btn" onClick={() => void openExternal(WIKI_URL)}>
-                <BookOpen size={14} />{about.wiki}
+              <button type="button" className="btn-icon" aria-label={about.wikiTooltip} onClick={() => void openExternal(WIKI_URL)}>
+                <BookOpen size={14} />
               </button>
             </Tooltip>
-          </div>
-
-          <div className="about-footer-links">
+            <Tooltip label={about.githubTooltip} placement="top">
+              <button type="button" className="btn-icon" aria-label={about.githubTooltip} onClick={() => void openExternal(REPO_URL)}>
+                <Github size={14} />
+              </button>
+            </Tooltip>
             <Tooltip label={about.issuesTooltip} placement="top">
               <button type="button" className="btn-icon" aria-label={about.issuesTooltip} onClick={() => void openExternal(ISSUES_URL)}>
                 <Bug size={14} />
-              </button>
-            </Tooltip>
-            <Tooltip label={about.releasesTooltip} placement="top">
-              <button type="button" className="btn-icon" aria-label={about.releasesTooltip} onClick={() => void openExternal(RELEASES_URL)}>
-                <Tag size={14} />
               </button>
             </Tooltip>
             <Tooltip label={copied ? about.diagnosticsCopied : about.copyDiagnostics} placement="top">
@@ -165,7 +244,16 @@ export default function AboutModal({
                 {copied ? <Check size={14} /> : <ClipboardCopy size={14} />}
               </button>
             </Tooltip>
-            <span className="about-tech-mark" aria-hidden="true"><Cpu size={14} /></span>
+            <Tooltip label={about.releasesTooltip} placement="top">
+              <button type="button" className="btn-icon" aria-label={about.releasesTooltip} onClick={() => void openExternal(RELEASES_URL)}>
+                <Tag size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip label={about.donateTooltip} placement="top">
+              <button type="button" className="btn-icon" aria-label={about.donateTooltip} onClick={() => void openExternal(DONATE_URL)}>
+                <Heart size={14} color={DONATE_HEART} fill={DONATE_HEART} stroke="none" />
+              </button>
+            </Tooltip>
           </div>
         </div>
 

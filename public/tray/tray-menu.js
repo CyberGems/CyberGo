@@ -15,6 +15,7 @@ const ICONS = {
   tag: '<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
   heart: '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
   help: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
   diamond: '<svg viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20"/><path d="M9 3l3 6 3-6"/></svg>',
   quit: '<svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>',
   chevron: '<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>',
@@ -466,7 +467,8 @@ function renderHelpFlyout() {
     makeItem({ action: 'help-faq', icon: 'faq', label: t('faq') }),
     makeItem({ action: 'help-changelog', icon: 'tag', label: t('changelog') }),
     makeItem({ action: 'help-website', icon: 'diamond', label: t('website') }),
-    makeItem({ action: 'help-donate', icon: 'heart', label: t('donate'), donate: true })
+    makeItem({ action: 'help-donate', icon: 'heart', label: t('donate'), donate: true }),
+    makeItem({ action: 'about', icon: 'info', label: t('about') })
   );
   flyoutHelpEl.replaceChildren(
     makeFlyoutHead('help', t('help')),

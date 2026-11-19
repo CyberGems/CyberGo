@@ -40,6 +40,18 @@ export interface AppInfo {
   osRelease: string;
 }
 
+/** The result of comparing this build against the newest GitHub release. */
+export interface UpdateCheck {
+  /** True when the newest release tag is newer than the running version. */
+  available: boolean;
+  /** The tag of the newest release, e.g. "v0.1.0-alpha.7". */
+  latest: string | null;
+  /** Where that release lives, for the download link. */
+  url: string | null;
+  /** Set when the check itself could not run. */
+  error: string | null;
+}
+
 export interface Recurrence {
   freq: Freq;
   interval: number;

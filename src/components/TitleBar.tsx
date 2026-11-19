@@ -32,6 +32,8 @@ export default function TitleBar({
   onClose,
   windowLabels,
   hideBrand = false,
+  onBrandClick,
+  brandLabel,
 }: {
   title: ReactNode;
   children?: ReactNode;
@@ -44,6 +46,10 @@ export default function TitleBar({
   };
   /** The lock screen shows the name of the app in the middle, so the bar stays empty. */
   hideBrand?: boolean;
+  /** When set, the brand becomes a button that opens the About dialog. */
+  onBrandClick?: () => void;
+  /** The accessible name and tooltip of that brand button. */
+  brandLabel?: string;
 }) {
   const api = window.cyberGoAPI;
   const [maximized, setMaximized] = useState(false);
@@ -62,7 +68,17 @@ export default function TitleBar({
 
   return (
     <header className="titlebar">
-      {!hideBrand && (
+      {!hideBrand && onBrandClick && (
+        <div className="drag">
+          <Tooltip label={brandLabel ?? ''} placement="bottom">
+            <button type="button" className="brand brand-btn" onClick={onBrandClick} aria-label={brandLabel ?? undefined}>
+              <img className="brand-icon" src="icon.png" alt="" draggable={false} />
+              <span className="brand-text">{title}</span>
+            </button>
+          </Tooltip>
+        </div>
+      )}
+      {!hideBrand && !onBrandClick && (
         <div className="drag">
           <div className="brand">{title}</div>
         </div>

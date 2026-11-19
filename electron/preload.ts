@@ -1,9 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AccessLogEntry, AppInfo, AuthMethod, Bootstrap, CsvResult, DisplayInfo, Group, Item, ItemDraft, PublicSettings } from '../shared/types';
+import type { AccessLogEntry, AppInfo, AuthMethod, Bootstrap, CsvResult, DisplayInfo, Group, Item, ItemDraft, PublicSettings, UpdateCheck } from '../shared/types';
 
 export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
   getAppInfo: () => Promise<AppInfo>;
+  checkUpdates: () => Promise<UpdateCheck>;
   openExternal: (url: string) => Promise<boolean>;
   readClipboardText: () => Promise<string>;
   minimize: () => Promise<void>;
@@ -65,6 +66,7 @@ export interface CyberGoAPI {
 const api: CyberGoAPI = {
   getBootstrap: () => ipcRenderer.invoke('bootstrap:get'),
   getAppInfo: () => ipcRenderer.invoke('app:info'),
+  checkUpdates: () => ipcRenderer.invoke('updates:check'),
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   readClipboardText: () => ipcRenderer.invoke('clipboard:read-text'),
   minimize: () => ipcRenderer.invoke('window:minimize'),

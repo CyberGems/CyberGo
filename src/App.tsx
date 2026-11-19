@@ -148,6 +148,13 @@ function MainApp() {
         event.preventDefault();
         setPaletteOpen(true);
       }
+      // The suite convention: F1 opens the About dialog of the app.
+      if (event.key === 'F1') {
+        if (dialogOpen.current) return;
+        event.preventDefault();
+        setSettingsOpen(false);
+        setAboutOpen(true);
+      }
     }
     document.addEventListener('keydown', keys);
     return () => document.removeEventListener('keydown', keys);
@@ -425,10 +432,12 @@ function MainApp() {
   return (
     <>
       <div className="app">
-      <TitleBar
-        title={<><span>Cyber</span>Go</>}
-        windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
-      >
+        <TitleBar
+          title={<><span>Cyber</span>Go</>}
+          windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
+          onBrandClick={() => { setSettingsOpen(false); setAboutOpen(true); }}
+          brandLabel={copy.about.title}
+        >
         <div className="toolbar">
           <div className="toolbar-section">
             <button className="btn btn-primary" onClick={() => { setSeed(null); setEditing('new'); }}>
@@ -575,6 +584,7 @@ function MainApp() {
               onOpen={(item) => { setSelectedIds([item.id]); setEditing(item); }}
               onNewDay={newOnDay}
               onContextMenu={showContextMenu}
+              onToggleComplete={(item) => detach(api.completeItem(item.id), 'complete the item')}
             />
           ) : (
             <ItemTable

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Flag } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, Flag, ListTodo } from 'lucide-react';
 import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { Copy } from '../i18n';
 import type { Group, Item, Lang } from '@shared/types';
@@ -321,7 +321,10 @@ export default function ItemTable({
                 <Tooltip label={item.notes || undefined} placement="top">
                   <span className="subject">{item.importance === 'high' && <Flag className="flag" size={12} style={{ marginRight: 6 }} />}{item.title}</span>
                 </Tooltip>
-                <span className={`kind-tag kind-${item.kind}`}>{item.kind === 'task' ? copy.task : copy.event}</span>
+                <span className={`kind-tag kind-${item.kind}`}>
+                  {item.kind === 'task' ? <ListTodo size={11} /> : <CalendarDays size={11} />}
+                  {item.kind === 'task' ? copy.task : copy.event}
+                </span>
               </div>
             );
           })}

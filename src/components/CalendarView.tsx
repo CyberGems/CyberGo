@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, ListTodo, Plus } from 'lucide-react';
 import type { Group, Item, Lang } from '@shared/types';
 import type { Copy } from '../i18n';
 import { formatClock } from '../lib/format';
@@ -62,6 +62,7 @@ export default function CalendarView({
   onOpen,
   onNewDay,
   onContextMenu,
+  onToggleComplete,
 }: {
   copy: Copy;
   lang: Lang;
@@ -72,6 +73,8 @@ export default function CalendarView({
   onOpen: (item: Item) => void;
   onNewDay: (day: Date) => void;
   onContextMenu?: (event: ReactMouseEvent<HTMLElement>, id: string) => void;
+  /** Marks a task done straight from the day view. */
+  onToggleComplete?: (item: Item) => void;
 }) {
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -266,7 +269,7 @@ export default function CalendarView({
                   <li key={item.id}>
                     <button
                       type="button"
-                      className={`cal-day-row ${selectedIds.includes(item.id) ? 'selected' : ''} ${item.completedAt ? 'done' : ''}`}
+                      className={`cal-day-row ${selectedIds.includes(item.id) ? 'selected' : ''} ${item.completedAt ? 'done' : ''} kind-${item.kind}`}
                       style={chipStyle(item)}
                       onClick={() => onSelect([item.id])}
                       onDoubleClick={() => onOpen(item)}
@@ -279,10 +282,22 @@ export default function CalendarView({
                       <span className="cal-day-main">
                         <span className="cal-day-title-text">{item.title}</span>
                         <span className="cal-day-meta">
-                          {item.kind === 'task' ? copy.task : copy.event}
+                          <span className="cal-day-kind">{item.kind === 'task' ? copy.task : copy.event}</span>
                           {group ? ` · ${group.name}` : ''}
                         </span>
                       </span>
+                      {item.kind === 'task' && !item.completedAt && onToggleComplete && (
+                        <Tooltip label={copy.markComplete} placement="left">
+                          <button
+                            type="button"
+                            className="cal-day-complete"
+                            aria-label={copy.markComplete}
+                            onClick={(event) => { event.stopPropagation(); onToggleComplete(item); }}
+                          >
+                            <CheckCircle2 size={15} />
+                          </button>
+                        </Tooltip>
+                      )}
                       <span className="cal-day-tag" style={{ background: tintOf(item) }} aria-hidden="true" />
                     </button>
                   </li>
@@ -374,6 +389,9 @@ export default function CalendarView({
                         onContextMenu={(e) => { e.stopPropagation(); onContextMenu?.(e, item.id); }}
                         aria-label={chipLabel(item)}
                       >
+                        <span className="cal-chip-kind" aria-hidden="true">
+                          {item.kind === 'task' ? <ListTodo size={10} /> : <CalendarDays size={10} />}
+                        </span>
                         {when && !item.allDay && <span className="cal-chip-time">{formatClock(when.toISOString(), lang)}</span>}
                         <span className="cal-chip-title">{item.title}</span>
                       </button>

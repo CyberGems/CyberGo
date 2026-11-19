@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, Notification, screen, session, shell, Tray } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, Notification, screen, session, shell, Tray } from 'electron';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -9,7 +9,7 @@ import { detectCsvFormat, itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../s
 import { parseIcs } from '../shared/ics';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { hashSecret, normalizeAuthSecret, verifySecret as verifyStoredSecret } from '../shared/auth';
-import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition } from '../shared/types';
+import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition, UpdateCheck } from '../shared/types';
 import * as db from './db';
 import { asDraft, asId, asIsoDate, asNumber, asSettingsPatch, asText, methodOf, presented } from './validate';
 import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
@@ -841,6 +841,75 @@ const TRAY_HELP_URLS = {
   donate: 'https://github.com/CyberGems/CyberGo#%EF%B8%8F-donate',
 } as const;
 
+// The newest published release, drafts excluded. The list is used instead of
+// the /latest endpoint so pre-release builds of this app are still seen.
+const RELEASES_API = 'https://api.github.com/repos/CyberGems/CyberGo/releases?per_page=5';
+
+/**
+ * Orders CyberGo versions, tags included. Numeric parts compare as numbers,
+ * the pre-release words rank in their usual order, and a version without a
+ * pre-release part is newer than one that carries it.
+ */
+export function compareVersions(a: string, b: string): number {
+  const parse = (value: string) => {
+    const match = value.toLowerCase().replace(/^v/, '').match(/^([^-]+)(?:-(.*))?$/);
+    return {
+      nums: (match?.[1] ?? '').split('.').map((part) => Number(part) || 0),
+      pres: match?.[2] ? match[2].split('.') : [],
+    };
+  };
+  const rank = (word: string) => ({ alpha: 0, beta: 1, rc: 2 }[word] ?? 3);
+  const left = parse(a);
+  const right = parse(b);
+  for (let i = 0; i < 3; i += 1) {
+    if ((left.nums[i] ?? 0) !== (right.nums[i] ?? 0)) return (left.nums[i] ?? 0) > (right.nums[i] ?? 0) ? 1 : -1;
+  }
+  if (left.pres.length === 0 && right.pres.length === 0) return 0;
+  if (left.pres.length === 0) return 1;
+  if (right.pres.length === 0) return -1;
+  for (let i = 0; i < Math.max(left.pres.length, right.pres.length); i += 1) {
+    const wordA = left.pres[i];
+    const wordB = right.pres[i];
+    if (wordA === undefined) return -1;
+    if (wordB === undefined) return 1;
+    const numA = Number(wordA);
+    const numB = Number(wordB);
+    if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+      if (numA !== numB) return numA > numB ? 1 : -1;
+      continue;
+    }
+    if (Number.isNaN(numA) !== Number.isNaN(numB)) return Number.isNaN(numA) ? -1 : 1;
+    if (rank(wordA) !== rank(wordB)) return rank(wordA) > rank(wordB) ? 1 : -1;
+  }
+  return 0;
+}
+
+/**
+ * Asks GitHub for the newest release and compares it with this build. The
+ * network is only touched here, never by the renderer behind its CSP.
+ */
+async function checkForUpdates(): Promise<UpdateCheck> {
+  try {
+    const response = await net.fetch(RELEASES_API, {
+      headers: { 'User-Agent': 'CyberGo-Update-Check', Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return { available: false, latest: null, url: null, error: `GitHub responded ${response.status}` };
+    const releases = await response.json() as Array<{ tag_name?: unknown; html_url?: unknown; draft?: unknown } | null>;
+    const release = Array.isArray(releases) ? releases.find((row) => row && typeof row.tag_name === 'string' && row.draft !== true) : null;
+    if (!release || typeof release.tag_name !== 'string') return { available: false, latest: null, url: null, error: 'no-release' };
+    const latest = release.tag_name;
+    return {
+      available: compareVersions(latest, app.getVersion()) > 0,
+      latest,
+      url: typeof release.html_url === 'string' ? release.html_url : null,
+      error: null,
+    };
+  } catch (error) {
+    return { available: false, latest: null, url: null, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 function getSuiteAppsList(lang: 'es' | 'en') {
   try {
     const dataPath = fromPublic('suite/suite.json');
@@ -1297,6 +1366,7 @@ function registerIpc() {
     arch: process.arch,
     osRelease: os.release(),
   }));
+  ipcMain.handle('updates:check', () => checkForUpdates());
   ipcMain.handle('shell:open-external', async (_event, value: unknown) => {
     if (typeof value !== 'string') return false;
     try {

@@ -217,6 +217,7 @@ export default function ItemModal({
           <button type="button" className={draft.kind === 'event' ? 'on' : ''} onClick={() => set({ kind: 'event' })}>{copy.event}</button>
           <button type="button" className={draft.kind === 'task' ? 'on' : ''} onClick={() => set({ kind: 'task' })}>{copy.task}</button>
         </div>
+        <p className="kind-hint">{draft.kind === 'task' ? copy.kindHintTask : copy.kindHintEvent}</p>
       </div>
       <label className="field"><span>{copy.title}</span><input data-focus value={draft.title} onChange={(e) => set({ title: e.target.value })} autoFocus /></label>
       <label className="field"><span>{copy.notes}</span><textarea value={draft.notes} onChange={(e) => set({ notes: e.target.value })} /></label>

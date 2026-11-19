@@ -77,7 +77,24 @@ button { cursor: pointer; }
 .drag:active { cursor: grabbing; }
 .no-drag, .titlebar button, .titlebar input, .toolbar, .win-controls { -webkit-app-region: no-drag; }
 .brand { font-weight: 600; letter-spacing: 0.01em; font-size: 13px; }
-.brand span { color: var(--accent-light); }
+/* Only the accent half of the name takes the accent; the button wrapper text keeps the plain tone. */
+.brand span:not(.brand-text) { color: var(--accent-light); }
+.brand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.brand-btn:hover { background: var(--bg-hover); }
+.brand-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.brand-icon { width: 16px; height: 16px; border-radius: 4px; display: block; }
 .grow { flex: 1; }
 /* The text that is only read by a screen reader. */
 .visually-hidden {
@@ -267,7 +284,33 @@ body.pointer-reset .settings-header-close:hover {
 }
 .subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .muted { color: var(--text-muted); }
-.kind-tag { font-size: 11px; color: var(--text-muted); text-align: right; }
+/* The kind tag of a row and the marker of a chip. Events read in the accent
+   family and tasks in the success family, so each kind says what it is with
+   its own tone; the icon carries the same signal in the gray theme. */
+.kind-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-right: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.kind-tag svg { flex-shrink: 0; }
+.kind-tag.kind-event {
+  color: var(--accent-light);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+}
+.kind-tag.kind-task {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 38%, transparent);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
 .flag { color: var(--warning); }
 .empty { margin: auto; text-align: center; color: var(--text-secondary); max-width: 360px; padding: 24px; }
 .empty h2 { margin: 0 0 6px; font-size: 18px; color: var(--text-primary); font-weight: 600; }
@@ -521,6 +564,7 @@ body.pointer-reset .settings-header-close:hover {
 .item-modal .error { margin-bottom: 4px; }
 .modal h2 { margin: 0 0 14px; font-size: 16px; }
 .about-modal {
+  position: relative;
   width: min(460px, calc(100% - 32px));
   max-height: min(680px, calc(100% - 48px));
   display: flex;
@@ -530,6 +574,24 @@ body.pointer-reset .settings-header-close:hover {
   background: linear-gradient(160deg, var(--bg-modal), var(--bg-app));
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
 }
+/* Soft light behind the content, the same dressing the suite uses. */
+.about-glass {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.about-glass::before,
+.about-glass::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent);
+  filter: blur(60px);
+}
+.about-glass::before { top: -80px; left: -70px; width: 210px; height: 210px; opacity: 0.13; }
+.about-glass::after { top: -50px; right: -80px; width: 180px; height: 180px; opacity: 0.11; }
 .about-header {
   display: flex;
   justify-content: space-between;
@@ -659,6 +721,71 @@ body.pointer-reset .settings-header-close:hover {
   cursor: pointer;
 }
 .about-suite-more:hover, .about-suite-more:focus-visible { color: var(--accent-light); text-decoration: underline; }
+.about-maintenance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.about-maintenance .btn { padding: 6px 12px; font-size: 12.5px; }
+.about-update-status {
+  margin-bottom: 2px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.about-update-status.latest { color: var(--success); }
+.about-update-status.available {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-light);
+}
+.about-update-status.error { color: var(--text-muted); }
+.about-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.about-toggle:hover { color: var(--text-primary); }
+.about-toggle-knob {
+  position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  background: var(--bg-active);
+  border: 1px solid var(--border);
+  transition: background 150ms, border-color 150ms;
+}
+.about-toggle-knob::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 150ms, background 150ms;
+}
+.about-toggle[aria-checked='true'] .about-toggle-knob { background: var(--accent-dim); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.about-toggle[aria-checked='true'] .about-toggle-knob::after { transform: translateX(13px); background: var(--accent-light); }
+.about-toggle-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: center;
+}
 .about-actions {
   display: flex;
   justify-content: center;
@@ -673,12 +800,6 @@ body.pointer-reset .settings-header-close:hover {
   align-items: center;
   gap: 3px;
   margin-top: 8px;
-}
-.about-tech-mark {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 4px;
-  color: var(--text-muted);
 }
 .about-modal-footer {
   display: flex;
@@ -714,6 +835,8 @@ body.pointer-reset .settings-header-close:hover {
 .field textarea { min-height: 72px; resize: vertical; }
 .pin-input { text-align: center; letter-spacing: 0.28em; }
 .seg { display: flex; gap: 6px; }
+/* One line under the kind selector that says what each kind is for. */
+.kind-hint { margin: 6px 0 0; color: var(--text-muted); font-size: 11.5px; line-height: 1.45; }
 .seg button, .swatch, .theme-card {
   border: 1px solid var(--border); background: var(--bg-input); border-radius: var(--radius-sm); color: var(--text-secondary);
 }
@@ -1253,6 +1376,10 @@ button.cal-daynum-count:hover { background: var(--accent); color: var(--text-on-
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
+.cal-chip-kind { flex-shrink: 0; display: inline-flex; }
+.cal-chip.kind-event .cal-chip-kind { color: var(--accent-light); }
+.cal-chip.kind-task .cal-chip-kind { color: var(--success); }
+.cal-chip.done .cal-chip-kind { color: var(--text-muted); }
 .cal-chip-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-more {
   display: inline-flex;
@@ -1309,6 +1436,26 @@ button.cal-daynum-count:hover { background: var(--accent); color: var(--text-on-
 .cal-day-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .cal-day-title-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-day-meta { color: var(--text-muted); font-size: 11px; }
+.cal-day-kind { font-weight: 600; }
+.cal-day-row.kind-event .cal-day-kind { color: var(--accent-light); }
+.cal-day-row.kind-task .cal-day-kind { color: var(--success); }
+.cal-day-row.done .cal-day-kind { color: var(--text-muted); }
+/* The one click that completes a task, next to its details. */
+.cal-day-complete {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.cal-day-complete:hover { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
 .cal-day-tag { margin-left: auto; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; }
 .cal-day-add {
   width: 100%;
