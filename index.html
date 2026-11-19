@@ -7,7 +7,9 @@
     <link rel="icon" type="image/png" href="/icon.png" />
     <title>CyberGo</title>
     <style>
-      html, body, #root { height: 100%; margin: 0; background: #12151b; color: #f1f2f5; }
+      /* The splash reads the theme variables when they exist and falls back
+         to the dark palette before the app has applied a theme. */
+      html, body, #root { height: 100%; margin: 0; background: var(--bg-app, #12151b); color: var(--text-primary, #f1f2f5); }
     </style>
   </head>
   <body>

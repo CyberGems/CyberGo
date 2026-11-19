@@ -147,33 +147,23 @@ export default function AboutModal({
           <div className="about-version">{about.version.replace('{version}', version)}</div>
           <p className="about-description">{about.description}</p>
 
-          <section className="about-section">
-            <div className="about-section-heading">{about.system}</div>
-            <div className="about-system-grid">
-              <div><span>{about.application}</span><strong>{version}</strong></div>
-              <div><span>{about.platform}</span><strong>{info ? `${platformLabel(info.platform)} ${info.osRelease}` : '…'}</strong></div>
-              <div><span>{about.engine}</span><strong>{info ? `Electron ${info.electron}` : '…'}</strong></div>
-              <div><span>{about.node}</span><strong>{info?.node || '…'}</strong></div>
-            </div>
-          </section>
-
           <section className="about-section" aria-label={about.maintenance}>
             <div className="about-section-heading">{about.maintenance}</div>
-            <div className="about-maintenance">
-              {update.state === 'latest' && <div className="about-update-status latest">{about.latestVersion}</div>}
-              {update.state === 'available' && (
-                <div className="about-update-status available">
-                  {about.updateAvailable.replace('{version}', update.latest)}
-                  <button type="button" className="btn btn-primary" onClick={() => void openExternal(update.url || RELEASES_URL)}>
-                    <Download size={14} />{about.downloadRelease}
-                  </button>
-                </div>
-              )}
-              {update.state === 'error' && <div className="about-update-status error">{about.updateError}</div>}
+            {update.state === 'latest' && <div className="about-update-status latest">{about.latestVersion}</div>}
+            {update.state === 'available' && (
+              <div className="about-update-status available">
+                {about.updateAvailable.replace('{version}', update.latest)}
+                <button type="button" className="btn btn-primary" onClick={() => void openExternal(update.url || RELEASES_URL)}>
+                  <Download size={14} />{about.downloadRelease}
+                </button>
+              </div>
+            )}
+            {update.state === 'error' && <div className="about-update-status error">{about.updateError}</div>}
+            <div className="about-card">
               {update.state !== 'available' && (
                 <button
                   type="button"
-                  className="btn"
+                  className="btn about-check"
                   onClick={() => void runCheck()}
                   disabled={update.state === 'checking'}
                 >
@@ -211,7 +201,12 @@ export default function AboutModal({
               {about.suiteAll} <span aria-hidden="true">→</span>
             </button>
           </section>
+        </div>
 
+        <footer className="about-modal-footer">
+          <button type="button" className="about-footer-brand" onClick={() => void openExternal(SITE_URL)}>
+            {about.footer}
+          </button>
           <div className="about-footer-links">
             <Tooltip label={about.websiteTooltip} placement="top">
               <button type="button" className="btn-icon" aria-label={about.websiteTooltip} onClick={() => void openExternal(SITE_URL)}>
@@ -255,12 +250,6 @@ export default function AboutModal({
               </button>
             </Tooltip>
           </div>
-        </div>
-
-        <footer className="about-modal-footer">
-          <button type="button" className="about-footer-brand" onClick={() => void openExternal(SITE_URL)}>
-            {about.footer}
-          </button>
         </footer>
       </div>
     </div>
