@@ -316,9 +316,9 @@ body.pointer-reset .settings-header-close:hover {
   background: color-mix(in srgb, var(--accent) 13%, transparent);
 }
 .kind-tag.kind-task {
-  color: var(--success);
-  border-color: color-mix(in srgb, var(--success) 38%, transparent);
-  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--kind-task);
+  border-color: color-mix(in srgb, var(--kind-task) 38%, transparent);
+  background: color-mix(in srgb, var(--kind-task) 12%, transparent);
 }
 /* The More menu of the title bar: one card, sections that open side flyouts,
    the same pattern the tray menu and the rest of the suite use. */
@@ -945,6 +945,17 @@ body.pointer-reset .settings-header-close:hover {
 .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
 .swatch { width: 22px; height: 22px; padding: 0; }
 .swatch.on { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+/* A sample of the row bar in the chosen colour, so the origin of the colour
+   the list shows is evident right where it is picked. */
+.swatch-bar-preview {
+  align-self: center;
+  width: 5px;
+  height: 22px;
+  margin-left: 10px;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+.swatch-bar-preview.empty { border: 1px dashed var(--border-strong); background: transparent; }
 .row-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; color: var(--text-secondary); }
 .check input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
@@ -1476,7 +1487,7 @@ button.cal-daynum-count:hover { background: var(--accent); color: var(--text-on-
 }
 .cal-chip-kind { flex-shrink: 0; display: inline-flex; }
 .cal-chip.kind-event .cal-chip-kind { color: var(--accent-light); }
-.cal-chip.kind-task .cal-chip-kind { color: var(--success); }
+.cal-chip.kind-task .cal-chip-kind { color: var(--kind-task); }
 .cal-chip.done .cal-chip-kind { color: var(--text-muted); }
 .cal-chip-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-more {
@@ -1536,7 +1547,7 @@ button.cal-daynum-count:hover { background: var(--accent); color: var(--text-on-
 .cal-day-meta { color: var(--text-muted); font-size: 11px; }
 .cal-day-kind { font-weight: 600; }
 .cal-day-row.kind-event .cal-day-kind { color: var(--accent-light); }
-.cal-day-row.kind-task .cal-day-kind { color: var(--success); }
+.cal-day-row.kind-task .cal-day-kind { color: var(--kind-task); }
 .cal-day-row.done .cal-day-kind { color: var(--text-muted); }
 /* The one click that completes a task, next to its details. */
 .cal-day-complete {

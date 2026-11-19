@@ -35,6 +35,9 @@ export const THEMES: { id: ThemeId; vars: Record<string, string> }[] = [
       '--danger-dim': 'rgba(255,0,85,0.15)',
       '--warning': '#f59e0b',
       '--success': '#22c55e',
+      // The tasks kind reads as pending work, not as done, so it keeps its
+      // own warm tone instead of borrowing the green of completion.
+      '--kind-task': '#f2b34c',
     },
   },
   {
@@ -68,6 +71,7 @@ export const THEMES: { id: ThemeId; vars: Record<string, string> }[] = [
       '--danger-dim': 'rgba(248,113,113,0.16)',
       '--warning': '#d1d5db',
       '--success': '#d1d5db',
+      '--kind-task': '#d1d5db',
     },
   },
   {
@@ -101,6 +105,7 @@ export const THEMES: { id: ThemeId; vars: Record<string, string> }[] = [
       '--danger-dim': 'rgba(220,38,38,0.10)',
       '--warning': '#b45309',
       '--success': '#15803d',
+      '--kind-task': '#b45309',
     },
   },
 ];

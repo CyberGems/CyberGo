@@ -269,6 +269,13 @@ export default function ItemModal({
               onClick={() => set({ color: swatch })}
             />
           ))}
+          {/* A sample of the row bar in the chosen colour, so the origin of
+              the colour the list shows is evident right here. */}
+          <span
+            className={`swatch-bar-preview ${draft.color ? '' : 'empty'}`}
+            style={draft.color ? { background: draft.color } : undefined}
+            aria-hidden="true"
+          />
         </div>
       </div>
       <div className="field">
