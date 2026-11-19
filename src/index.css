@@ -1888,6 +1888,10 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   border-bottom-color: color-mix(in srgb, var(--border) 74%, transparent);
 }
 .row:last-child { border-bottom: 0; }
+/* Late tasks wear a quiet red, so they are found at a glance. The wash is
+   defined before the selection styles: a picked row keeps the pick colour. */
+.row.overdue { background: color-mix(in srgb, var(--danger) 9%, transparent); }
+.row.overdue:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); }
 .row:focus-visible { position: relative; z-index: 1; }
 /*
  * The picked rows.

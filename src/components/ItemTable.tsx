@@ -288,7 +288,7 @@ export default function ItemTable({
               <div
                 key={item.id}
                 data-id={item.id}
-                className={`row ${selectedIds.includes(item.id) ? 'selected' : ''} ${selection.hits.includes(item.id) ? 'in-drag' : ''}`}
+                className={`row ${status.tone === 'overdue' ? 'overdue' : ''} ${selectedIds.includes(item.id) ? 'selected' : ''} ${selection.hits.includes(item.id) ? 'in-drag' : ''}`}
                 onClick={(event) => {
                   if (selection.consumeClick()) return;
                   selection.select(item.id, event.ctrlKey || event.metaKey, event.shiftKey);
@@ -299,7 +299,6 @@ export default function ItemTable({
                 tabIndex={0}
                 aria-current={selectedIds.includes(item.id) ? 'true' : undefined}
                 aria-label={label}
-                style={tint && !selectedIds.includes(item.id) && !selection.hits.includes(item.id) ? { background: `color-mix(in srgb, ${tint} 12%, transparent)` } : undefined}
               >
                 {/* The kind icon carries the identity of the row: its shape
                     says event or task, its colour says the item or the group.
