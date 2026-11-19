@@ -300,17 +300,14 @@ export default function ItemTable({
                 aria-current={selectedIds.includes(item.id) ? 'true' : undefined}
                 aria-label={label}
               >
-                {/* The kind icon carries the identity of the row: its shape
-                    says event or task, its colour says the item or the group.
-                    It keeps both even when the row is picked, so a selected
-                    row never turns into an anonymous strip. */}
-                <span
-                  className="row-kind"
-                  aria-hidden="true"
-                  style={{ color: tint || (item.kind === 'task' ? 'var(--success)' : 'var(--accent-light)') }}
-                >
+                {/* The kind icon says event or task, in a neutral tone so the
+                    row colours stay quiet; late tasks turn it red instead. */}
+                <span className="row-kind" aria-hidden="true">
                   {item.kind === 'task' ? <ListTodo size={14} /> : <CalendarDays size={14} />}
                 </span>
+                {/* The colour the user assigned lives in this bar, so it stays
+                    visible without washing the whole row. */}
+                {tint && <span aria-hidden="true" className="row-bar" style={{ background: tint }} />}
                 <span className="date-cell">
                   <span className="date-value">{formatDate(item.occurrenceAt || item.startAt, lang) || copy.quickNone}</span>
                 </span>

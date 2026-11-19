@@ -156,7 +156,17 @@ body.pointer-reset .settings-header-close:hover {
   background: var(--bg-surface); border-radius: 10px; padding: 0 6px;
 }
 .nav-btn.active .badge, .group-row.active .badge { color: var(--accent-light); background: transparent; }
-.row-kind { display: inline-flex; justify-content: center; width: 100%; }
+.row-kind { display: inline-flex; justify-content: center; width: 100%; color: var(--text-muted); }
+.row.overdue .row-kind { color: var(--danger); }
+/* The colour the user assigned to an item or its group rides on this bar,
+   instead of washing the whole row. */
+.row-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
 .side-foot { padding: 8px; border-top: 1px solid var(--border); }
 
 .list-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-list); overflow: hidden; }
@@ -1883,6 +1893,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   z-index: 3;
 }
 .row {
+  position: relative;
   min-height: 46px;
   padding-inline: 14px;
   border-bottom-color: color-mix(in srgb, var(--border) 74%, transparent);
@@ -1932,7 +1943,9 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   text-overflow: ellipsis;
 }
 .status-pill.today { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); color: var(--accent-light); background: var(--accent-dim); }
-.status-pill.overdue { border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); color: var(--danger); background: var(--danger-dim); }
+/* The overdue pill is quiet text: the red wash of the row already carries
+   the state, so a boxed pill would pile red on red. */
+.status-pill.overdue { border-color: transparent; background: transparent; color: var(--danger); font-weight: 600; }
 .status-pill.future { color: var(--text-secondary); }
 .kind-tag { justify-self: end; background: transparent; color: var(--text-muted); }
 
