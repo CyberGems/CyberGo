@@ -35,6 +35,10 @@ let backupTimer: ReturnType<typeof setInterval> | null = null;
 let tray: Tray | null = null;
 let sessionLocked = false;
 let quitting = false;
+// True while the Alt key is down. Windows turns Alt+F4 into a native close
+// before the F4 keydown reaches the webContents listener, so the close handler
+// needs it to tell an explicit quit from the X.
+let altHeld = false;
 let pendingNavigate: string | null = null;
 const REMINDER_DEFAULT_WIDTH = 420;
 const REMINDER_DEFAULT_HEIGHT = 560;
@@ -727,6 +731,10 @@ function createMain() {
   mainWindow.on('close', (event) => {
     if (persistTimer) clearTimeout(persistTimer);
     persistMainWindowState();
+    // Alt+F4 arrives as a native close before its keydown: while Alt is held
+    // the close is an explicit quit, so the first-close dialog and the tray
+    // choice are skipped and the quit path below runs instead.
+    if (altHeld) quitting = true;
     if (quitting) return;
     // The first time, the user is asked what to do when the window is
     // closed, the same way the rest of the suite does it. From then on the
@@ -2157,9 +2165,18 @@ function applyWindowsSnapFallback(win: BrowserWindow, input: Electron.Input): bo
 
 // Alt+F4 is the close shortcut even when the X leaves CyberGo in the tray.
 app.on('browser-window-created', (_event, window) => {
+  // Alt+Tab (or any other focus loss) swallows the Alt keyup, so a stale flag
+  // would turn a later X click into an explicit quit.
+  window.on('blur', () => {
+    altHeld = false;
+  });
   window.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'Alt') altHeld = input.type !== 'keyUp';
     if (input.type === 'keyDown' && input.alt && input.key === 'F4') {
       event.preventDefault();
+      // The quit is user-requested, so the close handler must not turn it into
+      // a hide to the tray.
+      quitting = true;
       db.flush();
       app.quit();
       return;
