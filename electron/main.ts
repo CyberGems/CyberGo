@@ -1265,10 +1265,18 @@ function updateCustomTrayMenuState() {
   }
 }
 
+const CYBERGO_TOGGLE_SHORTCUT = 'Alt+Shift+G';
+
+function formatTrayTooltip(shortcut?: string): string {
+  const clean = String(shortcut || '').trim();
+  const text = clean ? `CyberGo · ${clean}` : 'CyberGo';
+  return text.length > 63 ? `${text.slice(0, 62)}…` : text;
+}
+
 function createTray() {
   const image = nativeImage.createFromPath(fromPublic('tray.png'));
   tray = new Tray(image.isEmpty() ? nativeImage.createEmpty() : image);
-  tray.setToolTip('CyberGo · Alt+Shift+G');
+  tray.setToolTip(formatTrayTooltip(CYBERGO_TOGGLE_SHORTCUT));
   try {
     ensureTrayMenuWin();
   } catch (err) {
