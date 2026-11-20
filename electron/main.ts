@@ -13,6 +13,7 @@ import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSet
 import * as db from './db';
 import { asDraft, asId, asIsoDate, asNumber, asSettingsPatch, asText, methodOf, presented } from './validate';
 import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
+import { formatTrayTooltip } from './tray-tooltip';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verify = process.env.CYBERGO_VERIFY === '1';
@@ -1266,12 +1267,6 @@ function updateCustomTrayMenuState() {
 }
 
 const CYBERGO_TOGGLE_SHORTCUT = 'Alt+Shift+G';
-
-function formatTrayTooltip(shortcut?: string): string {
-  const clean = String(shortcut || '').trim();
-  const text = clean ? `CyberGo · ${clean}` : 'CyberGo';
-  return text.length > 63 ? `${text.slice(0, 62)}…` : text;
-}
 
 function createTray() {
   const image = nativeImage.createFromPath(fromPublic('tray.png'));
