@@ -15,7 +15,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Plataforma-Windows%2010%2F11-2563EB?style=flat-square" alt="Windows 10 y 11" />
-  <img src="https://img.shields.io/badge/Electron-35-334155?style=flat-square&logo=electron&logoColor=white" alt="Electron 35" />
+  <img src="https://img.shields.io/badge/Electron-42-334155?style=flat-square&logo=electron&logoColor=white" alt="Electron 42" />
   <img src="https://img.shields.io/badge/Estado-alpha-F59E0B?style=flat-square" alt="Estado: alpha" />
   <img src="https://img.shields.io/badge/Licencia-GPL--3.0-334155?style=flat-square" alt="Licencia: GPL-3.0" />
 </p>
@@ -254,7 +254,7 @@ CyberGo/
 └── scripts/                 Scripts de recursos y de build de pre-release
 ```
 
-CyberGo usa **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js** y **electron-builder**. El renderer se comunica con el proceso local de Electron a través del puente de preload.
+CyberGo usa **Electron 42**, **React 19**, **TypeScript**, **Vite**, **SQL.js** y **electron-builder**. El renderer se comunica con el proceso local de Electron a través del puente de preload.
 
 ---
 
