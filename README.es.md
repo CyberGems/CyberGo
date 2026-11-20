@@ -263,7 +263,7 @@ CyberGo usa **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js** 
 | Atajo | Acción |
 |---|---|
 | `Ctrl+K` | Abre la paleta de comandos |
-| `Alt+Shift+G` | Captura rápida desde cualquier parte de Windows |
+| `Alt+G` | Captura rápida desde cualquier parte de Windows |
 | `Enter` | Abre o confirma la acción enfocada |
 | `Escape` | Cierra el modal actual o cancela la acción actual |
 | `Space` | Selecciona la fila enfocada en la tabla de elementos |

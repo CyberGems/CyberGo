@@ -979,7 +979,7 @@ function buildTrayMenuState(resetView: boolean) {
     version: app.getVersion(),
     lang,
     isVisible: Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized()),
-    shortcut: 'Alt+Shift+G',
+    shortcut: 'Alt+G',
     hasPassword: db.hasPassword(),
     suiteApps: getSuiteAppsList(lang),
     flyoutSide: trayMenuFlyoutSide,
@@ -1266,7 +1266,7 @@ function updateCustomTrayMenuState() {
   }
 }
 
-const CYBERGO_TOGGLE_SHORTCUT = 'Alt+Shift+G';
+const CYBERGO_TOGGLE_SHORTCUT = 'Alt+G';
 
 function createTray() {
   const image = nativeImage.createFromPath(fromPublic('tray.png'));
@@ -2042,8 +2042,8 @@ if (!gotLock) {
     registerIpc();
     createMain();
     createTray();
-    if (!globalShortcut.register('Alt+Shift+G', () => quickCapture())) {
-      console.error('CyberGo: could not register the Alt+Shift+G quick-capture hotkey.');
+    if (!globalShortcut.register('Alt+G', () => quickCapture())) {
+      console.error('CyberGo: could not register the Alt+G quick-capture hotkey.');
     }
     setTimeout(() => void evaluateReminders('tick'), 800);
     reminderTimer = setInterval(() => void evaluateReminders('tick'), 15_000);
@@ -2133,4 +2133,37 @@ process.on('SIGINT', () => {
 process.on('SIGTERM', () => {
   db.flush();
   app.quit();
+});
+
+// Win+Up / Win+Down are Windows gestures: the shell performs them and the key
+// never reaches the app. A frameless window can be left out of them, so the
+// same action runs here when the key does arrive, instead of doing nothing.
+function applyWindowsSnapFallback(win: BrowserWindow, input: Electron.Input): boolean {
+  if (input.type !== 'keyDown' || !input.meta) return false;
+  if (input.alt || input.control || input.shift) return false;
+  if (input.key !== 'Up' && input.key !== 'Down') return false;
+  if (win.isDestroyed() || win.isFullScreen()) return false;
+  if (!win.isMaximizable() && !win.isMinimizable()) return false;
+
+  if (input.key === 'Up') {
+    if (win.isMaximizable() && !win.isMaximized()) win.maximize();
+  } else if (win.isMaximized()) {
+    win.unmaximize();
+  } else if (win.isMinimizable()) {
+    win.minimize();
+  }
+  return true;
+}
+
+// Alt+F4 is the close shortcut even when the X leaves CyberGo in the tray.
+app.on('browser-window-created', (_event, window) => {
+  window.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.alt && input.key === 'F4') {
+      event.preventDefault();
+      db.flush();
+      app.quit();
+      return;
+    }
+    if (applyWindowsSnapFallback(window, input)) event.preventDefault();
+  });
 });

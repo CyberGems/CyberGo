@@ -263,7 +263,7 @@ CyberGo uses **Electron 35**, **React 19**, **TypeScript**, **Vite**, **SQL.js**
 | Shortcut | Action |
 |---|---|
 | `Ctrl+K` | Open the command palette |
-| `Alt+Shift+G` | Quick capture from anywhere in Windows |
+| `Alt+G` | Quick capture from anywhere in Windows |
 | `Enter` | Open or confirm the focused action |
 | `Escape` | Close the current modal or cancel the current action |
 | `Space` | Select the focused row in the item table |

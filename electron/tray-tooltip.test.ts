@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { TRAY_TOOLTIP_MAX_LENGTH, formatTrayTooltip } from './tray-tooltip';
 
 test('the tray tooltip uses the suite format with a single shortcut segment', () => {
-  assert.equal(formatTrayTooltip('Alt+Shift+G'), 'CyberGo · Alt+Shift+G');
+  assert.equal(formatTrayTooltip('Alt+G'), 'CyberGo · Alt+G');
 });
 
 test('the tray tooltip falls back to the bare app name without a shortcut', () => {
@@ -14,7 +14,7 @@ test('the tray tooltip falls back to the bare app name without a shortcut', () =
 });
 
 test('the tray tooltip trims the segment before formatting', () => {
-  assert.equal(formatTrayTooltip('  Alt+Shift+G  '), 'CyberGo · Alt+Shift+G');
+  assert.equal(formatTrayTooltip('  Alt+G  '), 'CyberGo · Alt+G');
 });
 
 test('the tray tooltip is capped at 63 characters with an ellipsis', () => {
