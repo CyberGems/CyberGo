@@ -10,9 +10,9 @@ These are all the connections CyberGo makes by itself. None of them sends your a
 
 | When | Where | What for | How to turn it off |
 |---|---|---|---|
-| 20 seconds after launch, then every 6 hours | `api.github.com` (the releases list) | Check for a newer version | No dedicated setting found |
+| 20 seconds after launch, then every 6 hours | `api.github.com` (the releases list) | Check for a newer version | No dedicated setting |
 
-Links you open yourself are not part of this list. CyberGo is an alpha pre-release; details may change before the first stable release.
+A link you click inside the app, or a web page you open in your browser, is your own action and is not a connection the app makes by itself. CyberGo is an alpha pre-release; details may change before the first stable release.
 
 ## What CyberGo reads on your PC
 

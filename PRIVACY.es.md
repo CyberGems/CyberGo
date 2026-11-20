@@ -12,7 +12,7 @@ Estas son todas las conexiones que CyberGo hace por su cuenta. Ninguna envía tu
 |---|---|---|---|
 | 20 segundos después de iniciar y después cada 6 horas | `api.github.com` (lista de releases) | Consultar una versión nueva | Sin ajuste específico |
 
-Los enlaces que abres tú no están en esta lista. CyberGo es una pre-release alpha; los detalles pueden cambiar antes de la primera versión estable.
+Un enlace que pulsas dentro de la app o una página web que abres en tu navegador es una acción tuya, no una conexión que la app haga por su cuenta. CyberGo es una pre-release alpha; los detalles pueden cambiar antes de la primera versión estable.
 
 ## Qué lee CyberGo de tu PC
 
