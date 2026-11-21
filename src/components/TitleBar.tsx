@@ -274,7 +274,7 @@ export default function TitleBar({
           <Tooltip label={windowLabels.minimize} shortcut="Win+↓" placement="bottom">
             <button className="win-btn" onClick={() => api.minimize()} aria-label={windowLabels.minimize}><Minus size={14} /></button>
           </Tooltip>
-          <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut="Win+↑" placement="bottom">
+          <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut={maximized ? 'Win+↓' : 'Win+↑'} placement="bottom">
             <button
               className="win-btn"
               onClick={() => api.toggleMaximize()}
@@ -456,7 +456,7 @@ export default function TitleBar({
         <Tooltip label={windowLabels.minimize} shortcut="Win+↓" placement="bottom">
           <button className="win-btn" onClick={() => api.minimize()} aria-label={windowLabels.minimize}><Minus size={14} /></button>
         </Tooltip>
-        <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut="Win+↑" placement="bottom">
+        <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut={maximized ? 'Win+↓' : 'Win+↑'} placement="bottom">
           <button
             className="win-btn"
             onClick={() => api.toggleMaximize()}
