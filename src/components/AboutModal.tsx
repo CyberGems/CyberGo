@@ -16,7 +16,6 @@ const ISSUES_URL = `${REPO_URL}/issues`;
 const RELEASES_URL = `${REPO_URL}/releases`;
 const DONATE_URL = `${REPO_URL}#%EF%B8%8F-donate`;
 const DONATE_HEART = '#F43F5E';
-const AUTO_CHECK_KEY = 'cybergo-about-autocheck';
 
 type UpdateState =
   | { state: 'idle' }
@@ -28,18 +27,20 @@ type UpdateState =
 export default function AboutModal({
   copy,
   info,
+  autoCheck,
+  onAutoCheckChange,
   onClose,
 }: {
   copy: Copy;
   info: AppInfo | null;
+  autoCheck: boolean;
+  onAutoCheckChange: (enabled: boolean) => void;
   onClose: () => void;
 }) {
   const about = copy.about;
   const [copied, setCopied] = useState(false);
   const [suitePick] = useState(pickSuiteApps);
   const [update, setUpdate] = useState<UpdateState>({ state: 'idle' });
-  // Default on, like the rest of the suite; the choice is remembered locally.
-  const [autoCheck, setAutoCheck] = useState(() => localStorage.getItem(AUTO_CHECK_KEY) !== 'false');
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const version = info?.version || '…';
@@ -89,11 +90,6 @@ export default function AboutModal({
     if (autoCheck) void runCheck();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function toggleAutoCheck(next: boolean) {
-    setAutoCheck(next);
-    localStorage.setItem(AUTO_CHECK_KEY, String(next));
-  }
 
   async function copyDiagnostics() {
     if (!info) return;
@@ -171,7 +167,7 @@ export default function AboutModal({
                 role="switch"
                 aria-checked={autoCheck}
                 aria-label={about.autoCheck}
-                onClick={() => toggleAutoCheck(!autoCheck)}
+                onClick={() => onAutoCheckChange(!autoCheck)}
               >
                 <span aria-hidden="true" className="about-toggle-knob" />
                 {about.autoCheck}

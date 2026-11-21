@@ -131,6 +131,8 @@ export default function SettingsModal({
   onClose,
   onLock,
   appInfo,
+  updateNotifications,
+  onUpdateNotificationsChange,
   onOpenAbout,
 }: {
   copy: Copy;
@@ -139,6 +141,8 @@ export default function SettingsModal({
   onClose: () => void;
   onLock: () => void;
   appInfo: AppInfo | null;
+  updateNotifications: boolean;
+  onUpdateNotificationsChange: (enabled: boolean) => void;
   onOpenAbout: () => void;
 }) {
   const api = window.cyberGoAPI;
@@ -451,6 +455,17 @@ export default function SettingsModal({
               {copy.startWithWindows}
             </label>
             <p className="hint">{copy.trayHint}</p>
+            <label className="check">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={updateNotifications}
+                aria-describedby="go-update-notifications-desc"
+                onChange={(event) => onUpdateNotificationsChange(event.target.checked)}
+              />
+              {copy.about.autoCheck}
+            </label>
+            <p className="hint" id="go-update-notifications-desc">{copy.about.autoCheckHint}</p>
           </div>
         )}
 

@@ -22,6 +22,8 @@ import Tooltip from './components/Tooltip';
 import DialogPanel from './components/Dialog';
 import { EnterGlyph, EscHint, KeyHint, useModalKeys } from './components/ModalKeys';
 
+const UPDATE_NOTIFICATIONS_KEY = 'cybergo-about-autocheck';
+
 export default function App() {
   if (!window.cyberGoAPI) {
     const lang = navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en';
@@ -56,6 +58,12 @@ function MainApp() {
   const [seed, setSeed] = useState<ItemDraft | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [updateNotifications, setUpdateNotifications] = useState(() => localStorage.getItem(UPDATE_NOTIFICATIONS_KEY) !== 'false');
+
+  function changeUpdateNotifications(enabled: boolean) {
+    localStorage.setItem(UPDATE_NOTIFICATIONS_KEY, String(enabled));
+    setUpdateNotifications(enabled);
+  }
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [remindersVisible, setRemindersVisible] = useState(false);
@@ -649,10 +657,20 @@ function MainApp() {
           onClose={() => setSettingsOpen(false)}
           onLock={() => { setSettingsOpen(false); detach(api.lock(), 'lock the app'); }}
           appInfo={appInfo}
+          updateNotifications={updateNotifications}
+          onUpdateNotificationsChange={changeUpdateNotifications}
           onOpenAbout={() => { setSettingsOpen(false); setAboutOpen(true); }}
         />
       )}
-      {aboutOpen && <AboutModal copy={copy} info={appInfo} onClose={() => setAboutOpen(false)} />}
+      {aboutOpen && (
+        <AboutModal
+          copy={copy}
+          info={appInfo}
+          autoCheck={updateNotifications}
+          onAutoCheckChange={changeUpdateNotifications}
+          onClose={() => setAboutOpen(false)}
+        />
+      )}
       {paletteOpen && (
         <CommandPalette
           copy={copy}
