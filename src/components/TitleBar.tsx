@@ -271,10 +271,10 @@ export default function TitleBar({
         {hideBrand && <div className="drag" />}
         {children}
         <div className="win-controls">
-          <Tooltip label={windowLabels.minimize} placement="bottom">
+          <Tooltip label={windowLabels.minimize} shortcut="Win+↓" placement="bottom">
             <button className="win-btn" onClick={() => api.minimize()} aria-label={windowLabels.minimize}><Minus size={14} /></button>
           </Tooltip>
-          <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} placement="bottom">
+          <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut="Win+↑" placement="bottom">
             <button
               className="win-btn"
               onClick={() => api.toggleMaximize()}
@@ -283,7 +283,7 @@ export default function TitleBar({
               {maximized ? <RestoreIcon /> : <MaximizeIcon />}
             </button>
           </Tooltip>
-          <Tooltip label={windowLabels.close} placement="bottom">
+          <Tooltip label={windowLabels.close} shortcut="Alt+F4" placement="bottom">
             <button className="win-btn close" onClick={() => (onClose ? onClose() : api.close())} aria-label={windowLabels.close}><X size={14} /></button>
           </Tooltip>
         </div>
@@ -453,10 +453,10 @@ export default function TitleBar({
         )}
       </div>
       <div className="win-controls">
-        <Tooltip label={windowLabels.minimize} placement="bottom">
+        <Tooltip label={windowLabels.minimize} shortcut="Win+↓" placement="bottom">
           <button className="win-btn" onClick={() => api.minimize()} aria-label={windowLabels.minimize}><Minus size={14} /></button>
         </Tooltip>
-        <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} placement="bottom">
+        <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut="Win+↑" placement="bottom">
           <button
             className="win-btn"
             onClick={() => api.toggleMaximize()}
@@ -465,7 +465,7 @@ export default function TitleBar({
             {maximized ? <RestoreIcon /> : <MaximizeIcon />}
           </button>
         </Tooltip>
-        <Tooltip label={windowLabels.close} placement="bottom">
+        <Tooltip label={windowLabels.close} shortcut="Alt+F4" placement="bottom">
           <button className="win-btn close" onClick={() => (onClose ? onClose() : api.close())} aria-label={windowLabels.close}><X size={14} /></button>
         </Tooltip>
       </div>

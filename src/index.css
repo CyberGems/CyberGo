@@ -1993,6 +1993,26 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   overflow-wrap: break-word;
   animation: tooltipPop 140ms ease-out;
 }
+.tooltip-label-with-shortcuts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tooltip-shortcut-key {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  /* Tinted from the secondary text, so the chip stays legible on the white
+     tooltip of the light theme (a --border outline vanished there). */
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 34%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
 .tooltip-arrow {
   position: absolute;
   width: 8px;

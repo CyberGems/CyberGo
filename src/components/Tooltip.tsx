@@ -14,11 +14,14 @@ function clamp(value: number, min: number, max: number) {
 
 export default function Tooltip({
   label,
+  shortcut,
   placement = 'bottom',
   delay = 250,
   children,
 }: {
   label: ReactNode;
+  /** Suite shortcut shown as a chip after the label, e.g. the window gestures. */
+  shortcut?: string;
   placement?: Placement;
   delay?: number;
   children: ReactElement;
@@ -166,7 +169,14 @@ export default function Tooltip({
           }}
         >
           <div ref={cardRef} className="tooltip-card">
-            {label}
+            {shortcut
+              ? (
+                <span className="tooltip-label-with-shortcuts">
+                  <span>{label}</span>
+                  <kbd className="tooltip-shortcut-key">{shortcut}</kbd>
+                </span>
+              )
+              : label}
             <span className="tooltip-arrow" style={position?.arrow} />
           </div>
         </div>,
