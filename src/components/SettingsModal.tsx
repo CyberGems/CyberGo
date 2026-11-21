@@ -455,17 +455,21 @@ export default function SettingsModal({
               {copy.startWithWindows}
             </label>
             <p className="hint">{copy.trayHint}</p>
-            <label className="check">
-              <input
-                type="checkbox"
-                role="switch"
-                checked={updateNotifications}
-                aria-describedby="go-update-notifications-desc"
-                onChange={(event) => onUpdateNotificationsChange(event.target.checked)}
-              />
-              {copy.about.autoCheck}
-            </label>
-            <p className="hint" id="go-update-notifications-desc">{copy.about.autoCheckHint}</p>
+            <button
+              type="button"
+              className="check about-toggle settings-update-notifications"
+              role="switch"
+              aria-checked={updateNotifications}
+              aria-labelledby="go-update-notifications-title"
+              aria-describedby="go-update-notifications-desc"
+              onClick={() => onUpdateNotificationsChange(!updateNotifications)}
+            >
+              <span className="settings-update-notifications-copy">
+                <strong id="go-update-notifications-title">{copy.about.autoCheck}</strong>
+                <small id="go-update-notifications-desc">{copy.about.autoCheckHint}</small>
+              </span>
+              <span aria-hidden="true" className="about-toggle-knob" />
+            </button>
           </div>
         )}
 

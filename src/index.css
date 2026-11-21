@@ -824,7 +824,7 @@ body.pointer-reset .settings-header-close:hover {
 .about-toggle[aria-checked='true'] .about-toggle-knob { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
 .about-toggle[aria-checked='true'] .about-toggle-knob::after {
   left: 23px;
-  background-color: var(--text-on-accent);
+  background-color: #fff;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.35 6.45 11.45 12.8 4.7' fill='none' stroke='%2312161e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center;
@@ -3176,6 +3176,25 @@ button, input, select, textarea { transition: border-color var(--transition), ba
 }
 .settings-tab-content > .hint {
   margin: -5px 2px 0;
+}
+.settings-tab-content > .settings-update-notifications {
+  justify-content: space-between;
+  gap: 12px;
+  text-align: start;
+  color: var(--text-primary);
+}
+.settings-update-notifications-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.settings-update-notifications-copy small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.settings-update-notifications .about-toggle-knob {
+  background: var(--border-strong);
 }
 .settings-tab-content .settings-section {
   margin: 0;
