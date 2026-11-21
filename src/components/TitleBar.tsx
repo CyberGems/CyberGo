@@ -343,7 +343,7 @@ export default function TitleBar({
     <header className="titlebar">
       {!hideBrand && onBrandClick && (
         <div className="drag">
-          <Tooltip label={brandLabel ?? ''} placement="bottom">
+          <Tooltip label={brandLabel ?? ''} shortcut="F1" placement="bottom">
             <button type="button" className="brand brand-btn" onClick={onBrandClick} aria-label={brandLabel ?? undefined}>
               <img className="brand-icon" src="icon.png" alt="" draggable={false} />
               <span className="brand-text">{title}</span>
@@ -371,7 +371,7 @@ export default function TitleBar({
             </button>
           </Tooltip>
         )}
-        <Tooltip label={labels.moreOptions} placement="bottom">
+        <Tooltip label={labels.moreOptions} shortcut="Alt+M" placement="bottom">
           <button
             type="button"
             ref={burgerRef}
