@@ -271,7 +271,7 @@ export default function TitleBar({
         {hideBrand && <div className="drag" />}
         {children}
         <div className="win-controls">
-          <Tooltip label={windowLabels.minimize} shortcut="Win+↓" placement="bottom">
+          <Tooltip label={windowLabels.minimize} shortcut={maximized ? undefined : 'Win+↓'} placement="bottom">
             <button className="win-btn" onClick={() => api.minimize()} aria-label={windowLabels.minimize}><Minus size={14} /></button>
           </Tooltip>
           <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut={maximized ? 'Win+↓' : 'Win+↑'} placement="bottom">
@@ -453,7 +453,7 @@ export default function TitleBar({
         )}
       </div>
       <div className="win-controls">
-        <Tooltip label={windowLabels.minimize} shortcut="Win+↓" placement="bottom">
+        <Tooltip label={windowLabels.minimize} shortcut={maximized ? undefined : 'Win+↓'} placement="bottom">
           <button className="win-btn" onClick={() => api.minimize()} aria-label={windowLabels.minimize}><Minus size={14} /></button>
         </Tooltip>
         <Tooltip label={maximized ? windowLabels.restore : windowLabels.maximize} shortcut={maximized ? 'Win+↓' : 'Win+↑'} placement="bottom">
