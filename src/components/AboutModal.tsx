@@ -40,7 +40,10 @@ export default function AboutModal({
   const about = copy.about;
   const [copied, setCopied] = useState(false);
   const [suitePick] = useState(pickSuiteApps);
-  const [update, setUpdate] = useState<UpdateState>({ state: 'idle' });
+  const [checkResult, setCheckResult] = useState<UpdateState>({ state: 'idle' });
+  const [requestedManually, setRequestedManually] = useState(false);
+  const checkRequestId = useRef(0);
+  const update: UpdateState = autoCheck || requestedManually ? checkResult : { state: 'idle' };
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const version = info?.version || '…';
@@ -73,14 +76,17 @@ export default function AboutModal({
   }
 
   async function runCheck(force = false) {
-    setUpdate({ state: 'checking' });
+    const requestId = ++checkRequestId.current;
+    setRequestedManually(force);
+    setCheckResult({ state: 'checking' });
     try {
       const result = await window.cyberGoAPI.checkUpdates(force);
-      if (result.error) setUpdate({ state: 'error' });
-      else if (result.available) setUpdate({ state: 'available', latest: result.latest ?? '', url: result.url });
-      else setUpdate({ state: 'latest' });
+      if (requestId !== checkRequestId.current) return;
+      if (result.error) setCheckResult({ state: 'error' });
+      else if (result.available) setCheckResult({ state: 'available', latest: result.latest ?? '', url: result.url });
+      else setCheckResult({ state: 'latest' });
     } catch {
-      setUpdate({ state: 'error' });
+      if (requestId === checkRequestId.current) setCheckResult({ state: 'error' });
     }
   }
 
