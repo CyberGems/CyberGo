@@ -5,6 +5,9 @@ export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
   getAppInfo: () => Promise<AppInfo>;
   checkUpdates: (force?: boolean) => Promise<UpdateCheck>;
+  downloadUpdate: (tag: string) => Promise<boolean>;
+  installUpdate: (tag: string) => Promise<{ ok: boolean; downloaded: boolean }>;
+  onUpdateProgress: (cb: (tag: string, percent: number) => void) => () => void;
   openExternal: (url: string) => Promise<boolean>;
   readClipboardText: () => Promise<string>;
   minimize: () => Promise<void>;
@@ -68,6 +71,13 @@ const api: CyberGoAPI = {
   getBootstrap: () => ipcRenderer.invoke('bootstrap:get'),
   getAppInfo: () => ipcRenderer.invoke('app:info'),
   checkUpdates: (force?: boolean) => ipcRenderer.invoke('updates:check', force),
+  downloadUpdate: (tag) => ipcRenderer.invoke('updates:download', tag),
+  installUpdate: (tag) => ipcRenderer.invoke('updates:install', tag),
+  onUpdateProgress: (cb) => {
+    const listener = (_event: unknown, tag: string, percent: number) => cb(tag, percent);
+    ipcRenderer.on('updates:progress', listener);
+    return () => ipcRenderer.removeListener('updates:progress', listener);
+  },
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
   readClipboardText: () => ipcRenderer.invoke('clipboard:read-text'),
   minimize: () => ipcRenderer.invoke('window:minimize'),

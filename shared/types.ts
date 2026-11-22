@@ -50,6 +50,8 @@ export interface UpdateCheck {
   url: string | null;
   /** Set when the check itself could not run. */
   error: string | null;
+  canInstall?: boolean;
+  downloaded?: boolean;
 }
 
 export interface Recurrence {

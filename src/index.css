@@ -891,7 +891,19 @@ body.pointer-reset .settings-header-close:hover {
   gap: 6px;
   color: var(--accent-light);
 }
-.about-update-status.error { color: var(--text-muted); }
+.about-update-status.error { color: var(--danger); }
+.about-update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.about-update-progress {
+  width: min(100%, 240px);
+  height: 6px;
+  accent-color: var(--accent);
+}
+.about-update-hint { color: var(--text-muted); }
 .about-footer-links {
   display: flex;
   justify-content: center;

@@ -14,6 +14,7 @@ import * as db from './db';
 import { asDraft, asId, asIsoDate, asNumber, asSettingsPatch, asText, methodOf, presented } from './validate';
 import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
 import { formatTrayTooltip } from './tray-tooltip';
+import { findReleaseInstaller, UpdateInstaller, type ReleaseInstaller } from './updater';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verify = process.env.CYBERGO_VERIFY === '1';
@@ -857,14 +858,24 @@ const RELEASES_API = 'https://api.github.com/repos/CyberGems/CyberGo/releases?pe
 // so the About dialog opens with an answer instead of a spinner.
 const UPDATE_CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 let lastUpdateCheck: { result: UpdateCheck; at: number } | null = null;
+let availableInstaller: ReleaseInstaller | undefined;
+const supportsInAppUpdates = app.isPackaged && process.platform === 'win32';
+const updateInstaller = new UpdateInstaller(path.join(app.getPath('userData'), 'updates'), net.fetch.bind(net));
+
+function withInstallerStatus(result: UpdateCheck): UpdateCheck {
+  const installer = availableInstaller;
+  if (!supportsInAppUpdates || !result.available || !installer || installer.tag !== result.latest) return result;
+  return { ...result, canInstall: true, downloaded: updateInstaller.isDownloaded(installer.tag) };
+}
 
 async function runUpdateCheck(): Promise<UpdateCheck> {
-  const result = await checkForUpdates();
+  const { installer, ...result } = await checkForUpdates();
+  if (!result.error) availableInstaller = installer;
   lastUpdateCheck = { result, at: Date.now() };
   // The title bar badge follows every completed check, so it appears and
   // clears without waiting for the About dialog.
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:status', result);
-  return result;
+  return withInstallerStatus(result);
 }
 
 /**
@@ -910,22 +921,24 @@ export function compareVersions(a: string, b: string): number {
  * Asks GitHub for the newest release and compares it with this build. The
  * network is only touched here, never by the renderer behind its CSP.
  */
-async function checkForUpdates(): Promise<UpdateCheck> {
+async function checkForUpdates(): Promise<UpdateCheck & { installer?: ReleaseInstaller }> {
   try {
     const response = await net.fetch(RELEASES_API, {
       headers: { 'User-Agent': 'CyberGo-Update-Check', Accept: 'application/vnd.github+json' },
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return { available: false, latest: null, url: null, error: `GitHub responded ${response.status}` };
-    const releases = await response.json() as Array<{ tag_name?: unknown; html_url?: unknown; draft?: unknown } | null>;
+    const releases = await response.json() as Array<{ tag_name?: unknown; html_url?: unknown; draft?: unknown; assets?: unknown } | null>;
     const release = Array.isArray(releases) ? releases.find((row) => row && typeof row.tag_name === 'string' && row.draft !== true) : null;
     if (!release || typeof release.tag_name !== 'string') return { available: false, latest: null, url: null, error: 'no-release' };
     const latest = release.tag_name;
+    const available = compareVersions(latest, app.getVersion()) > 0;
     return {
-      available: compareVersions(latest, app.getVersion()) > 0,
+      available,
       latest,
       url: typeof release.html_url === 'string' ? release.html_url : null,
       error: null,
+      installer: available ? findReleaseInstaller(latest, release.assets) : undefined,
     };
   } catch (error) {
     return { available: false, latest: null, url: null, error: error instanceof Error ? error.message : String(error) };
@@ -1456,8 +1469,38 @@ function registerIpc() {
   }));
   ipcMain.handle('updates:check', (_event, force?: unknown) => {
     if (force === true) return runUpdateCheck();
-    if (lastUpdateCheck && Date.now() - lastUpdateCheck.at < UPDATE_CHECK_INTERVAL) return lastUpdateCheck.result;
+    if (lastUpdateCheck && Date.now() - lastUpdateCheck.at < UPDATE_CHECK_INTERVAL) {
+      return withInstallerStatus(lastUpdateCheck.result);
+    }
     return runUpdateCheck();
+  });
+  ipcMain.handle('updates:download', async (event, tag: unknown) => {
+    const installer = availableInstaller;
+    if (!supportsInAppUpdates || event.sender !== mainWindow?.webContents || !installer || installer.tag !== tag) {
+      return false;
+    }
+    try {
+      await updateInstaller.download(installer, (percent) => {
+        if (!event.sender.isDestroyed()) event.sender.send('updates:progress', installer.tag, percent);
+      });
+      return true;
+    } catch (error) {
+      console.error('CyberGo update download failed:', error);
+      return false;
+    }
+  });
+  ipcMain.handle('updates:install', async (event, tag: unknown) => {
+    if (!supportsInAppUpdates || event.sender !== mainWindow?.webContents || typeof tag !== 'string') {
+      return { ok: false, downloaded: false };
+    }
+    try {
+      await updateInstaller.install(tag);
+      setImmediate(() => app.quit());
+      return { ok: true, downloaded: true };
+    } catch (error) {
+      console.error('CyberGo update installer failed:', error);
+      return { ok: false, downloaded: updateInstaller.isDownloaded(tag) };
+    }
   });
   ipcMain.handle('shell:open-external', async (_event, value: unknown) => {
     if (typeof value !== 'string') return false;
