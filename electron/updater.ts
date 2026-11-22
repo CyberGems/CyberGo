@@ -29,7 +29,7 @@ export function launchInstaller(installer: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // The assisted NSIS installer skips its welcome page for an update and
     // offers to run CyberGo when it finishes.
-    const child = spawn(installer, ['--updated'], { detached: true, stdio: 'ignore', windowsHide: true });
+    const child = spawn(installer, ['--updated'], { detached: true, stdio: 'ignore' });
     child.once('error', reject);
     child.once('spawn', () => {
       child.unref();
