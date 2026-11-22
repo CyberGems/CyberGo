@@ -152,6 +152,11 @@ export default function SettingsModal({
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [message, setMessage] = useState('');
+  // Bumped on every completed settings write so the nav-footer hairline
+  // replays its green pulse per save action (suite standard).
+  const [savePulse, setSavePulse] = useState(0);
+  const savedTimer = useRef<number | null>(null);
+  const pulseTimer = useRef<number | null>(null);
   const [recovery, setRecovery] = useState('');
   const [backups, setBackups] = useState<BackupInfo[]>([]);
   const [keepText, setKeepText] = useState(() => String(settings.autobackupKeep));
@@ -206,6 +211,15 @@ export default function SettingsModal({
     }
   }, [tab]);
 
+  function showSaved() {
+    setMessage(copy.saved);
+    setSavePulse((p) => p + 1);
+    if (savedTimer.current) window.clearTimeout(savedTimer.current);
+    if (pulseTimer.current) window.clearTimeout(pulseTimer.current);
+    savedTimer.current = window.setTimeout(() => setMessage(''), 2200);
+    pulseTimer.current = window.setTimeout(() => setSavePulse(0), 1600);
+  }
+
   async function patch(partial: Partial<PublicSettings>) {
     let saved: PublicSettings;
     try {
@@ -217,7 +231,7 @@ export default function SettingsModal({
     }
     if (partial.theme) applyTheme(saved.theme);
     if (partial.accessLogEnabled != null) void refreshAccessLog();
-    setMessage(copy.saved);
+    showSaved();
   }
 
   async function previewReminderPlacement(
@@ -396,6 +410,9 @@ export default function SettingsModal({
               ))}
             </nav>
             <div className="settings-nav-footer">
+              {savePulse > 0 && (
+                <span key={savePulse} className="settings-save-separator-pulse" aria-hidden="true" />
+              )}
               {message && (
                 <div className="settings-saved" role="status" aria-live="polite">
                   <span className="settings-saved-dot" aria-hidden="true" />
@@ -632,7 +649,7 @@ export default function SettingsModal({
             <div className="row-actions" style={{ justifyContent: 'flex-start' }}>
               {!hasPassword && <button className="btn btn-primary" onClick={() => void createPassword()}>{method === 'pin' ? copy.setPin : copy.setPassword}</button>}
               {hasPassword && <button className="btn btn-primary" onClick={() => void changePassword()}>{method === 'pin' ? copy.changePin : copy.changePassword}</button>}
-              {hasPassword && <button className="btn btn-danger" onClick={() => void api.removePassword(current).then((ok) => setMessage(ok ? copy.saved : (settings.authMethod === 'pin' ? copy.wrongPin : copy.wrongPassword)))}>{settings.authMethod === 'pin' ? copy.removePin : copy.removePassword}</button>}
+              {hasPassword && <button className="btn btn-danger" onClick={() => void api.removePassword(current).then((ok) => { if (ok) showSaved(); else setMessage(settings.authMethod === 'pin' ? copy.wrongPin : copy.wrongPassword); })}>{settings.authMethod === 'pin' ? copy.removePin : copy.removePassword}</button>}
               {hasPassword && <button className="btn" onClick={onLock}>{copy.lockNow}</button>}
             </div>
             {recovery && (

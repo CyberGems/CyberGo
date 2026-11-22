@@ -3015,6 +3015,7 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   opacity: 0.86;
 }
 .settings-nav-footer {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 9px;
@@ -3048,6 +3049,29 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* Suite-standard save flash: the nav-footer hairline pulses green on each
+   completed settings write (replayed per save via remount in SettingsModal). */
+.settings-save-separator-pulse {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--success) 85%, transparent),
+    transparent
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--success) 45%, transparent);
+  animation: settingsSeparatorPulse 1.4s ease-out forwards;
+}
+@keyframes settingsSeparatorPulse {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}
 .settings-nav-close {
   width: 100%;
   display: flex;
@@ -3072,6 +3096,11 @@ button, input, select, textarea { transition: border-color var(--transition), ba
   color: var(--text-primary);
   background: color-mix(in srgb, var(--accent) 9%, var(--bg-hover));
   outline: none;
+}
+/* The keycap keeps its own casing ("Esc"), unaffected by the button label. */
+.settings-nav-close .key-hint {
+  text-transform: none;
+  letter-spacing: normal;
 }
 .config-brand-footer {
   display: flex;
