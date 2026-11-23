@@ -9,13 +9,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.6"><img src="https://img.shields.io/badge/Download%20pre--release-0.1.0--alpha.6-0891B2?style=for-the-badge" alt="Download CyberGo 0.1.0-alpha.6" /></a>
+  <a href="https://github.com/CyberGems/CyberGo/releases/latest"><img src="https://img.shields.io/badge/Download%20latest%20pre--release-0891B2?style=for-the-badge" alt="Download latest CyberGo pre-release" /></a>
   <a href="https://github.com/CyberGems/CyberGo/releases"><img src="https://img.shields.io/badge/All%20releases-30363D?style=for-the-badge&logo=github&logoColor=white" alt="All releases" /></a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-2563EB?style=flat-square" alt="Windows 10 and 11" />
-  <img src="https://img.shields.io/badge/Electron-42-334155?style=flat-square&logo=electron&logoColor=white" alt="Electron 42" />
+  <img src="https://img.shields.io/badge/Framework-Electron-334155?style=flat-square&logo=electron&logoColor=white" alt="Framework: Electron" />
   <img src="https://img.shields.io/badge/Status-alpha-F59E0B?style=flat-square" alt="Alpha status" />
   <img src="https://img.shields.io/badge/License-GPL--3.0-334155?style=flat-square" alt="License: GPL-3.0" />
 </p>
@@ -151,7 +151,7 @@ Plenty of planners lock your agenda behind an account and a cloud, or bury it in
 
 ### 📥 Download
 
-Download the Windows installer from the [CyberGo pre-release page](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.6). The SHA-256 checksum of the installer ships next to it as a SHA256SUMS.txt file in the release assets.
+Download the Windows installer from the [latest CyberGo pre-release](https://github.com/CyberGems/CyberGo/releases/latest). The SHA-256 checksum of the installer ships next to it as a SHA256SUMS.txt file in the release assets.
 
 The alpha installers are unsigned Windows executables. Windows SmartScreen may display a warning because the file does not yet have code-signing reputation. You can inspect the source, compare the SHA-256 value published with the release, or build the installer yourself.
 
@@ -254,7 +254,7 @@ CyberGo/
 └── scripts/                 Asset and pre-release build scripts
 ```
 
-CyberGo uses **Electron 42**, **React 19**, **TypeScript**, **Vite**, **SQL.js**, and **electron-builder**. The renderer communicates with the local Electron process through the preload bridge.
+CyberGo uses **Electron**, **React**, **TypeScript**, **Vite**, **SQL.js**, and **electron-builder**. The renderer communicates with the local Electron process through the preload bridge.
 
 ---
 

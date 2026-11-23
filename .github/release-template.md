@@ -8,7 +8,7 @@
 
 <!-- IMPORTANT FOR AGENTS & MAINTAINERS: Always rewrite this entire section and highlights with the ACTUAL release notes for this specific new version before tagging. NEVER leave or copy previous version notes! Use 25-45 words for the summary, lead with user-facing changes, and do not repeat the app name or version. Keep the Spanish mirror inside the details block in sync: translate the summary and rewrite the highlights. -->
 <!-- changelog-summary:start -->
-Upgrades Electron to 42.11.18 to eliminate the white native titlebar glitch on Windows tray popups, fixes tray flicker and cross-monitor jumps with a 4px flyout gap, makes the Avisos button a toggle, and refines calendar, date picker, and About views.
+Adds verified manual updates from About, including download progress and installation when automatic notices are off. The setting is shared between About and Settings. Installer setup now opens the updated app, alongside refinements to the title bar, tray, task list, calendar, and themes.
 <!-- changelog-summary:end -->
 
 > **New to CyberGo?** A private, local-first agenda for tasks, events and reminders on Windows.
@@ -17,18 +17,18 @@ Upgrades Electron to 42.11.18 to eliminate the white native titlebar glitch on W
 
 ### ✨ Key Features & Highlights
 
-- 🪟 **Clean multi-monitor tray on Electron 42**: Upgraded Electron to `42.11.18` and switched the tray menu to a fresh prewarmed window with two-step transparent reveal and a `4px` flyout gap, removing the white titlebar flash, repeated-open flicker, and cross-monitor jumps.
+- 🔄 **Verified manual updates:** About can check releases, download the matching installer with progress, verify its SHA-256 checksum, and install it. Manual checks and installs remain available when automatic notices are off.
 
-- 🔔 **Toggleable Reminders and clearer dates**: The toolbar `Avisos` button now toggles the reminders window and reflects locked state in its title, `Nuevo` defaults to ten minutes ahead with linked start/end dragging, and tasks can be completed directly from the calendar.
+- 🔔 **One update notice setting:** The same preference is available in About and Settings, stays synchronized, and keeps its state after restarting the app.
 
-- 🎨 **Themed splash and aligned About dialog**: The startup splash follows the active theme and the About dialog layout matches CyberNotes.
+- 🪟 **Installer and interface refinements:** In-app updates show the standard Windows setup assistant, whose Finish action opens the new version. The title bar, tray, task list, calendar, and theme-aware controls also received updates.
 
 <details>
 <summary><b>🇪🇸 Ver notas de la versión en Español</b></summary>
 
 ### 🚀 Novedades de esta versión
 
-Actualiza Electron a 42.11.18 para eliminar el fallo de barra blanca en la bandeja de Windows, corrige parpadeos y saltos entre monitores con flyouts a 4px, convierte Avisos en un interruptor y pule calendario, selector de fechas y Acerca de.
+Permite buscar, descargar e instalar actualizaciones manualmente desde Acerca de, con progreso y verificación SHA-256, incluso con los avisos automáticos apagados. El interruptor se comparte con Configuración y el asistente abre la nueva versión al finalizar.
 
 > **¿Nuevo en CyberGo?** Una agenda local y privada para tareas, eventos y avisos en Windows.
 
@@ -36,11 +36,11 @@ Actualiza Electron a 42.11.18 para eliminar el fallo de barra blanca en la bande
 
 ### ✨ Novedades destacadas
 
-- 🪟 **Bandeja limpia en multimonitor con Electron 42**: Se actualizó Electron a `42.11.18` y se pasó el menú de bandeja a ventana precalentada con revelado transparente en dos pasos y espacio de `4px`, eliminando la barra de título blanca, el parpadeo y los saltos entre monitores.
+- 🔄 **Actualizaciones manuales verificadas:** Acerca de puede buscar versiones, descargar el instalador correspondiente mostrando el progreso, comprobar su checksum SHA-256 e instalarlo. La búsqueda y la instalación manual siguen disponibles con los avisos apagados.
 
-- 🔔 **Avisos alternables y fechas más ágiles**: El botón `Avisos` ahora alterna mostrar/ocultar la ventana e indica el estado bloqueado en el título, `Nuevo` propone 10 minutos adelante arrastrando inicio y fin juntos, y las tareas pueden completarse desde el calendario.
+- 🔔 **Una sola preferencia de avisos:** El mismo interruptor aparece en Acerca de y Configuración, sincroniza ambos sitios y conserva su estado al reiniciar la app.
 
-- 🎨 **Splash con tema y diálogo Acerca de alineado**: La pantalla inicial respeta el tema activo y el diálogo Acerca de iguala el diseño de CyberNotes.
+- 🪟 **Instalador e interfaz mejorados:** Las actualizaciones muestran el asistente normal de Windows y, al terminar, abren la nueva versión. También se actualizaron la barra de título, la bandeja, las vistas de tareas y calendario, y los controles adaptados al tema.
 
 ### ℹ️ Antes de instalar
 

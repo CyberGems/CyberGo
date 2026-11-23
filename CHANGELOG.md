@@ -1,3 +1,17 @@
+## 0.1.0-alpha.9 - 2026-11-22
+
+Ninth public pre-release of CyberGo. Adds verified manual updates from About, keeps automatic notices under one shared setting, and opens the updated app after setup. The release also refines the title bar, tray, task list, calendar, and theme-aware controls.
+
+### Added
+
+- About can check for updates, download the matching Windows installer with visible progress, verify its SHA-256 checksum, and install it manually even when automatic notices are off.
+- The update notice preference is available in About and Settings, stays synchronized, and persists across launches.
+
+### Improved
+
+- The normal Windows setup assistant is visible during an in-app update, and its Finish action opens the updated app automatically.
+- Refined title-bar menus and shortcuts, tray behavior, task and calendar presentation, theme styling, and the settings save indicator.
+
 # Changelog
 
 ## 0.1.0-alpha.8 - 2026-11-19

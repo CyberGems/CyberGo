@@ -9,13 +9,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.6"><img src="https://img.shields.io/badge/Descargar%20pre--release-0.1.0--alpha.6-0891B2?style=for-the-badge" alt="Descargar CyberGo 0.1.0-alpha.6" /></a>
+  <a href="https://github.com/CyberGems/CyberGo/releases/latest"><img src="https://img.shields.io/badge/Descargar%20pre--release%20m%C3%A1s%20reciente-0891B2?style=for-the-badge" alt="Descargar la pre-release más reciente de CyberGo" /></a>
   <a href="https://github.com/CyberGems/CyberGo/releases"><img src="https://img.shields.io/badge/Todas_las_versiones-30363D?style=for-the-badge&logo=github&logoColor=white" alt="Todas las versiones" /></a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Plataforma-Windows%2010%2F11-2563EB?style=flat-square" alt="Windows 10 y 11" />
-  <img src="https://img.shields.io/badge/Electron-42-334155?style=flat-square&logo=electron&logoColor=white" alt="Electron 42" />
+  <img src="https://img.shields.io/badge/Motor-Electron-334155?style=flat-square&logo=electron&logoColor=white" alt="Motor: Electron" />
   <img src="https://img.shields.io/badge/Estado-alpha-F59E0B?style=flat-square" alt="Estado: alpha" />
   <img src="https://img.shields.io/badge/Licencia-GPL--3.0-334155?style=flat-square" alt="Licencia: GPL-3.0" />
 </p>
@@ -151,7 +151,7 @@ Muchas agendas encierran tu planificación tras una cuenta y una nube, o te enti
 
 ### 📥 Descargar
 
-Descarga el instalador de Windows desde la [página de pre-release de CyberGo](https://github.com/CyberGems/CyberGo/releases/tag/v0.1.0-alpha.6). El checksum SHA-256 del instalador viaja junto a él como un archivo SHA256SUMS.txt en los assets del release.
+Descarga el instalador de Windows desde la [pre-release más reciente de CyberGo](https://github.com/CyberGems/CyberGo/releases/latest). El checksum SHA-256 del instalador viaja junto a él como un archivo SHA256SUMS.txt en los assets del release.
 
 Los instaladores alpha son ejecutables de Windows sin firmar. Es posible que Windows SmartScreen muestre una advertencia porque el archivo aún no tiene reputación de firma de código. Puedes inspeccionar el código fuente, comparar el valor SHA-256 publicado con la release, o construir el instalador tú mismo.
 
@@ -254,7 +254,7 @@ CyberGo/
 └── scripts/                 Scripts de recursos y de build de pre-release
 ```
 
-CyberGo usa **Electron 42**, **React 19**, **TypeScript**, **Vite**, **SQL.js** y **electron-builder**. El renderer se comunica con el proceso local de Electron a través del puente de preload.
+CyberGo usa **Electron**, **React**, **TypeScript**, **Vite**, **SQL.js** y **electron-builder**. El renderer se comunica con el proceso local de Electron a través del puente de preload.
 
 ---
 
