@@ -409,6 +409,11 @@ async function createReminderWindow(alwaysOnTop: boolean) {
     },
   });
   reminderWindow = win;
+  // The renderer loads the main bundle, so its document title would otherwise
+  // replace the window title with the plain app name after navigation.
+  win.webContents.on('did-finish-load', () => {
+    if (!win.isDestroyed()) win.setTitle('CyberGo · Reminders');
+  });
   // The window opens with this size, so the first resize that the system
   // may report is not taken for a size of the user.
   lastProgrammaticSize = { width: size.width, height: size.height };
