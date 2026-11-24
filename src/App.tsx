@@ -15,6 +15,8 @@ import CommandPalette from './components/CommandPalette';
 import QuickAdd from './components/QuickAdd';
 import SettingsModal from './components/SettingsModal';
 import AboutModal from './components/AboutModal';
+import UpdateNotice from './components/UpdateNotice';
+import { useUpdateNotice } from './lib/useUpdateNotice';
 import LockScreen from './components/LockScreen';
 import RemindersWindow from './components/RemindersWindow';
 import TextContextMenu from './components/TextContextMenu';
@@ -59,6 +61,25 @@ function MainApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [updateNotifications, setUpdateNotifications] = useState(() => localStorage.getItem(UPDATE_NOTIFICATIONS_KEY) !== 'false');
+
+  const [aboutCheck, setAboutCheck] = useState(0);
+  const update = useUpdateNotice(updateNotifications, Boolean(boot && !boot.locked));
+
+  function openAbout() {
+    setAboutCheck(0);
+    setSettingsOpen(false);
+    setAboutOpen(true);
+  }
+
+  function checkFromMenu() {
+    if (update.offer) {
+      update.show();
+      return;
+    }
+    setSettingsOpen(false);
+    setAboutOpen(true);
+    setAboutCheck((request) => request + 1);
+  }
 
   function changeUpdateNotifications(enabled: boolean) {
     localStorage.setItem(UPDATE_NOTIFICATIONS_KEY, String(enabled));
@@ -129,10 +150,7 @@ function MainApp() {
       setCloseRemember(false);
       setCloseDialog(true);
     });
-    const openAbout = api.onOpenAbout(() => {
-      setSettingsOpen(false);
-      setAboutOpen(true);
-    });
+    const stopAbout = api.onOpenAbout(openAbout);
     // The toggle of the toolbar mirrors the floating window: every show and
     // every hide, from any entry point, lands here.
     const reminderVisibility = api.onReminderVisibility(setRemindersVisible);
@@ -140,7 +158,7 @@ function MainApp() {
     const visibility = api.onWindowVisibility(() => {
       window.dispatchEvent(new Event('cybergo:window-visibility'));
     });
-    return () => { off(); open(); focusQuick(); confirmClose(); openAbout(); reminderVisibility(); visibility(); };
+    return () => { off(); open(); focusQuick(); confirmClose(); stopAbout(); reminderVisibility(); visibility(); };
   }, []);
 
   /** The answer to the question of what to do when the window is closed. */
@@ -160,8 +178,7 @@ function MainApp() {
       if (event.key === 'F1') {
         if (dialogOpen.current) return;
         event.preventDefault();
-        setSettingsOpen(false);
-        setAboutOpen(true);
+        openAbout();
       }
     }
     document.addEventListener('keydown', keys);
@@ -443,11 +460,14 @@ function MainApp() {
         <TitleBar
           title={<><span>Cyber</span>Go</>}
           windowLabels={{ minimize: copy.minimize, maximize: copy.maximize, restore: copy.restore, close: copy.closeWindow }}
-          onBrandClick={() => { setSettingsOpen(false); setAboutOpen(true); }}
+          onBrandClick={openAbout}
           brandLabel={copy.about.title}
           menuLabels={copy}
           lockAvailable={boot.hasPassword}
-          onOpenAbout={() => { setSettingsOpen(false); setAboutOpen(true); }}
+          onOpenAbout={openAbout}
+          onCheckUpdates={checkFromMenu}
+          updateVersion={update.offer?.release.latest}
+          onOpenUpdate={update.show}
         >
         <div className="toolbar">
           <div className="toolbar-section">
@@ -659,16 +679,33 @@ function MainApp() {
           appInfo={appInfo}
           updateNotifications={updateNotifications}
           onUpdateNotificationsChange={changeUpdateNotifications}
-          onOpenAbout={() => { setSettingsOpen(false); setAboutOpen(true); }}
+          onOpenAbout={openAbout}
         />
       )}
       {aboutOpen && (
         <AboutModal
           copy={copy}
           info={appInfo}
-          autoCheck={updateNotifications}
-          onAutoCheckChange={changeUpdateNotifications}
+          checkRequest={aboutCheck}
+          onCheck={update.checkManually}
+          updateNoticeOpen={update.open}
           onClose={() => setAboutOpen(false)}
+        />
+      )}
+      {update.open && update.offer && (
+        <UpdateNotice
+          offer={update.offer}
+          copy={copy}
+          language={boot.settings.language}
+          installed={appInfo?.version}
+          aboveAbout={aboutOpen}
+          focusOnOpen={update.focusOnOpen}
+          onClose={update.hide}
+          onGitHub={() => void update.openGitHub()}
+          onSkip={update.skip}
+          onDownload={() => void update.download()}
+          onCancel={() => void update.cancel()}
+          onInstall={() => void update.install()}
         />
       )}
       {paletteOpen && (

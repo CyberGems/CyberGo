@@ -9,7 +9,7 @@ import { detectCsvFormat, itemToCsvRow, parseCsv, rowToDraft, toCsv } from '../s
 import { parseIcs } from '../shared/ics';
 import { fireKey, isDue, parseLocal, tomorrowAtNine } from '../shared/schedule';
 import { hashSecret, normalizeAuthSecret, verifySecret as verifyStoredSecret } from '../shared/auth';
-import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition, UpdateCheck } from '../shared/types';
+import type { AuthMethod, DisplayBounds, DisplayInfo, Item, ItemDraft, PublicSettings, ReminderPosition, UpdateCheck, UpdateDownloadResult } from '../shared/types';
 import * as db from './db';
 import { asDraft, asId, asIsoDate, asNumber, asSettingsPatch, asText, methodOf, presented } from './validate';
 import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
@@ -868,14 +868,22 @@ function withInstallerStatus(result: UpdateCheck): UpdateCheck {
   return { ...result, canInstall: true, downloaded: updateInstaller.isDownloaded(installer.tag) };
 }
 
-async function runUpdateCheck(): Promise<UpdateCheck> {
+let updateCheckInFlight: Promise<UpdateCheck> | null = null;
+
+function runUpdateCheck(): Promise<UpdateCheck> {
+  updateCheckInFlight ??= refreshUpdateCheck().finally(() => { updateCheckInFlight = null; });
+  return updateCheckInFlight;
+}
+
+async function refreshUpdateCheck(): Promise<UpdateCheck> {
   const { installer, ...result } = await checkForUpdates();
   if (!result.error) availableInstaller = installer;
   lastUpdateCheck = { result, at: Date.now() };
   // The title bar badge follows every completed check, so it appears and
   // clears without waiting for the About dialog.
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:status', result);
-  return withInstallerStatus(result);
+  const status = withInstallerStatus(result);
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('updates:status', status);
+  return status;
 }
 
 /**
@@ -928,7 +936,10 @@ async function checkForUpdates(): Promise<UpdateCheck & { installer?: ReleaseIns
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return { available: false, latest: null, url: null, error: `GitHub responded ${response.status}` };
-    const releases = await response.json() as Array<{ tag_name?: unknown; html_url?: unknown; draft?: unknown; assets?: unknown } | null>;
+    const releases = await response.json() as Array<{
+      tag_name?: unknown; html_url?: unknown; draft?: unknown; assets?: unknown;
+      body?: unknown; published_at?: unknown;
+    } | null>;
     const release = Array.isArray(releases) ? releases.find((row) => row && typeof row.tag_name === 'string' && row.draft !== true) : null;
     if (!release || typeof release.tag_name !== 'string') return { available: false, latest: null, url: null, error: 'no-release' };
     const latest = release.tag_name;
@@ -938,6 +949,8 @@ async function checkForUpdates(): Promise<UpdateCheck & { installer?: ReleaseIns
       latest,
       url: typeof release.html_url === 'string' ? release.html_url : null,
       error: null,
+      releaseNotes: typeof release.body === 'string' ? release.body : undefined,
+      publishedAt: typeof release.published_at === 'string' ? release.published_at : undefined,
       installer: available ? findReleaseInstaller(latest, release.assets) : undefined,
     };
   } catch (error) {
@@ -1474,21 +1487,24 @@ function registerIpc() {
     }
     return runUpdateCheck();
   });
-  ipcMain.handle('updates:download', async (event, tag: unknown) => {
+  ipcMain.handle('updates:download', async (event, tag: unknown): Promise<UpdateDownloadResult> => {
     const installer = availableInstaller;
     if (!supportsInAppUpdates || event.sender !== mainWindow?.webContents || !installer || installer.tag !== tag) {
-      return false;
+      return 'failed';
     }
     try {
       await updateInstaller.download(installer, (percent) => {
         if (!event.sender.isDestroyed()) event.sender.send('updates:progress', installer.tag, percent);
       });
-      return true;
+      return 'ready';
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return 'cancelled';
       console.error('CyberGo update download failed:', error);
-      return false;
+      return 'failed';
     }
   });
+  ipcMain.handle('updates:cancel', (event, tag: unknown) =>
+    event.sender === mainWindow?.webContents && typeof tag === 'string' && updateInstaller.cancelDownload(tag));
   ipcMain.handle('updates:install', async (event, tag: unknown) => {
     if (!supportsInAppUpdates || event.sender !== mainWindow?.webContents || typeof tag !== 'string') {
       return { ok: false, downloaded: false };

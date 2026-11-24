@@ -68,6 +68,7 @@ La mayoría de los planificadores te piden una cuenta antes de dejarte anotar un
 
 - Esta es una pre-release alpha. Las funciones y los formatos de datos pueden cambiar.
 - Mantén una copia de seguridad reciente antes de importar o actualizar.
+- El aviso flotante muestra un adelanto de las notas de la versión y separa la descarga de la instalación. Abre Acerca de para buscar una versión nueva.
 - El instalador aún no está firmado digitalmente.
 - La identidad visual aún no está terminada, por lo que el icono y los colores pueden cambiar antes de la primera versión estable.
 - Los informes de errores y sugerencias son bienvenidos a través de [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).

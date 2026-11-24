@@ -49,6 +49,9 @@ export default function TitleBar({
   menuLabels,
   lockAvailable = false,
   onOpenAbout,
+  onCheckUpdates,
+  updateVersion,
+  onOpenUpdate,
 }: {
   title: ReactNode;
   children?: ReactNode;
@@ -70,11 +73,12 @@ export default function TitleBar({
   /** The lock action needs a password to exist. */
   lockAvailable?: boolean;
   onOpenAbout?: () => void;
+  onCheckUpdates?: () => void;
+  updateVersion?: string;
+  onOpenUpdate?: () => void;
 }) {
   const api = window.cyberGoAPI;
   const [maximized, setMaximized] = useState(false);
-  /** The tag of the newest release when it beats this build, else null. */
-  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
@@ -90,20 +94,6 @@ export default function TitleBar({
       .then((value) => { if (alive) setMaximized(value); })
       .catch(() => {});
     const off = api.onMaximized?.((value) => setMaximized(value));
-    return () => {
-      alive = false;
-      off?.();
-    };
-  }, []);
-
-  // The update badge starts from the cached check and then follows every
-  // silent check the main process completes.
-  useEffect(() => {
-    let alive = true;
-    api.checkUpdates()
-      .then((result) => { if (alive && result.available) setUpdateVersion(result.latest); })
-      .catch(() => {});
-    const off = api.onUpdatesStatus?.((result) => setUpdateVersion(result.available ? result.latest : null));
     return () => {
       alive = false;
       off?.();
@@ -323,7 +313,7 @@ export default function TitleBar({
         { id: 'diagnostics', icon: <ClipboardCopy size={14} />, label: labels.about.copyDiagnostics, run: () => { setMenuOpen(false); void copyDiagnostics(); } },
         { id: 'help-divider', divider: true },
         { id: 'about', icon: <Info size={14} />, label: labels.aboutEntry, run: () => { setMenuOpen(false); onOpenAbout?.(); } },
-        { id: 'updates', icon: <Download size={14} />, label: labels.about.checkUpdates, run: () => { setMenuOpen(false); onOpenAbout?.(); } },
+        { id: 'updates', icon: <Download size={14} />, label: labels.about.checkUpdates, run: () => { setMenuOpen(false); onCheckUpdates?.(); } },
       ],
     },
   ];
@@ -365,7 +355,7 @@ export default function TitleBar({
               type="button"
               className="titlebar-update-button"
               aria-label={labels.about.updateAvailable.replace('{version}', updateVersion.replace(/^v/, ''))}
-              onClick={() => onOpenAbout?.()}
+              onClick={onOpenUpdate}
             >
               <ArrowDown size={14} strokeWidth={2.4} aria-hidden="true" />
             </button>
