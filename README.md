@@ -68,6 +68,7 @@ Most planners ask you to create an account before you can write down a dentist a
 
 - This is an alpha pre-release. Features and data formats may change.
 - Keep a recent backup before importing or upgrading.
+- The floating update notice previews the release notes and keeps download and installation separate. Open About to check for a new version.
 - The installer is not digitally signed yet.
 - The visual identity is not finished yet, so the icon and the colors may still change before the first stable release.
 - Bug reports and suggestions are welcome through [GitHub Issues](https://github.com/CyberGems/CyberGo/issues).

@@ -1,11 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { AccessLogEntry, AppInfo, AuthMethod, Bootstrap, CsvResult, DisplayInfo, Group, Item, ItemDraft, PublicSettings, UpdateCheck } from '../shared/types';
+import type { AccessLogEntry, AppInfo, AuthMethod, Bootstrap, CsvResult, DisplayInfo, Group, Item, ItemDraft, PublicSettings, UpdateCheck, UpdateDownloadResult } from '../shared/types';
 
 export interface CyberGoAPI {
   getBootstrap: () => Promise<Bootstrap>;
   getAppInfo: () => Promise<AppInfo>;
   checkUpdates: (force?: boolean) => Promise<UpdateCheck>;
-  downloadUpdate: (tag: string) => Promise<boolean>;
+  downloadUpdate: (tag: string) => Promise<UpdateDownloadResult>;
+  cancelUpdateDownload: (tag: string) => Promise<boolean>;
   installUpdate: (tag: string) => Promise<{ ok: boolean; downloaded: boolean }>;
   onUpdateProgress: (cb: (tag: string, percent: number) => void) => () => void;
   openExternal: (url: string) => Promise<boolean>;
@@ -72,6 +73,7 @@ const api: CyberGoAPI = {
   getAppInfo: () => ipcRenderer.invoke('app:info'),
   checkUpdates: (force?: boolean) => ipcRenderer.invoke('updates:check', force),
   downloadUpdate: (tag) => ipcRenderer.invoke('updates:download', tag),
+  cancelUpdateDownload: (tag) => ipcRenderer.invoke('updates:cancel', tag),
   installUpdate: (tag) => ipcRenderer.invoke('updates:install', tag),
   onUpdateProgress: (cb) => {
     const listener = (_event: unknown, tag: string, percent: number) => cb(tag, percent);

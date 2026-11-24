@@ -43,6 +43,7 @@ export class UpdateInstaller {
   private readonly partialPath: string;
   private ready: { tag: string; digest: string } | null = null;
   private busy = false;
+  private transfer: { tag: string; controller: AbortController } | null = null;
 
   constructor(
     private readonly directory: string,
@@ -57,12 +58,18 @@ export class UpdateInstaller {
     return this.ready?.tag === tag;
   }
 
-  private async expectedDigest(update: ReleaseInstaller): Promise<string> {
+  cancelDownload(tag: string): boolean {
+    if (this.transfer?.tag !== tag) return false;
+    this.transfer.controller.abort();
+    return true;
+  }
+
+  private async expectedDigest(update: ReleaseInstaller, signal: AbortSignal): Promise<string> {
     if (update.digest) return update.digest;
     if (!update.hasChecksumFile) throw new Error('Missing update checksum');
 
     const url = RELEASES_URL + '/download/' + encodeURIComponent(update.tag) + '/' + CHECKSUM_FILE;
-    const response = await this.fetch(url, { signal: AbortSignal.timeout(15_000) });
+    const response = await this.fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]) });
     if (!response.ok) throw new Error('Update checksum could not be downloaded');
     const lines = (await response.text()).split(/\r?\n/);
     for (const line of lines) {
@@ -77,14 +84,18 @@ export class UpdateInstaller {
     if (this.isDownloaded(update.tag)) return;
 
     this.busy = true;
+    const controller = new AbortController();
+    const { signal } = controller;
+    this.transfer = { tag: update.tag, controller };
     try {
-      const digest = await this.expectedDigest(update);
+      const digest = await this.expectedDigest(update, signal);
+      signal.throwIfAborted();
       const url = RELEASES_URL + '/download/' + encodeURIComponent(update.tag) + '/' + encodeURIComponent(update.name);
       await mkdir(this.directory, { recursive: true });
       await rm(this.partialPath, { force: true });
       const file = await open(this.partialPath, 'wx');
       try {
-        const response = await this.fetch(url, { signal: AbortSignal.timeout(10 * 60_000) });
+        const response = await this.fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(10 * 60_000)]) });
         if (!response.ok || !response.body) throw new Error('The installer could not be downloaded');
         const reader = response.body.getReader();
         const hash = createHash('sha256');
@@ -93,6 +104,7 @@ export class UpdateInstaller {
         try {
           for (;;) {
             const { done, value } = await reader.read();
+            signal.throwIfAborted();
             if (done) break;
             bytes += value.byteLength;
             if (bytes > update.size) throw new Error('The installer exceeds the size in the release');
@@ -115,11 +127,18 @@ export class UpdateInstaller {
       } finally {
         await file.close();
       }
+      signal.throwIfAborted();
+      // Once verification passes, publish the staged package atomically.
+      this.transfer = null;
       await rename(this.partialPath, this.installerPath);
       this.ready = { tag: update.tag, digest };
       progress(100);
+    } catch (error) {
+      if (signal.aborted) signal.throwIfAborted();
+      throw error;
     } finally {
       await rm(this.partialPath, { force: true }).catch(() => {});
+      this.transfer = null;
       this.busy = false;
     }
   }

@@ -85,3 +85,36 @@ test('rejects a corrupt download and a modified staged installer', async (t) => 
   await assert.rejects(updater.install(tag), /SHA-256/);
   assert.equal(updater.isDownloaded(tag), false);
 });
+
+test('cancelling an active transfer aborts the request and discards the partial installer', async (t) => {
+  const directory = await updateDirectory(t);
+  const packageInfo = findReleaseInstaller(tag, [asset]);
+  assert(packageInfo);
+  let requestSignal: AbortSignal | null | undefined;
+  let retry = false;
+  const updater = new UpdateInstaller(directory, async (_url, init) => {
+    if (retry) return new Response(payload);
+    requestSignal = init?.signal;
+    return new Response(new ReadableStream({
+      start(stream) {
+        stream.enqueue(payload.subarray(0, 2));
+        requestSignal?.addEventListener('abort', () => stream.error(requestSignal?.reason), { once: true });
+      },
+    }));
+  }, async () => assert.fail('Download should never start the installer'));
+
+  let reportChunk!: () => void;
+  const firstChunk = new Promise<void>((resolve) => { reportChunk = resolve; });
+  const transfer = updater.download(packageInfo, reportChunk);
+  const cancelled = assert.rejects(transfer, { name: 'AbortError' });
+  await Promise.race([firstChunk, transfer]);
+  assert.equal(updater.cancelDownload('unrelated'), false);
+  assert.equal(updater.cancelDownload(tag), true);
+  await cancelled;
+  assert.equal(requestSignal?.aborted, true);
+  assert.equal(updater.isDownloaded(tag), false);
+  await assert.rejects(readFile(path.join(directory, 'CyberGo.Update.download')), { code: 'ENOENT' });
+  retry = true;
+  await updater.download(packageInfo, () => {});
+  assert.equal(updater.isDownloaded(tag), true);
+});

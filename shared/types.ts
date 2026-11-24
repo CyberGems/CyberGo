@@ -52,7 +52,11 @@ export interface UpdateCheck {
   error: string | null;
   canInstall?: boolean;
   downloaded?: boolean;
+  releaseNotes?: string;
+  publishedAt?: string;
 }
+
+export type UpdateDownloadResult = 'ready' | 'cancelled' | 'failed';
 
 export interface Recurrence {
   freq: Freq;
