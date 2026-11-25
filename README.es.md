@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/CyberGems/CyberGo">
-    <img src="https://cybergems.org/banners/es/cybergo.png" alt="Tu planificador offline de tareas y eventos" />
+    <img src="https://cybergems.org/banners/es/cybergo.png" alt="Tareas, eventos y recordatorios, sin conexión" />
   </a>
 </p>
 
@@ -24,7 +24,7 @@
 
 <div align="center">
 
-### Tus tareas, eventos y recordatorios, planificados en lenguaje natural y guardados en tu PC
+### Una agenda local y privada para tareas, eventos y recordatorios en Windows.
 
 </div>
 

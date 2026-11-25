@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/CyberGems/CyberGo">
-    <img src="https://cybergems.org/banners/cybergo.png" alt="Your offline planner for tasks, events and reminders" />
+    <img src="https://cybergems.org/banners/cybergo.png" alt="Tasks, events and reminders, offline" />
   </a>
 </p>
 
@@ -24,7 +24,7 @@
 
 <div align="center">
 
-### Your tasks, events and reminders, planned in plain language and kept on your PC
+### A private, local-first agenda for tasks, events and reminders on Windows.
 
 </div>
 
