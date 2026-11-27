@@ -63,7 +63,8 @@ Permite buscar, descargar e instalar actualizaciones manualmente desde Acerca de
 
 | File | Description | Platform |
 | :--- | :--- | :--- |
-| **[`CyberGo.Setup.{{VERSION_NUM}}.exe`](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/CyberGo.Setup.{{VERSION_NUM}}.exe)** | 🚀 **Alpha installer** (NSIS with Start Menu & Desktop shortcuts; no portable build yet) | Windows 10 / 11 (x64) |
+| **[`CyberGo.Setup.{{VERSION_NUM}}.exe`](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/CyberGo.Setup.{{VERSION_NUM}}.exe)** | 🚀 **Alpha installer** (NSIS with Start Menu & Desktop shortcuts) | Windows 10 / 11 (x64) |
+| **[`CyberGo-Portable-{{VERSION_NUM}}.exe`](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/CyberGo-Portable-{{VERSION_NUM}}.exe)** | 💼 **Alpha portable edition** (single executable, keeps its data in a `data` folder beside it, no installation) | Windows 10 / 11 (x64) |
 
 ---
 
@@ -76,6 +77,12 @@ Permite buscar, descargar e instalar actualizaciones manualmente desde Acerca de
 
 ```text
 {{INSTALLER_HASH}}
+```
+
+**Portable**: [View VirusTotal report](https://www.virustotal.com/gui/file/{{PORTABLE_HASH}})
+
+```text
+{{PORTABLE_HASH}}
 ```
 
 The checksums are also available as a downloadable [SHA256SUMS.txt](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/SHA256SUMS.txt).

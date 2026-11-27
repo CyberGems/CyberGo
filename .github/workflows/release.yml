@@ -41,7 +41,7 @@ jobs:
       # honest, because on a tag push electron-builder would otherwise try
       # to publish itself and demand a GitHub token. The build:electron
       # script syncs the About icons, compiles the renderer and the main
-      # process, and packages the NSIS installer into release/.
+      # process, and packages the NSIS installer and portable executable into release/.
       - name: Compile and Package Electron App
         run: npm run build:electron -- --publish never
         env:
@@ -66,15 +66,23 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           VER_NUM="${TAG#v}"
           INSTALLER=$(ls release/CyberGo-"$VER_NUM"-setup.exe)
+          PORTABLE=$(ls release/CyberGo-Portable-"$VER_NUM".exe)
           if [ ! -f "$INSTALLER" ]; then
             echo "::error::Installer not found: release/CyberGo-$VER_NUM-setup.exe"
             exit 1
           fi
+          if [ ! -f "$PORTABLE" ]; then
+            echo "::error::Portable executable not found: release/CyberGo-Portable-$VER_NUM.exe"
+            exit 1
+          fi
           mkdir -p staging
           cp "$INSTALLER" "staging/CyberGo.Setup.$VER_NUM.exe"
-          (cd staging && sha256sum "CyberGo.Setup.$VER_NUM.exe" > SHA256SUMS.txt)
+          cp "$PORTABLE" "staging/CyberGo-Portable-$VER_NUM.exe"
+          (cd staging && sha256sum "CyberGo.Setup.$VER_NUM.exe" "CyberGo-Portable-$VER_NUM.exe" > SHA256SUMS.txt)
           echo "installer: CyberGo.Setup.$VER_NUM.exe"
-          echo "sha256:    $(cut -d' ' -f1 staging/SHA256SUMS.txt)"
+          echo "sha256:    $(grep -F 'CyberGo.Setup.' staging/SHA256SUMS.txt | cut -d' ' -f1)"
+          echo "portable:  CyberGo-Portable-$VER_NUM.exe"
+          echo "sha256:    $(grep -F 'CyberGo-Portable-' staging/SHA256SUMS.txt | cut -d' ' -f1)"
 
       # Prefer gh CLI with retries over a single publish call: GitHub has
       # been returning intermittent 503s during release create/upload.
@@ -87,7 +95,7 @@ jobs:
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
           VER_NUM="${TAG#v}"
-          FILES=(staging/CyberGo.Setup."$VER_NUM".exe staging/SHA256SUMS.txt)
+          FILES=(staging/CyberGo.Setup."$VER_NUM".exe staging/CyberGo-Portable-"$VER_NUM".exe staging/SHA256SUMS.txt)
 
           retry() {
             local attempt=1
@@ -132,40 +140,49 @@ jobs:
       # Upload the freshly built installer to VirusTotal so the SHA256 link
       # in the release body resolves as soon as the draft is published (new
       # builds are unknown to VirusTotal until someone submits them).
-      - name: Scan installer with VirusTotal
+      - name: Scan builds with VirusTotal
         if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         env:
           VIRUSTOTAL_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}
         run: |
-          $installerItem = Get-ChildItem -Path "./staging" -Filter "CyberGo.Setup.*.exe" | Select-Object -First 1
-          if (-not $installerItem) {
-            throw "Installer not found in ./staging"
+          $files = @(
+            (Get-ChildItem -Path "./staging" -Filter "CyberGo.Setup.*.exe" | Select-Object -First 1)
+            (Get-ChildItem -Path "./staging" -Filter "CyberGo-Portable-*.exe" | Select-Object -First 1)
+          ) | Where-Object { $_ }
+          if ($files.Count -lt 2) {
+            throw "Installer and portable executables are required in ./staging"
           }
-          Write-Host "Installer: $($installerItem.Name)"
+          foreach ($file in $files) { Write-Host "Build: $($file.Name)" }
 
           if ($env:VIRUSTOTAL_API_KEY) {
-            $item = Get-Item $installerItem.FullName
-            $sizeMb = [Math]::Round($item.Length / 1MB, 2)
-            Write-Host "Uploading $installerItem.FullName ($sizeMb MB) to VirusTotal..."
-            $headers = @{ "x-apikey" = $env:VIRUSTOTAL_API_KEY }
-            $url = "https://www.virustotal.com/api/v3/files"
+            function Upload-VirusTotal($filePath, $apiKey) {
+              $item = Get-Item $filePath
+              $sizeMb = [Math]::Round($item.Length / 1MB, 2)
+              Write-Host "Uploading $filePath ($sizeMb MB) to VirusTotal..."
+              $headers = @{ "x-apikey" = $apiKey }
+              $url = "https://www.virustotal.com/api/v3/files"
 
-            if ($item.Length -gt 30MB) {
-              Write-Host "File exceeds 30MB ($sizeMb MB), requesting dedicated large-file upload endpoint from VirusTotal..."
-              $urlResp = Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/files/upload_url" -Method Get -Headers $headers -TimeoutSec 60
-              $url = $urlResp.data
-              Write-Host "Using dedicated endpoint: $url"
+              if ($item.Length -gt 30MB) {
+                Write-Host "File exceeds 30MB ($sizeMb MB), requesting dedicated large-file upload endpoint from VirusTotal..."
+                $urlResp = Invoke-RestMethod -Uri "https://www.virustotal.com/api/v3/files/upload_url" -Method Get -Headers $headers -TimeoutSec 60
+                $url = $urlResp.data
+                Write-Host "Using dedicated endpoint: $url"
+              }
+
+              & curl.exe -s -S --fail -X POST -H "x-apikey: $apiKey" -F "file=@$filePath" "$url" | Out-Null
+              Write-Host "Upload successful."
             }
 
-            try {
-              & curl.exe -s -S --fail -X POST -H "x-apikey: $($env:VIRUSTOTAL_API_KEY)" -F "file=@$($item.FullName)" "$url" | Out-Null
-              Write-Host "Upload successful."
-            } catch {
-              Write-Warning "VirusTotal installer upload warning: $_"
+            foreach ($file in $files) {
+              try {
+                Upload-VirusTotal $file.FullName $env:VIRUSTOTAL_API_KEY
+              } catch {
+                Write-Warning "VirusTotal upload warning for $($file.Name): $_"
+              }
             }
           } else {
-            Write-Host "VIRUSTOTAL_API_KEY secret not found; skipping the upload. The SHA256 checksum still ships in SHA256SUMS.txt."
+            Write-Host "VIRUSTOTAL_API_KEY secret not found; skipping the upload. The SHA256 checksums still ship in SHA256SUMS.txt."
           }
 
       # Render .github/release-template.md with the real version and SHA256
@@ -197,17 +214,21 @@ jobs:
             done
           }
 
-          INSTALLER_HASH=$(cut -d' ' -f1 staging/SHA256SUMS.txt)
-          if [ -z "$INSTALLER_HASH" ]; then
-            echo "::error::Installer hash is empty"
+          INSTALLER_HASH=$(grep -F 'CyberGo.Setup.' staging/SHA256SUMS.txt | cut -d' ' -f1)
+          PORTABLE_HASH=$(grep -F 'CyberGo-Portable-' staging/SHA256SUMS.txt | cut -d' ' -f1)
+          if [ -z "$INSTALLER_HASH" ] || [ -z "$PORTABLE_HASH" ]; then
+            echo "::error::Installer or portable hash is empty"
             exit 1
           fi
           echo "installer: CyberGo.Setup.$VER_NUM.exe"
           echo "sha256:    $INSTALLER_HASH"
+          echo "portable:  CyberGo-Portable-$VER_NUM.exe"
+          echo "sha256:    $PORTABLE_HASH"
 
           sed -e "s/{{VERSION}}/$TAG/g" \
               -e "s/{{VERSION_NUM}}/$VER_NUM/g" \
               -e "s/{{INSTALLER_HASH}}/$INSTALLER_HASH/g" \
+              -e "s/{{PORTABLE_HASH}}/$PORTABLE_HASH/g" \
               .github/release-template.md > FINAL_RELEASE_NOTES.md
               sed -i '/<!--.*-->/d' FINAL_RELEASE_NOTES.md
 

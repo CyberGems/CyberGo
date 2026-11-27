@@ -15,6 +15,7 @@ import { asDraft, asId, asIsoDate, asNumber, asSettingsPatch, asText, methodOf, 
 import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWindowBounds, type SavedWindowBounds } from './window-bounds';
 import { formatTrayTooltip } from './tray-tooltip';
 import { findReleaseInstaller, UpdateInstaller, type ReleaseInstaller } from './updater';
+import { isPortableBuild, portableExecutableFile, portableUserDataPath } from './portable';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verify = process.env.CYBERGO_VERIFY === '1';
@@ -26,7 +27,21 @@ function bootLog(message: string) {
 
 if (verify) {
   app.setPath('userData', path.join(os.tmpdir(), 'cybergo-verify'));
+} else {
+  // Portable builds keep the database, backups and settings in a `data` folder
+  // beside the executable. This must run before any getPath('userData'),
+  // including the module-level constants further down this file.
+  const portableData = portableUserDataPath();
+  if (portableData) {
+    try {
+      fs.mkdirSync(portableData, { recursive: true });
+    } catch (error) {
+      console.error('[PORTABLE] Failed to create portable data directory:', error);
+    }
+    app.setPath('userData', portableData);
+  }
 }
+const isPortable = isPortableBuild();
 
 let mainWindow: BrowserWindow | null = null;
 let reminderWindow: BrowserWindow | null = null;
@@ -163,7 +178,7 @@ function flushNavigate() {
 function applyLogin(enabled: boolean) {
   app.setLoginItemSettings({
     openAtLogin: enabled,
-    path: process.execPath,
+    path: portableExecutableFile() || process.execPath,
     args: app.isPackaged ? [] : [path.resolve(app.getAppPath())],
   });
 }
@@ -864,7 +879,7 @@ const RELEASES_API = 'https://api.github.com/repos/CyberGems/CyberGo/releases?pe
 const UPDATE_CHECK_INTERVAL = 6 * 60 * 60 * 1000;
 let lastUpdateCheck: { result: UpdateCheck; at: number } | null = null;
 let availableInstaller: ReleaseInstaller | undefined;
-const supportsInAppUpdates = app.isPackaged && process.platform === 'win32';
+const supportsInAppUpdates = app.isPackaged && process.platform === 'win32' && !isPortable;
 const updateInstaller = new UpdateInstaller(path.join(app.getPath('userData'), 'updates'), net.fetch.bind(net));
 
 function withInstallerStatus(result: UpdateCheck): UpdateCheck {

@@ -152,7 +152,7 @@ Plenty of planners lock your agenda behind an account and a cloud, or bury it in
 
 ### 📥 Download
 
-Download the Windows installer from the [latest CyberGo pre-release](https://github.com/CyberGems/CyberGo/releases/latest). The SHA-256 checksum of the installer ships next to it as a SHA256SUMS.txt file in the release assets.
+Download the Windows installer or the portable executable from the [latest CyberGo pre-release](https://github.com/CyberGems/CyberGo/releases/latest). The SHA-256 checksums of both files ship next to them as a SHA256SUMS.txt file in the release assets.
 
 The alpha installers are unsigned Windows executables. Windows SmartScreen may display a warning because the file does not yet have code-signing reputation. You can inspect the source, compare the SHA-256 value published with the release, or build the installer yourself.
 
@@ -163,6 +163,10 @@ This alpha targets **Windows 10 and Windows 11, 64-bit**.
 1. Download and run the installer.
 2. Start CyberGo from the Start menu.
 3. Choose English or Spanish and select a theme.
+
+### 💼 Portable Edition
+
+No installation wanted? Download `CyberGo-Portable-x.x.x.exe`, drop it in any folder and run it. Your agenda, backups and settings live in a `data` folder beside the executable, so the whole setup travels on a USB stick. Auto-launch points at the executable you ran, but new versions are downloaded by hand from [Releases](https://github.com/CyberGems/CyberGo/releases/latest); the update notice links there.
 
 ### 🛡️ Windows SmartScreen
 
