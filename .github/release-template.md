@@ -64,7 +64,6 @@ Permite buscar, descargar e instalar actualizaciones manualmente desde Acerca de
 | File | Description | Platform |
 | :--- | :--- | :--- |
 | **[`CyberGo.Setup.{{VERSION_NUM}}.exe`](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/CyberGo.Setup.{{VERSION_NUM}}.exe)** | 🚀 **Alpha installer** (NSIS with Start Menu & Desktop shortcuts; no portable build yet) | Windows 10 / 11 (x64) |
-| **[`SHA256SUMS.txt`](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/SHA256SUMS.txt)** | 🔐 SHA-256 checksum of the installer | Any (text) |
 
 ---
 
@@ -78,6 +77,8 @@ Permite buscar, descargar e instalar actualizaciones manualmente desde Acerca de
 ```text
 {{INSTALLER_HASH}}
 ```
+
+The checksums are also available as a downloadable [SHA256SUMS.txt](https://github.com/CyberGems/CyberGo/releases/download/{{VERSION}}/SHA256SUMS.txt).
 
 ---
 
