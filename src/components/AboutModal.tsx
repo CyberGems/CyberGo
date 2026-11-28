@@ -1,7 +1,8 @@
+import { useGitHubStar } from '../useGitHubStar';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BookOpen, Bug, Check, ClipboardCopy, Gem, Github, Heart, RefreshCw, Tag, X } from 'lucide-react';
+import { BookOpen, Bug, Check, ClipboardCopy, Gem, Github, Star, Heart, RefreshCw, Tag, X } from 'lucide-react';
 import type { AppInfo, UpdateCheck } from '@shared/types';
-import type { Copy } from '../i18n';
+import { copyOf, type Copy } from '../i18n';
 import { platformLabel } from '../lib/format';
 import { useFocusTrap } from './Dialog';
 import Tooltip from './Tooltip';
@@ -41,6 +42,7 @@ export default function AboutModal({
 }) {
   const about = copy.about;
   const [copied, setCopied] = useState(false);
+  const { giveStar, starState, starLabel } = useGitHubStar(() => window.cyberGoAPI.starRepository(), copy === copyOf('es'));
   const [suitePick] = useState(pickSuiteApps);
   const [update, setUpdate] = useState<UpdateState>({ state: 'idle' });
   const processedRequest = useRef(0);
@@ -219,6 +221,11 @@ export default function AboutModal({
             <Tooltip label={about.releasesTooltip} placement="top">
               <button type="button" className="btn-icon" aria-label={about.releasesTooltip} onClick={() => void openExternal(RELEASES_URL)}>
                 <Tag size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip label={starLabel} placement="top">
+              <button type="button" className="btn-icon" aria-label={starLabel} aria-busy={starState === 'busy'} disabled={starState === 'busy' || starState === 'starred'} onClick={() => void giveStar()}>
+                <Star size={14} fill={starState === 'starred' ? 'currentColor' : 'none'} />
               </button>
             </Tooltip>
             <Tooltip label={about.donateTooltip} placement="top">

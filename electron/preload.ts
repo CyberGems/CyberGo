@@ -10,6 +10,7 @@ export interface CyberGoAPI {
   installUpdate: (tag: string) => Promise<{ ok: boolean; downloaded: boolean }>;
   onUpdateProgress: (cb: (tag: string, percent: number) => void) => () => void;
   openExternal: (url: string) => Promise<boolean>;
+  starRepository: () => Promise<'starred' | 'opened'>;
   readClipboardText: () => Promise<string>;
   minimize: () => Promise<void>;
   toggleMaximize: () => Promise<boolean>;
@@ -81,6 +82,7 @@ const api: CyberGoAPI = {
     return () => ipcRenderer.removeListener('updates:progress', listener);
   },
   openExternal: (url) => ipcRenderer.invoke('shell:open-external', url),
+  starRepository: () => ipcRenderer.invoke('github:star'),
   readClipboardText: () => ipcRenderer.invoke('clipboard:read-text'),
   minimize: () => ipcRenderer.invoke('window:minimize'),
   toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),

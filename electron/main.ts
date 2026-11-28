@@ -1,4 +1,6 @@
+import { createGitHubStarAction } from './github-star';
 import crypto from 'crypto';
+
 import { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, Notification, screen, session, shell, Tray } from 'electron';
 import fs from 'fs';
 import os from 'os';
@@ -16,6 +18,9 @@ import { MAIN_MIN_HEIGHT, MAIN_MIN_WIDTH, resolveReminderWindowSize, resolveWind
 import { formatTrayTooltip } from './tray-tooltip';
 import { findReleaseInstaller, UpdateInstaller, type ReleaseInstaller } from './updater';
 import { isPortableBuild, portableExecutableFile, portableUserDataPath } from './portable';
+
+const starRepository = createGitHubStarAction(() => shell.openExternal('https://github.com/CyberGems/CyberGo'));
+ipcMain.handle('github:star', () => starRepository());
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const verify = process.env.CYBERGO_VERIFY === '1';
@@ -1429,6 +1434,10 @@ ipcMain.on('tray-menu-action', (_event, action: string, payload?: { site?: strin
   }
   if (action === 'suite-home') {
     void shell.openExternal('https://cybergems.org');
+    return;
+  }
+  if (action === 'help-star') {
+    void starRepository().catch(console.error);
     return;
   }
   if (action === 'help-docs') {

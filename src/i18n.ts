@@ -1,6 +1,7 @@
 import type { Lang } from '@shared/types';
 
 const es = {
+  githubStar: 'Dar una estrella en GitHub',
   appName: 'CyberGo',
   newItem: 'Nuevo',
   edit: 'Editar',
@@ -508,6 +509,7 @@ const es = {
 };
 
 const en: typeof es = {
+  githubStar: 'Star on GitHub',
   appName: 'CyberGo',
   newItem: 'New',
   edit: 'Edit',

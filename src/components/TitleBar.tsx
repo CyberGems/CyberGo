@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, Bell, BookOpen, ChevronDown, ClipboardCopy, Download, Globe, Heart, HelpCircle, Info, Lock, Minus, MoreHorizontal, Power, Tag, X, Zap } from 'lucide-react';
+import { ArrowDown, Bell, BookOpen, ChevronDown, ClipboardCopy, Download, Globe, Heart, HelpCircle, Info, Lock, Minus, MoreHorizontal, Power, Star, Tag, X, Zap } from 'lucide-react';
 import type { Copy } from '../i18n';
 import { platformLabel } from '../lib/format';
 import Tooltip from './Tooltip';
@@ -306,6 +306,8 @@ export default function TitleBar({
       id: 'help',
       label: labels.sectionHelp,
       rows: [
+        { id: 'github-star', icon: <Star size={14} />, label: labels.githubStar, run: () => { setMenuOpen(false); void api.starRepository().catch(console.error); } },
+        { id: 'github-star-divider', divider: true },
         { id: 'docs', icon: <BookOpen size={14} />, label: labels.helpDocs, run: () => { setMenuOpen(false); void api.openExternal('https://github.com/CyberGems/CyberGo/wiki'); } },
         { id: 'faq', icon: <HelpCircle size={14} />, label: labels.helpFaq, run: () => { setMenuOpen(false); void api.openExternal('https://github.com/CyberGems/CyberGo/wiki/FAQ'); } },
         { id: 'changelog', icon: <Tag size={14} />, label: labels.helpChangelog, run: () => { setMenuOpen(false); void api.openExternal('https://github.com/CyberGems/CyberGo/releases'); } },
